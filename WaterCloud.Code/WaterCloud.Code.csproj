@@ -1,0 +1,54 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <Optimize>false</Optimize>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Extend\**" />
+    <Compile Remove="Extension\**" />
+    <EmbeddedResource Remove="Extend\**" />
+    <EmbeddedResource Remove="Extension\**" />
+    <None Remove="Extend\**" />
+    <None Remove="Extension\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Extend\Ext.Mapper.cs" />
+    <Compile Include="Extend\Ext.Convert.cs" />
+    <Compile Include="Extend\Ext.DateTime.cs" />
+    <Compile Include="Extend\Ext.Enum.cs" />
+    <Compile Include="Extend\Ext.Exception.cs" />
+    <Compile Include="Extend\Ext.Format.cs" />
+    <Compile Include="Extend\Ext.String.cs" />
+    <Compile Include="Extend\Ext.Validate.cs" />
+    <Compile Include="Extend\Ext.Linq.cs" />
+    <Compile Include="Extend\Ext.List.cs" />
+    <Compile Include="Extend\Ext.Table.cs" />
+    <Compile Include="Extend\Ext.Number.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Autofac" Version="6.4.0" />
+    <PackageReference Include="AutoMapper" Version="11.0.1" />
+    <PackageReference Include="CSRedisCore" Version="3.8.669" />
+    <PackageReference Include="iTextSharp.LGPLv2.Core.Fix" Version="1.4.3" />
+    <PackageReference Include="Microsoft.AspNetCore.Html.Abstractions" Version="2.2.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.2.0" />
+    <PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="6.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="6.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="6.0.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="Serenity.Web" Version="3.14.5" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
+    <PackageReference Include="System.Drawing.Common" Version="6.0.0" />
+    <PackageReference Include="ZKWeb.System.Drawing" Version="4.0.1" />
+    <PackageReference Include="RabbitMQ.Client" Version="6.4.0" />
+  </ItemGroup>
+
+</Project>
