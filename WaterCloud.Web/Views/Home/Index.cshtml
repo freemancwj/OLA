@@ -136,8 +136,6 @@
     <script src="~/js/cookie/jquery.cookie.js?v=@WaterCloud.Code.GlobalContext.GetVersion()"></script>
     <script src="~/js/framework-clientdata.js?v=@WaterCloud.Code.GlobalContext.GetVersion()"></script>
     <script src="~/js/framework-ui.js?v=@WaterCloud.Code.GlobalContext.GetVersion()"></script>
-    <script src="~/lib/signalr/dist/browser/signalr.js?v=@WaterCloud.Code.GlobalContext.GetVersion()"></script>
-    <script src="~/js/chat.js?v=@WaterCloud.Code.GlobalContext.GetVersion()"></script>
     
     <script>
         // 接收消息
@@ -185,6 +183,13 @@
                 });
             })
         };
+     function replace_em(str) {
+            str = str.replace(/\</g, '&lt;');
+            str = str.replace(/\>/g, '&gt;');
+            str = str.replace(/\n/g, '<br/>');
+            str = str.replace(/\[em_([0-9]*)\]/g, '<img src="/scripts/qq/face/$1.gif" border="0" />');
+            return str;
+        }
         layui.use(['jquery', 'layer', 'miniAdmin', 'miniTongji', 'miniTab', 'common', 'notice'], function () {
             var $ = layui.jquery,
                 layer = layui.layer,
@@ -249,7 +254,11 @@
                             async: true,
                             success: function (data) {
                                 layer.msg('退出成功');
-                                window.onbeforeunload();
+                                // 原在线聊天脚本（chat.js）已替换为 LayIM，window.onbeforeunload 可能不存在，
+                                // 直接调用会抛异常导致后面的跳转不执行，这里判空处理
+                                if (typeof window.onbeforeunload === 'function') {
+                                    window.onbeforeunload();
+                                }
                                 $.cookie("wc_returnurl", '', {
                                     expires: -1, path: '/'
                                 });
@@ -261,106 +270,21 @@
             });
         });
 
-         layui.config({
-    layimPath: "/layim/dist/" //配置 layim.js 所在目录
-    , layimAssetsPath: "/js/lay-module/layim/dist/layim-assets/" //layim 资源文件所在目录
-}).extend({
-    layim: layui.cache.layimPath + 'layim' //配置 layim 组件所在的路径
-}).use('layim', function (layim) { //加载组件
-    //先来个客服模式压压精
-    layim.config({
-        init: {
-            url: "/Api/User/GetinitData"
-        } //获取主面板列表信息，下文会做进一步介绍
-             , title:"聊天系统"
-                , isAudio:true
-                , isVideo: true
-                , notice:true
-        //获取群员接口（返回的数据格式见下文）
-        , members: {
-            url: '' //接口地址（返回的数据格式见下文）
-            , type: 'get' //默认get，一般可不填
-            , data: {} //额外参数
-        }
-
-        //上传图片接口（返回的数据格式见下文），若不开启图片上传，剔除该项即可
-        , uploadImage: {
-            url: '' //接口地址
-            , type: 'post' //默认post
-        }
-
-        //上传文件接口（返回的数据格式见下文），若不开启文件上传，剔除该项即可
-        , uploadFile: {
-            url: '' //接口地址
-            , type: 'post' //默认post
-        }
-        //扩展工具栏，下文会做进一步介绍（如果无需扩展，剔除该项即可）
-        , tool: [{
-            alias: 'code' //工具别名
-            , title: '代码' //工具名称
-            , icon: '' //工具图标，参考图标文档
-        }]
-
-        , msgbox: layui.cache.dir + 'css/modules/layim/html/msgbox.html' //消息盒子页面地址，若不开启，剔除该项即可
-        , find: layui.cache.dir + 'css/modules/layim/html/find.html' //发现页面地址，若不开启，剔除该项即可
-        , chatLog: layui.cache.dir + 'css/modules/layim/html/chatlog.html' //聊天记录页面地址，若不开启，剔除该项即可
-
-    });
-        //发送文字消息
-            layim.on('sendMessage', function (res) {
-                var mine = res.mine;
-                var to = res.to;
-                var msg = {
-                    username: mine.username,
-                    avatar: mine.avatar,
-                    id: mine.id,
-                    type: to.type,
-                    content: mine.content,
-                    mine: false,
-                    fromid: mine.id,
-                    toid: to.id
-                }
-                var sendsjon = JSON.stringify(msg);
-                connection.invoke("SendOneIm", sendsjon).catch(function (err) {
-                    return console.error(err.toString());
-                });
-            });
-      //接收文字消息
-            connection.on("ReceiveOneIm", function (msg) {
-                const obj = JSON.parse(msg);
-                layim.getMessage(obj);
-            });
-                        //上线
-            connection.on("online", function (id) {              
-                layim.setFriendStatus(id, 'online'); //设置指定好友在线，即头像取消置灰
-            });
-            //下线
-            connection.on("offline", function (id) {
-                layim.setFriendStatus(id, 'offline'); //设置指定好友在线，即头像置灰
-            });
-
-            //改变状态
-            layim.on('online', function (status) {
-
-                connection.invoke("ChangeStatus", status).catch(function (err) {
-                    return console.error(err.toString());
-                });
-
-            });
-
-            //修改签名
-            layim.on('sign', function (value) {
-                connection.invoke("ChangeSign", value).catch(function (err) {
-                    return console.error(err.toString());
-                });
-               
-            });
-            //签名回调监听
-            connection.on("SignBack", function (msg) {
-                alert(msg)
-            });
-});
     </script>
+
+    @{
+        var chatBaseUrl = (WaterCloud.Code.GlobalContext.Configuration["Chat:BaseUrl"] ?? "").TrimEnd('/');
+        var chatEnabled = WaterCloud.Code.GlobalContext.Configuration["Chat:Enabled"] != "false" && !string.IsNullOrEmpty(chatBaseUrl);
+    }
+    @if (chatEnabled)
+    {
+        <script src="@(chatBaseUrl)/embed.js"
+                data-base="@chatBaseUrl"
+                data-ticket-url="/api/Chat/SsoUrl"
+                data-width="260"
+                data-height="600"
+                data-title="在线聊天"></script>
+    }
 
 </body>
 

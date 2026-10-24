@@ -71,7 +71,42 @@ namespace WaterCloud.Service.SystemOrganize
 			return data;
 		}
 
-		public async Task<List<UserExtend>> GetList(string keyword)
+        public async Task<List<UserExtend>> GetListByRoleId(SoulPage<UserExtend> pagination, string roleId)
+        {
+            //反格式化显示只能用"等于"，其他不支持
+            Dictionary<string, Dictionary<string, string>> dic = new Dictionary<string, Dictionary<string, string>>();
+            Dictionary<string, string> enabledTemp = new Dictionary<string, string>();
+            enabledTemp.Add("1", "有效");
+            enabledTemp.Add("0", "无效");
+            dic.Add("F_EnabledMark", enabledTemp);
+            Dictionary<string, string> sexTemp = new Dictionary<string, string>();
+            var sexList = await GlobalContext.GetService<ItemsDataService>().GetItemList("104");
+            foreach (var item in sexList)
+            {
+                sexTemp.Add(item.F_ItemCode, item.F_ItemName);
+            }
+            dic.Add("F_Gender", sexTemp);
+            pagination = ChangeSoulData(dic, pagination);
+            //获取数据权限
+            var query = GetQuery().Where(a => a.F_IsAdmin == false);
+            if (!string.IsNullOrEmpty(roleId))
+            {		
+                query = query.Where(a => a.F_RoleId.Equals(roleId));
+            }
+            query = GetDataPrivilege("a", "", query);
+            var data = await query.ToPageListAsync(pagination);
+            var roles = repository.Db.Queryable<RoleEntity>().ToList();
+            var orgs = repository.Db.Queryable<OrganizeEntity>().ToList();
+            foreach (var item in data)
+            {
+                string[] roleIds = item.F_RoleId.Split(',');
+                string[] departmentIds = item.F_OrganizeId.Split(',');
+                item.F_OrganizeName = string.Join(',', orgs.Where(a => departmentIds.Contains(a.F_Id)).Select(a => a.F_FullName).ToList());
+                item.F_RoleName = string.Join(',', roles.Where(a => roleIds.Contains(a.F_Id)).Select(a => a.F_FullName).ToList());
+            }
+            return data;
+        }
+        public async Task<List<UserExtend>> GetList(string keyword)
 		{
 			var cachedata = GetQuery().Where(a => a.F_IsAdmin == false);
 			if (!string.IsNullOrEmpty(keyword))
@@ -91,7 +126,27 @@ namespace WaterCloud.Service.SystemOrganize
 			return data;
 		}
 
-		private ISugarQueryable<UserExtend> GetQuery()
+        public async Task<List<UserExtend>> GetStudentList(string roleid)
+        {
+            var cachedata = GetQuery().Where(a => a.F_IsAdmin == false);
+            if (!string.IsNullOrEmpty(roleid))
+            {
+                cachedata = cachedata.Where(a => a.F_RoleId.Equals(roleid));
+            }
+            var data = await cachedata.OrderBy(a => a.F_Account).ToListAsync();
+            var roles = await repository.Db.Queryable<RoleEntity>().ToListAsync();
+            var orgs = await repository.Db.Queryable<OrganizeEntity>().ToListAsync();
+            foreach (var item in data)
+            {
+                string[] roleIds = item.F_RoleId.Split(',');
+                string[] departmentIds = item.F_OrganizeId.Split(',');
+                item.F_OrganizeName = string.Join(',', orgs.Where(a => departmentIds.Contains(a.F_Id)).Select(a => a.F_FullName).ToList());
+                item.F_RoleName = string.Join(',', roles.Where(a => roleIds.Contains(a.F_Id)).Select(a => a.F_FullName).ToList());
+            }
+            return data;
+        }
+
+        private ISugarQueryable<UserExtend> GetQuery()
 		{
 			var query = repository.Db.Queryable<UserEntity, RoleEntity, SystemSetEntity>((a, b, c) => new JoinQueryInfos(
 				JoinType.Left, a.F_DutyId == b.F_Id,

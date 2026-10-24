@@ -234,7 +234,9 @@ function style_html(html_source, indent_size, indent_character, max_char) {
               this.print_newline(true, this.output);
             }
           }
-          return content.join(''); //returns fully formatted tag
+            alert(content);
+            return content.join(''); //returns fully formatted tag
+
         }
         
         this.get_unformatted = function (delimiter, orig_tag) { //function to return unformatted content in its entirety

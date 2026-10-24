@@ -26,18 +26,18 @@ namespace WaterCloud.Web.Areas.SystemOrganize.Controllers
 		public RoleService _roleService { get; set; }
 		public OrganizeService _orgService { get; set; }
 
-		[HandlerAjaxOnly]
-		[IgnoreAntiforgeryToken]
-		public async Task<ActionResult> GetGridJson(SoulPage<UserExtend> pagination, string keyword)
-		{
-			if (string.IsNullOrEmpty(pagination.field))
-			{
-				pagination.field = "F_OrganizeId";
-				pagination.order = "asc";
-			}
-			var data = await _service.GetLookList(pagination, keyword);
-			return Content(pagination.setData(data).ToJson());
-		}
+		//[HandlerAjaxOnly]
+		//[IgnoreAntiforgeryToken]
+		//public async Task<ActionResult> GetGridJson(SoulPage<UserExtend> pagination, string keyword)
+		//{
+		//	if (string.IsNullOrEmpty(pagination.field))
+		//	{
+		//		pagination.field = "F_OrganizeId";
+		//		pagination.order = "asc";
+		//	}
+		//	var data = await _service.GetLookList(pagination, keyword);
+		//	return Content(pagination.setData(data).ToJson());
+		//}
 
 		[HttpGet]
 		public virtual ActionResult AddForm()
@@ -45,7 +45,15 @@ namespace WaterCloud.Web.Areas.SystemOrganize.Controllers
 			return View();
 		}
 
-		[HttpGet]
+        [HttpGet]
+       // [HandlerAuthorize]
+      //  [HandlerAdmin(false)]
+        public virtual ActionResult StudentList()
+        {
+            return View();
+        }
+
+        [HttpGet]
 		[HandlerAjaxOnly]
 		public async Task<ActionResult> GetListJson(string keyword, string ids)
 		{
@@ -65,7 +73,45 @@ namespace WaterCloud.Web.Areas.SystemOrganize.Controllers
 			return Success(data.Count, data);
 		}
 
+		[HandlerAjaxOnly]
+		[IgnoreAntiforgeryToken]
+		public async Task<ActionResult> GetGridJson(SoulPage<UserExtend> pagination, string keyword, string roleid)
+		{
+			if (string.IsNullOrEmpty(pagination.field))
+			{
+				pagination.field = "F_OrganizeId";
+				pagination.order = "asc";
+			}
+			var data = await _service.GetLookList(pagination, keyword);
+			if (!string.IsNullOrEmpty(roleid))
+			{
+				data = data.Where(u => u.F_RoleId.Split(',').Contains(roleid)).ToList();
+			}
+			return Content(pagination.setData(data).ToJson());
+		}
+
+
 		[HttpGet]
+        [HandlerAjaxOnly]
+        public async Task<ActionResult> GetStudentListJson(string ids)
+        {
+            var data = await _service.GetStudentList("08da9c6b-f455-46c0-8ffe-81edad14c7be");
+            data = data.Where(a => a.F_EnabledMark == true).ToList();
+            if (!string.IsNullOrEmpty(ids))
+            {
+                foreach (var item in ids.Split(','))
+                {
+                    var temp = data.Find(a => a.F_Id == item);
+                    if (temp != null)
+                    {
+                        temp.LAY_CHECKED = true;
+                    }
+                }
+            }
+            return Success(data.Count, data);
+        }
+
+        [HttpGet]
 		[HandlerAjaxOnly]
 		public async Task<ActionResult> GetFormJson(string keyValue)
 		{

@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
@@ -24,6 +24,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Remove="Areas\SystemOrganize\Views\User\StudentList.cshtml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Areas\SystemOrganize\Views\User\StudentList.cshtml" />
     <None Include="wwwroot\lib\layui\font\iconfont.svg" />
     <None Include="wwwroot\lib\layui\font\iconfont.woff2" />
     <None Include="wwwroot\lib\layui\modules\all.js" />

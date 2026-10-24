@@ -15,6 +15,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WaterCloud.CodeGenerator", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WaterCloud.Service", "WaterCloud.Service\WaterCloud.Service.csproj", "{55C15DA5-2666-4EE2-81F4-244AAC5D2691}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "LayIM", "LayIM", "{B0B77BBB-15FE-4734-9D6A-B8F69793FA4A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LayimChat", "LayIM\server\LayimChat.csproj", "{57A5B7CF-795E-423A-A6CB-037A4A07F1E7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -45,11 +49,18 @@ Global
 		{55C15DA5-2666-4EE2-81F4-244AAC5D2691}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{55C15DA5-2666-4EE2-81F4-244AAC5D2691}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{55C15DA5-2666-4EE2-81F4-244AAC5D2691}.Release|Any CPU.Build.0 = Release|Any CPU
+		{57A5B7CF-795E-423A-A6CB-037A4A07F1E7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{57A5B7CF-795E-423A-A6CB-037A4A07F1E7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{57A5B7CF-795E-423A-A6CB-037A4A07F1E7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{57A5B7CF-795E-423A-A6CB-037A4A07F1E7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {30EA3764-674F-48E9-908A-3B962BD30291}
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{57A5B7CF-795E-423A-A6CB-037A4A07F1E7} = {B0B77BBB-15FE-4734-9D6A-B8F69793FA4A}
 	EndGlobalSection
 EndGlobal

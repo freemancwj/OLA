@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Configuration;
@@ -99,6 +99,11 @@ namespace WaterCloud.Code
 
 		public static string GetVersion()
 		{
+			string configVersion = Configuration["SystemConfig:ProjectVersion"];
+			if (!string.IsNullOrEmpty(configVersion))
+			{
+				return configVersion;
+			}
 			Version version = Assembly.GetEntryAssembly().GetName().Version;
 			return version.ToString();
 		}

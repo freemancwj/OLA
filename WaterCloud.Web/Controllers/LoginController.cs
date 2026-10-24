@@ -1,4 +1,4 @@
-﻿/*******************************************************************************
+/*******************************************************************************
  * Copyright © 2020 WaterCloud.Framework 版权所有
  * Author: WaterCloud
  * Description: WaterCloud快速开发平台
@@ -22,6 +22,11 @@ namespace WaterCloud.Web.Controllers
 {
 	public class LoginController : Controller
 	{
+		/// <summary>
+		/// 拼图位置允许的误差（像素）
+		/// </summary>
+		private const int SliderTolerance = 8;
+
 		public UserService _userService { get; set; }
 		public LogService _logService { get; set; }
 		public SystemSetService _setService { get; set; }
@@ -135,16 +140,89 @@ namespace WaterCloud.Web.Controllers
 		}
 
 		/// <summary>
+		/// 获取滑块拼图验证码
+		/// </summary>
+		/// <returns></returns>
+		[HttpGet]
+		[HandlerAjaxOnly]
+		public ActionResult GetSliderCaptcha()
+		{
+			try
+			{
+				SliderCaptchaResult captcha = new SliderVerifyHelper().Create(GlobalContext.HostingEnvironment.WebRootPath);
+				string token = Guid.NewGuid().ToString("N");
+				// 拼图目标位置只保存在服务端，有效期5分钟
+				CacheHelper.SetBySecond("slider_captcha_" + token, captcha.PieceOffsetX.ToString(), 300);
+				return Content(new
+				{
+					state = ResultType.success.ToString(),
+					token = token,
+					bgImage = "data:image/png;base64," + captcha.BackgroundImage,
+					pieceImage = "data:image/png;base64," + captcha.PieceImage,
+					pieceY = captcha.PieceY,
+					pieceBoxSize = captcha.PieceBoxSize,
+					width = captcha.Width,
+					height = captcha.Height
+				}.ToJson());
+			}
+			catch (Exception)
+			{
+				return Content(new AlwaysResult { state = ResultType.error.ToString(), message = "验证码加载失败，请刷新重试" }.ToJson());
+			}
+		}
+
+		/// <summary>
+		/// 验证滑块拼图位置
+		/// </summary>
+		/// <param name="token">验证码token</param>
+		/// <param name="sliderX">拼图拖动后的横向位置</param>
+		/// <returns></returns>
+		[HttpPost]
+		[HandlerAjaxOnly]
+		[IgnoreAntiforgeryToken]
+		public ActionResult VerifySlider(string token, int sliderX)
+		{
+			try
+			{
+				if (string.IsNullOrEmpty(token))
+				{
+					return Content(new AlwaysResult { state = ResultType.error.ToString(), message = "验证失败，请刷新验证码" }.ToJson());
+				}
+				string cacheKey = "slider_captcha_" + token;
+				string targetX = CacheHelper.Get<string>(cacheKey);
+				// 每个验证码只能使用一次
+				CacheHelper.Remove(cacheKey);
+				if (string.IsNullOrEmpty(targetX))
+				{
+					return Content(new AlwaysResult { state = ResultType.error.ToString(), message = "验证码已过期，请刷新重试" }.ToJson());
+				}
+				if (!int.TryParse(targetX, out int target) || Math.Abs(sliderX - target) > SliderTolerance)
+				{
+					return Content(new AlwaysResult { state = ResultType.error.ToString(), message = "拼图未对齐，验证失败" }.ToJson());
+				}
+				string verifyToken = Guid.NewGuid().ToString("N");
+				// 验证通过凭证，登录时校验
+				CacheHelper.SetBySecond("slider_verify_" + verifyToken, verifyToken, 300);
+				return Content(new { state = ResultType.success.ToString(), message = "验证通过", verifyToken = verifyToken }.ToJson());
+			}
+			catch (Exception)
+			{
+				return Content(new AlwaysResult { state = ResultType.error.ToString(), message = "验证失败，请刷新重试" }.ToJson());
+			}
+		}
+
+		/// <summary>
 		/// 登录验证
 		/// </summary>
 		/// <param name="username">用户</param>
 		/// <param name="password">密码</param>
 		/// <param name="localurl">域名</param>
+		/// <param name="sliderToken">滑块验证token</param>
 		/// <returns></returns>
 		[HttpPost]
 		[HandlerAjaxOnly]
 		[IgnoreAntiforgeryToken]
-		public async Task<ActionResult> CheckLogin(string username, string password, string localurl)
+		public async Task<ActionResult> CheckLogin(string username, string password, string localurl, string sliderToken)
 		{
 			//根据域名判断租户
 			LogEntity logEntity = new LogEntity();
@@ -156,6 +234,19 @@ namespace WaterCloud.Web.Controllers
 			}
 			try
 			{
+				if (string.IsNullOrEmpty(sliderToken))
+				{
+					return Content(new AlwaysResult { state = ResultType.error.ToString(), message = "请先完成滑块验证" }.ToJson());
+				}
+				
+				var cacheToken = CacheHelper.Get<string>("slider_verify_" + sliderToken);
+				if (cacheToken == null)
+				{
+					return Content(new AlwaysResult { state = ResultType.error.ToString(), message = "滑块验证已过期，请重新验证" }.ToJson());
+				}
+				
+				CacheHelper.Remove("slider_verify_" + sliderToken);
+				
 				UserEntity userEntity = await _userService.CheckLogin(username, password, localurl);
 				OperatorModel operatorModel = new OperatorModel();
 				operatorModel.UserId = userEntity.F_Id;

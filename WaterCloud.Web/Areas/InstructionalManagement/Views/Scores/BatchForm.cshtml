@@ -1,0 +1,232 @@
+@{
+    ViewBag.Title = "批量录入成绩";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<style>
+    .score-table-wrap {
+        max-height: 430px;
+        overflow-y: auto;
+        border: 1px solid #e6e6e6;
+        border-radius: 4px;
+    }
+    .score-table-wrap table {
+        margin: 0;
+    }
+    .score-table-wrap thead th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: #f2f2f2;
+    }
+    .score-table-wrap .layui-input {
+        height: 30px;
+    }
+</style>
+<script>
+    layui.use(['jquery', 'form', 'laydate', 'common', 'optimizeSelectOption'], function () {
+        var form = layui.form,
+            $ = layui.jquery,
+            common = layui.common,
+            laydate = layui.laydate;
+        var isAdmin = false;
+
+        common.authorizeFields('adminform');
+        laydate.render({ elem: '#txt_examTime', type: 'date', format: 'yyyy-MM-dd', trigger: 'click' });
+
+        function fillSelect(selector, list, idField, nameField, placeholder) {
+            var html = '<option value="">' + placeholder + '</option>';
+            $.each(list, function (i, item) {
+                html += '<option value="' + item[idField] + '">' + item[nameField] + '</option>';
+            });
+            $(selector).html(html);
+        }
+
+        $(function () {
+            common.ajax({
+                url: '/InstructionalManagement/Scores/GetClassListJson', async: false,
+                success: function (data) { fillSelect('#ddl_class', data, 'F_Id', 'F_FullName', '请选择班级'); }
+            });
+            common.ajax({
+                url: '/InstructionalManagement/Scores/GetCourseListJson', async: false,
+                success: function (data) { fillSelect('#ddl_course', data, 'F_Id', 'F_ItemName', '请选择课程'); }
+            });
+            common.ajax({
+                url: '/InstructionalManagement/Scores/GetScoreTypeListJson', async: false,
+                success: function (data) { fillSelect('#ddl_scoreType', data, 'F_ItemCode', 'F_ItemName', '请选择成绩类型'); }
+            });
+            common.ajax({
+                url: '/InstructionalManagement/Scores/GetRoleJson', async: false,
+                success: function (data) { isAdmin = !!data.IsAdmin; }
+            });
+            form.render();
+        });
+        wcLoading.close();
+
+        function loadStudents() {
+            var classId = $('#ddl_class').val();
+            if (!classId) {
+                common.modalMsg("请先选择班级", "warning");
+                return;
+            }
+            common.ajax({
+                url: '/InstructionalManagement/Scores/GetBatchStudentsJson',
+                data: {
+                    classId: classId,
+                    courseId: $('#ddl_course').val(),
+                    scoreType: $('#ddl_scoreType').val(),
+                    semester: $('#txt_semester').val()
+                },
+                success: function (list) {
+                    var html = '';
+                    if (!list || list.length === 0) {
+                        html = '<tr><td colspan="6" style="text-align:center;color:#999;">该班级下暂无学生</td></tr>';
+                    } else {
+                        $.each(list, function (i, item) {
+                            var disabled = (!isAdmin && item.F_AuditStatus === 1) ? 'disabled' : '';
+                            var status = item.F_AuditStatus === 1 ? '<span class="layui-badge layui-bg-green">已通过</span>'
+                                : (item.F_AuditStatus === 2 ? '<span class="layui-badge layui-bg-red">已退回</span>' : '<span class="layui-badge layui-bg-gray">未录入</span>');
+                            html += '<tr data-student="' + item.F_StudentId + '">'
+                                + '<td>' + (item.F_Account || '') + '</td>'
+                                + '<td>' + (item.F_RealName || '') + '</td>'
+                                + '<td>' + (item.F_ClassName || '') + '</td>'
+                                + '<td><input type="number" class="layui-input score-input" min="0" max="150" step="0.5" value="' + (item.F_Score === null || item.F_Score === undefined ? '' : item.F_Score) + '" ' + disabled + '></td>'
+                                + '<td><input type="text" class="layui-input remark-input" value="' + (item.F_Remak ? String(item.F_Remak).replace(/"/g, '&quot;') : '') + '" ' + disabled + '></td>'
+                                + '<td>' + status + '</td>'
+                                + '</tr>';
+                        });
+                    }
+                    $('#studentBody').html(html);
+                }
+            });
+        }
+
+        $('#btn-load').click(function () { loadStudents(); });
+        form.on('select(ddl_class)', function () { loadStudents(); });
+
+        form.on('submit(saveBtn)', function () {
+            var classId = $('#ddl_class').val();
+            var courseId = $('#ddl_course').val();
+            var scoreType = $('#ddl_scoreType').val();
+            var semester = $.trim($('#txt_semester').val());
+            var examTime = $('#txt_examTime').val();
+            if (!classId || !courseId || !scoreType || !semester) {
+                common.modalMsg("请先完整选择班级、课程、成绩类型并填写学期", "warning");
+                return false;
+            }
+            var rows = [];
+            var hasError = false;
+            $('#studentBody tr[data-student]').each(function () {
+                var $tr = $(this);
+                var scoreText = $.trim($tr.find('.score-input').val());
+                if (scoreText === '') {
+                    return true;
+                }
+                var score = parseFloat(scoreText);
+                if (isNaN(score) || score < 0 || score > 150) {
+                    hasError = true;
+                    return false;
+                }
+                rows.push({
+                    F_StudentId: $tr.attr('data-student'),
+                    F_Score: score,
+                    F_Remak: $.trim($tr.find('.remark-input').val())
+                });
+            });
+            if (hasError) {
+                common.modalMsg("分数必须在0到150之间", "warning");
+                return false;
+            }
+            if (rows.length === 0) {
+                common.modalMsg("请至少录入一名学生的成绩", "warning");
+                return false;
+            }
+            common.submitForm({
+                url: '/InstructionalManagement/Scores/BatchSubmitForm',
+                param: {
+                    rowsJson: JSON.stringify(rows),
+                    classId: classId,
+                    courseId: courseId,
+                    scoreType: scoreType,
+                    semester: semester,
+                    examTime: examTime
+                },
+                success: function () {
+                    common.parentreload('data-search-btn');
+                }
+            });
+            return false;
+        });
+    });
+</script>
+
+<body>
+    <div class="layuimini-container">
+        <div class="layuimini-main">
+            <div class="layui-form layuimini-form" lay-filter="adminform">
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label required">班级</label>
+                        <div class="layui-input-inline">
+                            <select id="ddl_class" lay-filter="ddl_class" lay-verify="required" lay-search>
+                                <option value="">请选择班级</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label required">课程</label>
+                        <div class="layui-input-inline">
+                            <select id="ddl_course" lay-verify="required" lay-search>
+                                <option value="">请选择课程</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label required">成绩类型</label>
+                        <div class="layui-input-inline">
+                            <select id="ddl_scoreType" lay-verify="required">
+                                <option value="">请选择成绩类型</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label required">学期</label>
+                        <div class="layui-input-inline">
+                            <input type="text" id="txt_semester" autocomplete="off" lay-verify="required" placeholder="如 2025-2026-1" class="layui-input">
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">考试时间</label>
+                        <div class="layui-input-inline">
+                            <input type="text" id="txt_examTime" autocomplete="off" placeholder="默认今天" class="layui-input">
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <button type="button" id="btn-load" class="layui-btn layui-btn-primary"><i class="layui-icon">&#xe615;</i> 加载学生</button>
+                    </div>
+                </div>
+                <div class="score-table-wrap">
+                    <table class="layui-table">
+                        <thead>
+                            <tr>
+                                <th style="width:120px;">学号</th>
+                                <th style="width:100px;">姓名</th>
+                                <th style="width:130px;">班级</th>
+                                <th style="width:100px;">分数</th>
+                                <th>备注</th>
+                                <th style="width:100px;">状态</th>
+                            </tr>
+                        </thead>
+                        <tbody id="studentBody">
+                            <tr><td colspan="6" style="text-align:center;color:#999;">请选择班级后加载学生</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="layui-form-item layui-hide">
+                    <button class="layui-btn site-demo-active" lay-submit id="submit" lay-filter="saveBtn">确认保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>

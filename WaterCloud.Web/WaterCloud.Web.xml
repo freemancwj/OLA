@@ -53,11 +53,28 @@
             获取一个流程实例的操作历史记录
             </summary>
         </member>
+        <member name="T:WaterCloud.Web.Areas.FlowManage.Controllers.LeaveApplicationController">
+            <summary>
+            创 建：超级管理员
+            日 期：2023-xx-xx xx:xx
+            描 述：员工请假管理控制器类
+            </summary>
+        </member>
         <member name="T:WaterCloud.Web.Areas.InfoManage.Controllers.MessageController">
             <summary>
             创 建：超级管理员
             日 期：2020-07-29 16:41
             描 述：通知管理控制器类
+            </summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.InstructionalManagement.Controllers.ScoresController">
+            <summary>
+            成绩管理
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.ScoresController.GetRoleJson">
+            <summary>
+            当前用户成绩管理角色，用于页面按钮控制
             </summary>
         </member>
         <member name="T:WaterCloud.Web.Areas.OrderManagement.Controllers.OrderController">
@@ -153,6 +170,16 @@
         <member name="M:WaterCloud.Web.Areas.SystemSecurity.Controllers.OpenJobsController.ClearScheduleJob">
             <summary>
             清除任务计划
+            </summary>
+        </member>
+        <member name="T:WaterCloud.Web.ChatController">
+            <summary>
+            在线聊天（LayIM）集成接口
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.ChatController.SsoUrl">
+            <summary>
+            获取当前登录用户的聊天系统免登录地址（SSO）
             </summary>
         </member>
         <member name="T:WaterCloud.Web.TestController">
@@ -303,6 +330,11 @@
             </summary>
             <returns></returns>
         </member>
+        <member name="F:WaterCloud.Web.Controllers.LoginController.SliderTolerance">
+            <summary>
+            拼图位置允许的误差（像素）
+            </summary>
+        </member>
         <member name="M:WaterCloud.Web.Controllers.LoginController.GetAuthCode">
             <summary>
             验证码获取（此接口已弃用）
@@ -315,13 +347,28 @@
             </summary>
             <returns></returns>
         </member>
-        <member name="M:WaterCloud.Web.Controllers.LoginController.CheckLogin(System.String,System.String,System.String)">
+        <member name="M:WaterCloud.Web.Controllers.LoginController.GetSliderCaptcha">
+            <summary>
+            获取滑块拼图验证码
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:WaterCloud.Web.Controllers.LoginController.VerifySlider(System.String,System.Int32)">
+            <summary>
+            验证滑块拼图位置
+            </summary>
+            <param name="token">验证码token</param>
+            <param name="sliderX">拼图拖动后的横向位置</param>
+            <returns></returns>
+        </member>
+        <member name="M:WaterCloud.Web.Controllers.LoginController.CheckLogin(System.String,System.String,System.String,System.String)">
             <summary>
             登录验证
             </summary>
             <param name="username">用户</param>
             <param name="password">密码</param>
             <param name="localurl">域名</param>
+            <param name="sliderToken">滑块验证token</param>
             <returns></returns>
         </member>
         <member name="T:WaterCloud.Web.AuthorizeFilterAttribute">

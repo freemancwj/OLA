@@ -8,8 +8,21 @@
             table = layui.table,
             commonTable = layui.commonTable,
             common = layui.common;
+
+        function initControl() {
+            $("#F_RoleId").bindSelect({
+                url: "/SystemOrganize/Role/GetListJson",
+                id: "F_Id",
+                text: "F_FullName"
+            });
+        }
         //加载数据
+        $(function () {
+            initControl();
+            form.render();
+        });
         wcLoading.close();
+      
         //权限控制(js是值传递)
         currentTableBar.innerHTML = common.authorizeButtonNew(currentTableBar.innerHTML);
         toolbarDemo.innerHTML = common.authorizeButtonNew(toolbarDemo.innerHTML);
@@ -33,7 +46,7 @@
                 },
                 { field: 'F_MobilePhone', title: '手机', width: 120, sort: true, filter: true },
                 {
-                    field: 'F_CompanyName', title: '公司名称', width: 150, sort: true, filter: true
+                    field: 'F_CompanyName', title: '学校名称', width: 150, sort: true, filter: true
                 },
                 {
                     field: 'F_OrganizeName', title: '部门名称', width: 200, sort: true
@@ -60,11 +73,15 @@
         });
         // 监听搜索操作
         form.on('submit(data-search-btn)', function (data) {
+
             //执行搜索重载
             commonTable.reloadtable({
                 elem: 'currentTableId',
                 curr: 1,
-                where: { keyword: data.field.txt_keyword }
+                   where: {
+                    keyword: data.field.txt_keyword,
+                    roleid: data.field.F_RoleId
+                }
             });
             return false;
         });
@@ -255,6 +272,15 @@
                                 <input type="text" id="txt_keyword" name="txt_keyword" autocomplete="off" class="layui-input" placeholder="">
                             </div>
                         </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">角色</label>
+                            <div class="layui-input-block">
+                                <select id="F_RoleId" name="F_RoleId">
+                                    <option value="">==请选择==</option>
+                                </select>
+                            </div>
+                        </div>
+                     
                         <div class="layui-inline">
                             <button type="submit" class="layui-btn layui-btn-primary" lay-submit lay-filter="data-search-btn"><i class="layui-icon">&#xe615;</i> 搜 索</button>
                         </div>

@@ -10,6 +10,7 @@ using WaterCloud.Service.InfoManage;
 using WaterCloud.Service.SystemOrganize;
 using WaterCloud.Service.Hubs;
 using WaterCloud.Domain.LayIM;
+//using System.Web;
 
 namespace WaterCloud.Service
 {
@@ -142,7 +143,9 @@ namespace WaterCloud.Service
 	
 		public async Task SendOneIm(string msg)
 		{
+			
 			var user = _service.currentuser;
+	
 			MsgModel msgmodel = JsonSerializer.Deserialize<MsgModel>(msg);
 			msgmodel.timestamp = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds();
 			bool mine = msgmodel.toid.ToUpper() == user.UserId.ToUpper() ? true : false;

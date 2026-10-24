@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
@@ -12,6 +12,7 @@
     <link rel="icon" href="@ViewBag.LogoIcon">
     <link rel="stylesheet" href="~/lib/layui/css/layui.css?v=@WaterCloud.Code.GlobalContext.GetVersion()" media="all">
     <link rel="stylesheet" href="~/css/loginnew.css?v=@WaterCloud.Code.GlobalContext.GetVersion()" media="all">
+    <link rel="stylesheet" href="~/css/slider.css?v=@WaterCloud.Code.GlobalContext.GetVersion()" media="all">
 </head>
 
 <body>
@@ -22,6 +23,7 @@
     <script src="~/lib/layui/layui.js?v=@WaterCloud.Code.GlobalContext.GetVersion()" charset="utf-8"></script>
     <script src="~/js/lay-config.js?v=@WaterCloud.Code.GlobalContext.GetVersion()" charset="utf-8"></script>
     <script src="~/js/framework-ui.js?v=@WaterCloud.Code.GlobalContext.GetVersion()"></script>
+    <script src="~/js/slider-verify.js?v=@WaterCloud.Code.GlobalContext.GetVersion()"></script>
     <script>
         layui.use(['jquery', 'form', 'table', 'common', 'commonTable', 'echarts'], function () {
         });
@@ -44,11 +46,7 @@
                         <input type="password" id="password" lay-verify="required|password" placeholder="密码" autocomplete="off" class="layui-input" value="@ViewBag.Password">
                     </div>
                     <div class="layui-form-item">
-                        <label class="layui-icon layui-icon-vercode" for="captcha"></label>
-                        <div class="code">
-                            <input id="captcha" type="text" name="captcha" lay-verify="required|captcha" placeholder="图形验证码" autocomplete="off" class="layui-input verification captcha">
-                            <canvas id="canvas" width="100" height="43"></canvas>
-                        </div>
+                        <div id="slider-verify"></div>
                     </div>
                     <div class="layui-form-item layui-hide">
                         <select id="wchost" name="wchost" lay-verify="required">
@@ -76,16 +74,12 @@
         //模式
         var SqlMode = '@ViewBag.SqlMode';
         (function ($) {
-            var show_num = [];
             $.login = {
                 formMessage: function (msg) {
                     $('.login_tips').find('.tips_msg').remove();
                     $('.login_tips').append('<div class="tips_msg"><i class="fa fa-question-circle"></i>' + msg + '</div>');
                 },
                 init: function () {
-                    $("#canvas").click(function () {
-                        draw(show_num);
-                    });
                     var login_error = top.$.cookie('WaterCloud_login_error');
                     if (login_error != null) {
                         switch (login_error) {
@@ -138,7 +132,6 @@
                     id: "F_HostUrl",
                     text: "F_ProjectName"
                 });
-                draw(show_num);
                 if ($.cookie("remember_user")) {
                     $("#remember_user").prop("checked", true);
                     $("#username").val($.cookie("username"));
@@ -176,6 +169,16 @@
                 // 登录过期的时候，跳出ifram框架
                 if (top.location != self.location) top.location = self.location;
 
+                var sliderVerify = $.sliderVerify.create('slider-verify', {
+                    height: 96,
+                    successText: '验证通过',
+                    failText: '向右拖动滑块完成拼图',
+                    onSuccess: function (token) {
+                    },
+                    onFail: function () {
+                    }
+                });
+
                 // 进行登录操作
                 form.on('submit(login)', function (data) {
                     saveUserInfo();
@@ -188,21 +191,15 @@
                         layer.msg('密码不能为空');
                         return false;
                     }
-                    var num = show_num.join("");
-                    if (data.captcha == '') {
-                        layer.msg('验证码不能为空');
-                        return false;
-                    }
-                    else if (num != data.captcha.toLowerCase()) {
-                        layer.msg('验证码错误');
-                        draw(show_num)
+                    if (!sliderVerify.isVerified()) {
+                        layer.msg('请先完成滑块验证');
                         return false;
                     }
                     $("#login_button").empty();
                     $("#login_button").attr('disabled', 'disabled').html("loading...");
                     $.ajax({
                         url: "/Login/CheckLogin?v=" + new Date().Format("yyyy-MM-dd hh:mm:ss"),
-                        data: { username: $.trim($('#username').val()), localurl: $('#wchost').val(), password: $.md5($.trim($('#password').val())) },
+                        data: { username: $.trim($('#username').val()), localurl: $('#wchost').val(), password: $.md5($.trim($('#password').val())), sliderToken: sliderVerify.getToken() },
                         type: "post",
                         dataType: "json",
                         success: function (data) {
@@ -228,7 +225,7 @@
                             } else {
                                 $("#login_button").empty();
                                 $("#login_button").removeAttr('disabled').html("登 入");
-                                draw(show_num);
+                                sliderVerify.reset();
                                 layer.msg(data.message);
                                 $.login.formMessage(data.message);
                             }
@@ -236,7 +233,7 @@
                         error: function () {
                             $("#login_button").empty();
                             $("#login_button").removeAttr('disabled').html("登 入");
-                            draw(show_num);
+                            sliderVerify.reset();
                             layer.msg("系统未知错误,请重新登录");
                             $.login.formMessage("系统未知错误,请重新登录");
                         }

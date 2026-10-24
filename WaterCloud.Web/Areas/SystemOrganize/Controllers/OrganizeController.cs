@@ -20,14 +20,24 @@ namespace WaterCloud.Web.Areas.SystemOrganize.Controllers
 	public class OrganizeController : BaseController
 	{
 		public OrganizeService _service { get; set; }
+        public RoleService _roleService { get; set; }
 
-		[HttpGet]
+        [HttpGet]
 		public virtual ActionResult AddForm()
 		{
 			return View();
 		}
 
-		[HttpGet]
+      
+        [HttpGet]
+       // [HandlerAuthorize]
+        //[HandlerAdmin(false)]
+        public virtual ActionResult StudentList()
+        {
+            return View();
+        }
+
+
 		[HandlerAjaxOnly]
 		public async Task<ActionResult> GetTreeSelectJson()
 		{
