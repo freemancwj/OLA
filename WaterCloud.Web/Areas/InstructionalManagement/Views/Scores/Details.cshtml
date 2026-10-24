@@ -1,0 +1,131 @@
+@{
+    ViewBag.Title = "成绩详情";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'common'], function () {
+        var form = layui.form,
+            $ = layui.jquery,
+            common = layui.common;
+        var keyValue = $.request("keyValue");
+
+        function fmtDate(value) {
+            if (!value) return '-';
+            var text = String(value).replace(/\//g, '-');
+            return text.substring(0, 10);
+        }
+        function fmtDateTime(value) {
+            if (!value) return '-';
+            return String(value).replace(/\//g, '-');
+        }
+        function auditStatusName(status) {
+            if (status === 1) return '已通过';
+            if (status === 2) return '已退回';
+            return '待审核';
+        }
+
+        $(function () {
+            common.ajax({
+                url: '/InstructionalManagement/Scores/GetFormJson',
+                data: { keyValue: keyValue },
+                async: false,
+                success: function (d) {
+                    $('#F_Account').text(d.F_Account || '-');
+                    $('#F_RealName').text(d.F_RealName || '-');
+                    $('#F_ClassName').text(d.F_ClassName || '-');
+                    $('#F_CourseName').text(d.F_CourseName || '-');
+                    $('#F_ScoreTypeName').text(d.F_ScoreTypeName || '-');
+                    $('#F_Semester').text(d.F_Semester || '-');
+                    $('#F_ExamTime').text(fmtDate(d.F_ExamTime));
+                    $('#F_Score').text(d.F_Score === null || d.F_Score === undefined ? '-' : d.F_Score);
+                    $('#F_ScoreLevel').text(d.F_ScoreLevel || '未评定');
+                    $('#F_AuditStatus').text(auditStatusName(d.F_AuditStatus));
+                    $('#F_CreatorUserName').text(d.F_CreatorUserName || '-');
+                    $('#F_CreatorTime').text(fmtDateTime(d.F_CreatorTime));
+                    $('#F_AuditUserName').text(d.F_AuditUserName || '-');
+                    $('#F_AuditTime').text(fmtDateTime(d.F_AuditTime));
+                    $('#F_AuditRemark').text(d.F_AuditRemark || '-');
+                    $('#F_Remak').text(d.F_Remak || '-');
+                }
+            });
+        });
+        wcLoading.close();
+    });
+</script>
+
+<body>
+    <div class="layuimini-container">
+        <div class="layuimini-main">
+            <div class="layui-form layuimini-form" lay-filter="adminform">
+                <div class="layui-form-item">
+                    <label class="layui-form-label">学号</label>
+                    <div class="layui-form-mid" id="F_Account" style="padding-left:10px;"></div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">姓名</label>
+                    <div class="layui-form-mid" id="F_RealName" style="padding-left:10px;"></div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">班级</label>
+                    <div class="layui-form-mid" id="F_ClassName" style="padding-left:10px;"></div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">课程</label>
+                    <div class="layui-form-mid" id="F_CourseName" style="padding-left:10px;"></div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">成绩类型</label>
+                    <div class="layui-form-mid" id="F_ScoreTypeName" style="padding-left:10px;"></div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">学期</label>
+                    <div class="layui-form-mid" id="F_Semester" style="padding-left:10px;"></div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">考试时间</label>
+                    <div class="layui-form-mid" id="F_ExamTime" style="padding-left:10px;"></div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">分数</label>
+                    <div class="layui-form-mid" id="F_Score" style="padding-left:10px;color:#FF5722;font-weight:bold;"></div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">等级</label>
+                    <div class="layui-form-mid" id="F_ScoreLevel" style="padding-left:10px;"></div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">审核状态</label>
+                    <div class="layui-form-mid" id="F_AuditStatus" style="padding-left:10px;"></div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">录入人</label>
+                    <div class="layui-form-mid" id="F_CreatorUserName" style="padding-left:10px;"></div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">录入时间</label>
+                    <div class="layui-form-mid" id="F_CreatorTime" style="padding-left:10px;"></div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">审核人</label>
+                    <div class="layui-form-mid" id="F_AuditUserName" style="padding-left:10px;"></div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">审核时间</label>
+                    <div class="layui-form-mid" id="F_AuditTime" style="padding-left:10px;"></div>
+                </div>
+                <div class="layui-form-item layui-form-text">
+                    <label class="layui-form-label">审核意见</label>
+                    <div class="layui-input-block">
+                        <textarea id="F_AuditRemark" class="layui-textarea" readonly></textarea>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-form-text">
+                    <label class="layui-form-label">备注</label>
+                    <div class="layui-input-block">
+                        <textarea id="F_Remak" class="layui-textarea" readonly></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>

@@ -1,0 +1,185 @@
+@{
+    ViewBag.Title = "成绩录入";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'laydate', 'common', 'optimizeSelectOption'], function () {
+        var form = layui.form,
+            $ = layui.jquery,
+            common = layui.common,
+            laydate = layui.laydate;
+        var keyValue = $.request("keyValue");
+
+        common.authorizeFields('adminform');
+
+        laydate.render({
+            elem: '#F_ExamTime',
+            type: 'date',
+            format: 'yyyy-MM-dd',
+            trigger: 'click'
+        });
+
+        function fillSelect(selector, list, idField, nameField, placeholder) {
+            var html = '<option value="">' + placeholder + '</option>';
+            $.each(list, function (i, item) {
+                html += '<option value="' + item[idField] + '">' + item[nameField] + '</option>';
+            });
+            $(selector).html(html);
+        }
+
+        function loadStudents(classId, callback) {
+            if (!classId) {
+                $('#F_StudentId').html('<option value="">请先选择班级</option>');
+                form.render('select');
+                if (callback) callback();
+                return;
+            }
+            common.ajax({
+                url: '/InstructionalManagement/Scores/GetStudentListJson',
+                data: { classId: classId },
+                async: false,
+                success: function (list) {
+                    var html = '<option value="">请选择学生</option>';
+                    $.each(list, function (i, item) {
+                        html += '<option value="' + item.F_StudentId + '">' + item.F_Account + ' ' + item.F_RealName + '</option>';
+                    });
+                    $('#F_StudentId').html(html);
+                    form.render('select');
+                    if (callback) callback();
+                }
+            });
+        }
+
+        $(function () {
+            initControl();
+            if (!!keyValue) {
+                common.ajax({
+                    url: '/InstructionalManagement/Scores/GetFormJson',
+                    data: { keyValue: keyValue },
+                    async: false,
+                    success: function (data) {
+                        if (data.F_ClassId) {
+                            $('#F_ClassId').val(data.F_ClassId);
+                        }
+                        loadStudents(data.F_ClassId, function () {
+                            $('#F_StudentId').val(data.F_StudentId);
+                            $('#F_CourseId').val(data.F_CourseId);
+                            $('#F_ScoreType').val(data.F_ScoreType);
+                            $('#F_Semester').val(data.F_Semester);
+                            $('#F_Score').val(data.F_Score);
+                            $('#F_Remak').val(data.F_Remak);
+                            if (data.F_ExamTime) {
+                                $('#F_ExamTime').val(String(data.F_ExamTime).replace(/\//g, '-').substring(0, 10));
+                            }
+                            form.render();
+                        });
+                    }
+                });
+            }
+            form.render();
+        });
+        wcLoading.close();
+
+        function initControl() {
+            common.ajax({
+                url: '/InstructionalManagement/Scores/GetClassListJson', async: false,
+                success: function (data) { fillSelect('#F_ClassId', data, 'F_Id', 'F_FullName', '请选择班级'); }
+            });
+            common.ajax({
+                url: '/InstructionalManagement/Scores/GetCourseListJson', async: false,
+                success: function (data) { fillSelect('#F_CourseId', data, 'F_Id', 'F_ItemName', '请选择课程'); }
+            });
+            common.ajax({
+                url: '/InstructionalManagement/Scores/GetScoreTypeListJson', async: false,
+                success: function (data) { fillSelect('#F_ScoreType', data, 'F_ItemCode', 'F_ItemName', '请选择成绩类型'); }
+            });
+            form.on('select(ddl_class)', function (data) {
+                loadStudents(data.value);
+            });
+        }
+
+        form.on('submit(saveBtn)', function (data) {
+            var score = parseFloat(data.field.F_Score);
+            if (isNaN(score) || score < 0 || score > 150) {
+                common.modalMsg("分数必须在0到150之间", "warning");
+                return false;
+            }
+            common.submitForm({
+                url: '/InstructionalManagement/Scores/SubmitForm?keyValue=' + (keyValue || ''),
+                param: data.field,
+                success: function () {
+                    common.parentreload('data-search-btn');
+                }
+            });
+            return false;
+        });
+    });
+</script>
+
+<body>
+    <div class="layuimini-container">
+        <div class="layuimini-main">
+            <div class="layui-form layuimini-form" lay-filter="adminform">
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">班级</label>
+                    <div class="layui-input-block">
+                        <select id="F_ClassId" name="F_ClassId" lay-filter="ddl_class" lay-verify="required" lay-search>
+                            <option value="">请选择班级</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">学生</label>
+                    <div class="layui-input-block">
+                        <select id="F_StudentId" name="F_StudentId" lay-verify="required" lay-search>
+                            <option value="">请先选择班级</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">课程</label>
+                    <div class="layui-input-block">
+                        <select id="F_CourseId" name="F_CourseId" lay-verify="required" lay-search>
+                            <option value="">请选择课程</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">成绩类型</label>
+                    <div class="layui-input-block">
+                        <select id="F_ScoreType" name="F_ScoreType" lay-verify="required">
+                            <option value="">请选择成绩类型</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">学期</label>
+                    <div class="layui-input-block">
+                        <input type="text" id="F_Semester" name="F_Semester" autocomplete="off" lay-verify="required" placeholder="如 2025-2026-1" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">考试时间</label>
+                    <div class="layui-input-block">
+                        <input type="text" id="F_ExamTime" name="F_ExamTime" autocomplete="off" lay-verify="required" placeholder="请选择考试时间" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">分数</label>
+                    <div class="layui-input-block">
+                        <input type="number" id="F_Score" name="F_Score" autocomplete="off" lay-verify="required|number" min="0" max="150" step="0.5" placeholder="0 - 150" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item layui-form-text">
+                    <label class="layui-form-label">备注</label>
+                    <div class="layui-input-block">
+                        <textarea id="F_Remak" name="F_Remak" placeholder="请输入备注" class="layui-textarea"></textarea>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-hide">
+                    <button class="layui-btn site-demo-active" lay-submit id="submit" lay-filter="saveBtn">确认保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>

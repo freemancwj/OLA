@@ -1,0 +1,95 @@
+@{
+    ViewBag.Title = "请假申请详情";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<div class="layuimini-container">
+    <div class="layuimini-main">
+        <form class="layui-form layui-form-pane">
+            <div class="layui-form-item">
+                <label class="layui-form-label">请假类型</label>
+                <div class="layui-input-block">
+                    <input type="text" name="F_LeaveType" class="layui-input" readonly>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">开始时间</label>
+                <div class="layui-input-block">
+                    <input type="text" name="F_StartTime" class="layui-input" readonly>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">结束时间</label>
+                <div class="layui-input-block">
+                    <input type="text" name="F_EndTime" class="layui-input" readonly>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">请假天数</label>
+                <div class="layui-input-block">
+                    <input type="text" name="F_LeaveDays" class="layui-input" readonly>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">审批状态</label>
+                <div class="layui-input-block">
+                    <input type="text" name="F_Status" class="layui-input" readonly>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">当前审批人</label>
+                <div class="layui-input-block">
+                    <input type="text" name="F_CurrentApprover" class="layui-input" readonly>
+                </div>
+            </div>
+            <div class="layui-form-item layui-form-text">
+                <label class="layui-form-label">请假原因</label>
+                <div class="layui-input-block">
+                    <textarea name="F_Reason" class="layui-textarea" readonly></textarea>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+<script>
+    layui.use(['form', 'jquery', 'common'], function () {
+        var form = layui.form,
+            $ = layui.jquery,
+            common = layui.common;
+
+        // 获取表单数据
+        common.ajax({
+            url: '/FlowManage/LeaveApplication/GetFormJson',
+            data: { keyValue: common.getQueryString('keyValue') },
+            async: false,
+            success: function (data) {
+                $("input[name='F_LeaveType']").val(getLeaveTypeText(data.F_LeaveType));
+                $("input[name='F_StartTime']").val(data.F_StartTime);
+                $("input[name='F_EndTime']").val(data.F_EndTime);
+                $("input[name='F_LeaveDays']").val(data.F_LeaveDays);
+                $("input[name='F_Status']").val(getStatusText(data.F_Status));
+                $("input[name='F_CurrentApprover']").val(data.F_CurrentApprover);
+                $("textarea[name='F_Reason']").val(data.F_Reason);
+            }
+        });
+
+        function getLeaveTypeText(type) {
+            switch (type) {
+                case 1: return '年假';
+                case 2: return '病假';
+                case 3: return '事假';
+                case 4: return '婚假';
+                case 5: return '产假';
+                default: return '';
+            }
+        }
+
+        function getStatusText(status) {
+            switch (status) {
+                case 0: return '待审批';
+                case 1: return '已通过';
+                case 2: return '已拒绝';
+                default: return '';
+            }
+        }
+    });
+</script>

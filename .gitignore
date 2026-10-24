@@ -340,4 +340,7 @@ ASALocalRun/
 # BeatPulse healthcheck temp database 
 healthchecksdb
 /WaterCloud.Web/DataProtection
-/WaterCloud.Web/wwwroot/file/local/20221006
+
+# 运行期上传目录
+/WaterCloud.Web/wwwroot/file/local/
+/LayIM/uploads/

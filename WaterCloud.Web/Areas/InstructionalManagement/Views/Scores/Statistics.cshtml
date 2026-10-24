@@ -1,0 +1,292 @@
+@{
+    ViewBag.Title = "成绩统计分析";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<style>
+    .stat-card {
+        float: left;
+        width: 12.5%;
+        padding: 0 4px;
+        box-sizing: border-box;
+    }
+    .stat-card .inner {
+        background: #fff;
+        border: 1px solid #e6e6e6;
+        border-radius: 4px;
+        padding: 10px 12px;
+        text-align: center;
+    }
+    .stat-card .label {
+        color: #888;
+        font-size: 12px;
+    }
+    .stat-card .value {
+        font-size: 20px;
+        font-weight: bold;
+        color: #1E9FFF;
+        margin-top: 4px;
+    }
+    .stat-cards:after {
+        content: '';
+        display: block;
+        clear: both;
+    }
+    .chart-box {
+        background: #fff;
+        border: 1px solid #e6e6e6;
+        border-radius: 4px;
+        padding: 8px;
+        margin-top: 10px;
+    }
+    .chart-row:after {
+        content: '';
+        display: block;
+        clear: both;
+    }
+    .chart-half {
+        float: left;
+        width: 50%;
+        box-sizing: border-box;
+        padding: 4px;
+    }
+    .chart-full {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 4px;
+    }
+    .chart {
+        width: 100%;
+        height: 300px;
+    }
+</style>
+<div class="layuimini-container">
+    <div class="layuimini-main">
+        <form class="layui-form layui-form-pane">
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label">班级</label>
+                    <div class="layui-input-inline">
+                        <select id="ddl_class" lay-search><option value="">全部班级</option></select>
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">课程</label>
+                    <div class="layui-input-inline">
+                        <select id="ddl_course" lay-search><option value="">全部课程</option></select>
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">成绩类型</label>
+                    <div class="layui-input-inline">
+                        <select id="ddl_scoreType"><option value="">全部类型</option></select>
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">学期</label>
+                    <div class="layui-input-inline">
+                        <input type="text" id="txt_semester" class="layui-input" placeholder="如 2025-2026-1" autocomplete="off">
+                    </div>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label">成绩范围</label>
+                    <div class="layui-input-inline">
+                        <input type="text" id="txt_minScore" class="layui-input" placeholder="最低分" autocomplete="off">
+                    </div>
+                    <div class="layui-form-mid">-</div>
+                    <div class="layui-input-inline">
+                        <input type="text" id="txt_maxScore" class="layui-input" placeholder="最高分" autocomplete="off">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <button type="button" id="btn-search" class="layui-btn"><i class="layui-icon">&#xe615;</i> 统计</button>
+                    <button type="button" id="btn-export" class="layui-btn layui-btn-primary"><i class="layui-icon">&#xe67d;</i> 导出成绩</button>
+                </div>
+            </div>
+        </form>
+        <div class="stat-cards">
+            <div class="stat-card"><div class="inner"><div class="label">成绩记录数</div><div class="value" id="v_total">0</div></div></div>
+            <div class="stat-card"><div class="inner"><div class="label">已录分数</div><div class="value" id="v_scored">0</div></div></div>
+            <div class="stat-card"><div class="inner"><div class="label">平均分</div><div class="value" id="v_avg">0</div></div></div>
+            <div class="stat-card"><div class="inner"><div class="label">最高分</div><div class="value" id="v_max">0</div></div></div>
+            <div class="stat-card"><div class="inner"><div class="label">最低分</div><div class="value" id="v_min">0</div></div></div>
+            <div class="stat-card"><div class="inner"><div class="label">及格人数</div><div class="value" id="v_pass">0</div></div></div>
+            <div class="stat-card"><div class="inner"><div class="label">及格率</div><div class="value" id="v_passRate">0%</div></div></div>
+            <div class="stat-card"><div class="inner"><div class="label">优秀率</div><div class="value" id="v_excellentRate">0%</div></div></div>
+        </div>
+        <div class="chart-row">
+            <div class="chart-half">
+                <div class="chart-box"><div id="chartScore" class="chart"></div></div>
+            </div>
+            <div class="chart-half">
+                <div class="chart-box"><div id="chartLevel" class="chart"></div></div>
+            </div>
+        </div>
+        <div class="chart-row">
+            <div class="chart-half">
+                <div class="chart-box"><div id="chartCourse" class="chart"></div></div>
+            </div>
+            <div class="chart-half">
+                <div class="chart-box"><div id="chartClass" class="chart"></div></div>
+            </div>
+        </div>
+        <div class="chart-full">
+            <div class="chart-box"><div id="chartSemester" class="chart"></div></div>
+        </div>
+    </div>
+</div>
+<script>
+    layui.use(['jquery', 'form', 'common', 'echarts', 'optimizeSelectOption'], function () {
+        var $ = layui.jquery,
+            form = layui.form,
+            common = layui.common,
+            echarts = layui.echarts;
+        var chartScore, chartLevel, chartCourse, chartClass, chartSemester;
+
+        function fillSelect(selector, list, idField, nameField, placeholder) {
+            var html = '<option value="">' + placeholder + '</option>';
+            $.each(list, function (i, item) {
+                html += '<option value="' + item[idField] + '">' + item[nameField] + '</option>';
+            });
+            $(selector).html(html);
+        }
+
+        $(function () {
+            common.ajax({
+                url: '/InstructionalManagement/Scores/GetClassListJson', async: false,
+                success: function (data) { fillSelect('#ddl_class', data, 'F_Id', 'F_FullName', '全部班级'); }
+            });
+            common.ajax({
+                url: '/InstructionalManagement/Scores/GetCourseListJson', async: false,
+                success: function (data) { fillSelect('#ddl_course', data, 'F_Id', 'F_ItemName', '全部课程'); }
+            });
+            common.ajax({
+                url: '/InstructionalManagement/Scores/GetScoreTypeListJson', async: false,
+                success: function (data) { fillSelect('#ddl_scoreType', data, 'F_ItemCode', 'F_ItemName', '全部类型'); }
+            });
+            form.render('select');
+            chartScore = echarts.init(document.getElementById('chartScore'));
+            chartLevel = echarts.init(document.getElementById('chartLevel'));
+            chartCourse = echarts.init(document.getElementById('chartCourse'));
+            chartClass = echarts.init(document.getElementById('chartClass'));
+            chartSemester = echarts.init(document.getElementById('chartSemester'));
+            loadStatistics();
+        });
+        wcLoading.close();
+
+        function getParams() {
+            return {
+                classId: $('#ddl_class').val(),
+                courseId: $('#ddl_course').val(),
+                scoreType: $('#ddl_scoreType').val(),
+                semester: $('#txt_semester').val(),
+                minScore: $('#txt_minScore').val(),
+                maxScore: $('#txt_maxScore').val()
+            };
+        }
+
+        function loadStatistics() {
+            common.ajax({
+                url: '/InstructionalManagement/Scores/GetStatisticsJson',
+                data: getParams(),
+                success: function (res) {
+                    renderSummary(res.Summary || {});
+                    renderCharts(res);
+                }
+            });
+        }
+
+        function renderSummary(s) {
+            $('#v_total').text(s.Total || 0);
+            $('#v_scored').text(s.ScoredCount || 0);
+            $('#v_avg').text(s.AvgScore || 0);
+            $('#v_max').text(s.MaxScore || 0);
+            $('#v_min').text(s.MinScore || 0);
+            $('#v_pass').text(s.PassCount || 0);
+            $('#v_passRate').text((s.PassRate || 0) + '%');
+            $('#v_excellentRate').text((s.ExcellentRate || 0) + '%');
+        }
+
+        function renderCharts(res) {
+            var scoreData = res.ScoreDistribution || [];
+            chartScore.setOption({
+                title: { text: '分数段分布', left: 'center', textStyle: { fontSize: 14 } },
+                tooltip: { trigger: 'axis' },
+                grid: { left: 50, right: 20, top: 45, bottom: 30 },
+                xAxis: { type: 'category', data: scoreData.map(function (a) { return a.Name; }) },
+                yAxis: { type: 'value', name: '人数' },
+                series: [{
+                    type: 'bar', data: scoreData.map(function (a) { return a.Count; }),
+                    itemStyle: { color: '#1E9FFF' }, barMaxWidth: 40
+                }]
+            });
+
+            var levelData = res.LevelDistribution || [];
+            chartLevel.setOption({
+                title: { text: '成绩等级占比', left: 'center', textStyle: { fontSize: 14 } },
+                tooltip: { trigger: 'item' },
+                legend: { bottom: 0 },
+                series: [{
+                    type: 'pie', radius: ['35%', '62%'], center: ['50%', '48%'],
+                    data: levelData.map(function (a) { return { name: a.Name, value: a.Count }; })
+                }]
+            });
+
+            var courseData = res.CourseStats || [];
+            chartCourse.setOption({
+                title: { text: '各课程平均分', left: 'center', textStyle: { fontSize: 14 } },
+                tooltip: { trigger: 'axis' },
+                grid: { left: 50, right: 20, top: 45, bottom: 60 },
+                xAxis: { type: 'category', data: courseData.map(function (a) { return a.Name; }), axisLabel: { rotate: 20 } },
+                yAxis: { type: 'value', name: '平均分' },
+                series: [{
+                    type: 'bar', data: courseData.map(function (a) { return a.AvgScore; }),
+                    itemStyle: { color: '#5FB878' }, barMaxWidth: 40
+                }]
+            });
+
+            var classData = res.ClassStats || [];
+            chartClass.setOption({
+                title: { text: '各班级平均分与及格率', left: 'center', textStyle: { fontSize: 14 } },
+                tooltip: { trigger: 'axis' },
+                legend: { bottom: 0 },
+                grid: { left: 50, right: 50, top: 45, bottom: 60 },
+                xAxis: { type: 'category', data: classData.map(function (a) { return a.Name; }), axisLabel: { rotate: 20 } },
+                yAxis: [
+                    { type: 'value', name: '平均分' },
+                    { type: 'value', name: '及格率(%)', max: 100 }
+                ],
+                series: [
+                    { name: '平均分', type: 'bar', data: classData.map(function (a) { return a.AvgScore; }), itemStyle: { color: '#FFB800' }, barMaxWidth: 30 },
+                    { name: '及格率', type: 'line', yAxisIndex: 1, data: classData.map(function (a) { return a.PassRate; }) }
+                ]
+            });
+
+            var semesterData = res.SemesterStats || [];
+            chartSemester.setOption({
+                title: { text: '各学期平均分趋势', left: 'center', textStyle: { fontSize: 14 } },
+                tooltip: { trigger: 'axis' },
+                grid: { left: 50, right: 30, top: 45, bottom: 40 },
+                xAxis: { type: 'category', data: semesterData.map(function (a) { return a.Name; }) },
+                yAxis: { type: 'value', name: '平均分' },
+                series: [{
+                    type: 'line', smooth: true, data: semesterData.map(function (a) { return a.AvgScore; }),
+                    itemStyle: { color: '#FF5722' }, areaStyle: { opacity: 0.15 }
+                }]
+            });
+        }
+
+        $('#btn-search').click(function () { loadStatistics(); });
+        $('#btn-export').click(function () {
+            window.open('/InstructionalManagement/Scores/ExportExcel?' + $.param(getParams()));
+        });
+        $(window).resize(function () {
+            if (chartScore) chartScore.resize();
+            if (chartLevel) chartLevel.resize();
+            if (chartCourse) chartCourse.resize();
+            if (chartClass) chartClass.resize();
+            if (chartSemester) chartSemester.resize();
+        });
+    });
+</script>

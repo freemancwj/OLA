@@ -1,0 +1,119 @@
+@{
+    ViewBag.Title = "成绩审核";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'common'], function () {
+        var form = layui.form,
+            $ = layui.jquery,
+            common = layui.common;
+        var keyValue = $.request("keyValue") || '';
+        var ids = keyValue.split(',').filter(function (a) { return a.length > 0; });
+
+        $(function () {
+            $('#txt_count').text(ids.length);
+            if (ids.length === 1) {
+                common.ajax({
+                    url: '/InstructionalManagement/Scores/GetFormJson',
+                    data: { keyValue: ids[0] },
+                    async: false,
+                    success: function (d) {
+                        $('#txt_student').text((d.F_Account || '') + ' ' + (d.F_RealName || ''));
+                        $('#txt_class').text(d.F_ClassName || '-');
+                        $('#txt_course').text(d.F_CourseName || '-');
+                        $('#txt_type').text(d.F_ScoreTypeName || '-');
+                        $('#txt_semester').text(d.F_Semester || '-');
+                        $('#txt_score').text(d.F_Score === null || d.F_Score === undefined ? '-' : d.F_Score);
+                        $('#txt_level').text(d.F_ScoreLevel || '未评定');
+                        $('#singleInfo').removeClass('layui-hide');
+                    }
+                });
+            } else {
+                $('#batchInfo').removeClass('layui-hide');
+            }
+            form.render();
+        });
+        wcLoading.close();
+
+        form.on('submit(saveBtn)', function (data) {
+            var auditStatus = data.field.auditStatus;
+            var remark = $.trim(data.field.remark);
+            if (!auditStatus) {
+                common.modalMsg("请选择审核结果", "warning");
+                return false;
+            }
+            if (auditStatus === '2' && remark === '') {
+                common.modalMsg("退回时请填写审核意见", "warning");
+                return false;
+            }
+            common.submitForm({
+                url: '/InstructionalManagement/Scores/AuditForm',
+                param: { keyValue: ids.join(','), auditStatus: auditStatus, remark: remark },
+                success: function () {
+                    common.parentreload('data-search-btn');
+                }
+            });
+            return false;
+        });
+    });
+</script>
+
+<body>
+    <div class="layuimini-container">
+        <div class="layuimini-main">
+            <div class="layui-form layuimini-form" lay-filter="adminform">
+                <div class="layui-form-item">
+                    <label class="layui-form-label">审核数量</label>
+                    <div class="layui-form-mid" style="padding-left:10px;"><span id="txt_count" style="font-weight:bold;color:#FF5722;"></span> 条成绩</div>
+                </div>
+                <div id="singleInfo" class="layui-hide">
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">学生</label>
+                        <div class="layui-form-mid" id="txt_student" style="padding-left:10px;"></div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">班级</label>
+                        <div class="layui-form-mid" id="txt_class" style="padding-left:10px;"></div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">课程</label>
+                        <div class="layui-form-mid" id="txt_course" style="padding-left:10px;"></div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">成绩类型</label>
+                        <div class="layui-form-mid" id="txt_type" style="padding-left:10px;"></div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">学期</label>
+                        <div class="layui-form-mid" id="txt_semester" style="padding-left:10px;"></div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">分数</label>
+                        <div class="layui-form-mid" id="txt_score" style="padding-left:10px;color:#FF5722;font-weight:bold;"></div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">等级</label>
+                        <div class="layui-form-mid" id="txt_level" style="padding-left:10px;"></div>
+                    </div>
+                </div>
+                <div id="batchInfo" class="layui-hide" style="padding:10px 20px;color:#666;">已选择多条成绩，将统一执行本次审核结果。</div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">审核结果</label>
+                    <div class="layui-input-block">
+                        <input type="radio" name="auditStatus" value="1" title="通过" checked>
+                        <input type="radio" name="auditStatus" value="2" title="退回">
+                    </div>
+                </div>
+                <div class="layui-form-item layui-form-text">
+                    <label class="layui-form-label">审核意见</label>
+                    <div class="layui-input-block">
+                        <textarea id="remark" name="remark" placeholder="退回时必填" class="layui-textarea"></textarea>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-hide">
+                    <button class="layui-btn site-demo-active" lay-submit id="submit" lay-filter="saveBtn">确认审核</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
