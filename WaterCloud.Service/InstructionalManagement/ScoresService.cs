@@ -93,7 +93,7 @@ namespace WaterCloud.Service.InstructionalManagement
             }
             var visibleClassIds = await teacherClassApp.GetVisibleClassIds();
             var sql = BuildQuerySql(keyword, classId, courseId, semester, scoreType, auditStatus, minScore, maxScore, visibleClassIds);
-            var query = repository.Db.SqlQueryable<ScoresExtend>(sql);
+            var query = repository.SqlQueryable<ScoresExtend>(sql);
             return await query.ToPageListAsync(pagination);
         }
 
@@ -104,7 +104,7 @@ namespace WaterCloud.Service.InstructionalManagement
         {
             var visibleClassIds = await teacherClassApp.GetVisibleClassIds();
             var sql = BuildQuerySql(keyword, classId, courseId, semester, scoreType, auditStatus, minScore, maxScore, visibleClassIds);
-            return await repository.Db.SqlQueryable<ScoresExtend>(sql).ToListAsync();
+            return await repository.SqlQueryable<ScoresExtend>(sql).ToListAsync();
         }
 
         private string BuildQuerySql(string keyword, string classId, string courseId, string semester, string scoreType, string auditStatus, string minScore, string maxScore, List<string> visibleClassIds)

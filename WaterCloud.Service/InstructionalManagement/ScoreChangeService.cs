@@ -62,7 +62,7 @@ namespace WaterCloud.Service.InstructionalManagement
                   .Append(" OR u.F_Account COLLATE Chinese_PRC_CI_AS LIKE N'%" + kw + "%'")
                   .Append(" OR c.F_ItemName COLLATE Chinese_PRC_CI_AS LIKE N'%" + kw + "%')");
             }
-            return await repository.Db.SqlQueryable<ScoreChangeExtend>(sb.ToString()).ToPageListAsync(pagination);
+            return await repository.SqlQueryable<ScoreChangeExtend>(sb.ToString()).ToPageListAsync(pagination);
         }
 
         /// <summary>
@@ -71,7 +71,7 @@ namespace WaterCloud.Service.InstructionalManagement
         public async Task<ScoreChangeExtend> GetForm(string keyValue)
         {
             var sql = BaseSql + " WHERE ISNULL(a.F_DeleteMark,0) = 0 AND a.F_Id = '" + Q(keyValue) + "'";
-            return await repository.Db.SqlQueryable<ScoreChangeExtend>(sql).FirstAsync();
+            return await repository.SqlQueryable<ScoreChangeExtend>(sql).FirstAsync();
         }
 
         /// <summary>
@@ -113,7 +113,7 @@ LEFT JOIN sys_user au ON a.F_AuditUserId = au.F_Id COLLATE Chinese_PRC_CI_AS";
             }
             var sb = new StringBuilder();
             sb.Append(@"
-SELECT TOP 200 a.F_Id, a.F_StudentId, a.F_CourseId, a.F_Score, a.F_Semester,
+SELECT " + SqlDialect.Top(200) + @"a.F_Id, a.F_StudentId, a.F_CourseId, a.F_Score, a.F_Semester,
        b.F_RealName, b.F_Account,
        o.F_FullName AS F_ClassName,
        c.F_ItemName AS F_CourseName,
@@ -136,8 +136,8 @@ WHERE ISNULL(a.F_DeleteMark,0) = 0 AND ISNULL(a.F_AuditStatus,0) = 1");
                   .Append(" OR c.F_ItemName COLLATE Chinese_PRC_CI_AS LIKE N'%" + kw + "%'")
                   .Append(" OR o.F_FullName COLLATE Chinese_PRC_CI_AS LIKE N'%" + kw + "%')");
             }
-            sb.Append(" ORDER BY a.F_CreatorTime DESC");
-            return await repository.Db.SqlQueryable<ScoresExtend>(sb.ToString()).ToListAsync();
+            sb.Append(" ORDER BY a.F_CreatorTime DESC" + SqlDialect.Limit(200));
+            return await repository.SqlQueryable<ScoresExtend>(sb.ToString()).ToListAsync();
         }
 
         #endregion

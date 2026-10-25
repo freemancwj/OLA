@@ -28,6 +28,11 @@ namespace WaterCloud.Code.Model
 		public string DBConnectionString { get; set; }
 		public int DBCommandTimeout { get; set; }
 
+		/// <summary>
+		/// 启动时根据实体自动创建/同步表结构（用于 PostgreSQL 等空库初始化）
+		/// </summary>
+		public bool? AutoCreateTable { get; set; }
+
 		public string CacheProvider { get; set; }
 		public string RedisConnectionString { get; set; }
 		public string TokenName { get; set; }

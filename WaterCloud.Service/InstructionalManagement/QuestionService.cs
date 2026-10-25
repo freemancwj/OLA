@@ -41,7 +41,7 @@ namespace WaterCloud.Service.InstructionalManagement
                 pagination.order = "desc";
             }
             var sql = BuildQuerySql(keyword, courseId, type);
-            return await repository.Db.SqlQueryable<QuestionExtend>(sql).ToPageListAsync(pagination);
+            return await repository.SqlQueryable<QuestionExtend>(sql).ToPageListAsync(pagination);
         }
 
         private string BuildQuerySql(string keyword, string courseId, string type)

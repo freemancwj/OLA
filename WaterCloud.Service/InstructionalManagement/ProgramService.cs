@@ -56,7 +56,7 @@ WHERE ISNULL(a.F_DeleteMark,0) = 0");
             {
                 sb.Append(" AND a.F_Semester = N'" + Q(semester.Trim()) + "'");
             }
-            return await repository.Db.SqlQueryable<ProgramExtend>(sb.ToString()).ToPageListAsync(pagination);
+            return await repository.SqlQueryable<ProgramExtend>(sb.ToString()).ToPageListAsync(pagination);
         }
 
         public async Task<ProgramEntity> GetForm(string keyValue)

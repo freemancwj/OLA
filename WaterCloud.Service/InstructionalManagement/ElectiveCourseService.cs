@@ -61,7 +61,7 @@ WHERE ISNULL(a.F_DeleteMark,0) = 0");
                 sb.Append(" AND (c.F_Name COLLATE Chinese_PRC_CI_AS LIKE N'%" + kw + "%'")
                   .Append(" OR u.F_RealName COLLATE Chinese_PRC_CI_AS LIKE N'%" + kw + "%')");
             }
-            return await repository.Db.SqlQueryable<ElectiveCourseExtend>(sb.ToString()).ToPageListAsync(pagination);
+            return await repository.SqlQueryable<ElectiveCourseExtend>(sb.ToString()).ToPageListAsync(pagination);
         }
 
         public async Task<ElectiveCourseEntity> GetForm(string keyValue)

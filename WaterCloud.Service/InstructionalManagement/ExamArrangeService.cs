@@ -53,7 +53,7 @@ namespace WaterCloud.Service.InstructionalManagement
             {
                 sb.Append(" AND CONVERT(varchar(10), a.F_ExamDate, 23) = '" + Q(examDate) + "'");
             }
-            return await repository.Db.SqlQueryable<ExamArrangeExtend>(sb.ToString()).ToPageListAsync(pagination);
+            return await repository.SqlQueryable<ExamArrangeExtend>(sb.ToString()).ToPageListAsync(pagination);
         }
 
         /// <summary>
@@ -79,7 +79,7 @@ namespace WaterCloud.Service.InstructionalManagement
                   .Append(" OR c.F_Name COLLATE Chinese_PRC_CI_AS LIKE N'%" + kw + "%'")
                   .Append(" OR o.F_FullName COLLATE Chinese_PRC_CI_AS LIKE N'%" + kw + "%')");
             }
-            return await repository.Db.SqlQueryable<ExamArrangeExtend>(sb.ToString()).ToPageListAsync(pagination);
+            return await repository.SqlQueryable<ExamArrangeExtend>(sb.ToString()).ToPageListAsync(pagination);
         }
 
         public async Task<ExamArrangeEntity> GetForm(string keyValue)
@@ -114,7 +114,7 @@ namespace WaterCloud.Service.InstructionalManagement
         /// </summary>
         public async Task<List<ClassroomOptionExtend>> GetClassroomList()
         {
-            return await repository.Db.SqlQueryable<ClassroomOptionExtend>(@"
+            return await repository.SqlQueryable<ClassroomOptionExtend>(@"
 SELECT c.F_Id, c.F_Name, c.F_Capacity, b.F_Name AS F_BuildingName
 FROM school_classroom c
 LEFT JOIN school_building b ON c.F_BuildingId = b.F_Id COLLATE Chinese_PRC_CI_AS
@@ -126,7 +126,7 @@ ORDER BY b.F_Name, c.F_Name").ToListAsync();
         /// </summary>
         public async Task<List<PeriodOptionExtend>> GetPeriodList()
         {
-            return await repository.Db.SqlQueryable<PeriodOptionExtend>(@"
+            return await repository.SqlQueryable<PeriodOptionExtend>(@"
 SELECT p.F_Id, p.F_Name,
        CONVERT(varchar(5), p.F_StartTime, 108) AS F_StartTime,
        CONVERT(varchar(5), p.F_EndTime, 108) AS F_EndTime

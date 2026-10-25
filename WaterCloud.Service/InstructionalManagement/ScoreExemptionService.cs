@@ -79,7 +79,7 @@ namespace WaterCloud.Service.InstructionalManagement
                   .Append(" OR u.F_Account COLLATE Chinese_PRC_CI_AS LIKE N'%" + kw + "%'")
                   .Append(" OR c.F_Name COLLATE Chinese_PRC_CI_AS LIKE N'%" + kw + "%')");
             }
-            return await repository.Db.SqlQueryable<ScoreExemptionExtend>(sb.ToString()).ToPageListAsync(pagination);
+            return await repository.SqlQueryable<ScoreExemptionExtend>(sb.ToString()).ToPageListAsync(pagination);
         }
 
         /// <summary>
@@ -88,7 +88,7 @@ namespace WaterCloud.Service.InstructionalManagement
         public async Task<ScoreExemptionExtend> GetForm(string keyValue)
         {
             var sql = BaseSql + " WHERE ISNULL(a.F_DeleteMark,0) = 0 AND a.F_Id = '" + Q(keyValue) + "'";
-            return await repository.Db.SqlQueryable<ScoreExemptionExtend>(sql).FirstAsync();
+            return await repository.SqlQueryable<ScoreExemptionExtend>(sql).FirstAsync();
         }
 
         /// <summary>
@@ -101,8 +101,8 @@ namespace WaterCloud.Service.InstructionalManagement
                 return @"
 SELECT a.*,
        u.F_RealName AS F_StudentName, u.F_Account,
-       (SELECT TOP 1 o.F_FullName FROM sys_organize o WHERE o.F_CategoryId = 'banji'
-           AND (',' + ISNULL(u.F_OrganizeId,'') + ',') LIKE '%,' + o.F_Id + ',%') AS F_ClassName,
+       (SELECT " + SqlDialect.Top(1) + @"o.F_FullName FROM sys_organize o WHERE o.F_CategoryId = 'banji'
+           AND (',' + ISNULL(u.F_OrganizeId,'') + ',') LIKE '%,' + o.F_Id + ',%'" + SqlDialect.Limit(1) + @") AS F_ClassName,
        c.F_Name AS F_CourseName,
        au.F_RealName AS F_AuditUserName
 FROM school_score_exemption a

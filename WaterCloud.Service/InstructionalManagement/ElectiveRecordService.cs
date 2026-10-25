@@ -59,7 +59,7 @@ WHERE ISNULL(a.F_DeleteMark,0) = 0 AND a.F_Status = 1");
                 sb.Append(" AND (u.F_RealName COLLATE Chinese_PRC_CI_AS LIKE N'%" + kw + "%'")
                   .Append(" OR u.F_Account COLLATE Chinese_PRC_CI_AS LIKE N'%" + kw + "%')");
             }
-            return await repository.Db.SqlQueryable<ElectiveRecordExtend>(sb.ToString()).ToPageListAsync(pagination);
+            return await repository.SqlQueryable<ElectiveRecordExtend>(sb.ToString()).ToPageListAsync(pagination);
         }
 
         /// <summary>
@@ -114,7 +114,7 @@ LEFT JOIN school_course c ON a.F_CourseId = c.F_Id COLLATE Chinese_PRC_CI_AS
 LEFT JOIN sys_user u ON a.F_TeacherId = u.F_Id COLLATE Chinese_PRC_CI_AS
 LEFT JOIN school_classroom cr ON a.F_ClassroomId = cr.F_Id COLLATE Chinese_PRC_CI_AS
 WHERE ISNULL(a.F_DeleteMark,0) = 0 AND ISNULL(a.F_EnabledMark,0) = 1 AND a.F_RoundId = '" + Q(roundId) + "'");
-            var list = await repository.Db.SqlQueryable<ElectiveCourseExtend>(sb.ToString())
+            var list = await repository.SqlQueryable<ElectiveCourseExtend>(sb.ToString())
                 .OrderBy(a => a.F_CourseName).ToListAsync();
             //本人已选
             var myIds = (await repository.IQueryable()
@@ -149,7 +149,7 @@ WHERE ISNULL(a.F_DeleteMark,0) = 0");
             {
                 sb.Append(" AND a.F_RoundId = '" + Q(roundId) + "'");
             }
-            var list = await repository.Db.SqlQueryable<ElectiveCourseExtend>(sb.ToString())
+            var list = await repository.SqlQueryable<ElectiveCourseExtend>(sb.ToString())
                 .OrderBy(a => a.F_CourseName).ToListAsync();
             foreach (var item in list)
             {

@@ -130,7 +130,7 @@ namespace WaterCloud.Service.InstructionalManagement
             var studentOnly = IsStudent;
             var myClassId = studentOnly ? await GetMyClassId() : null;
             var sql = BuildQuerySql(keyword, courseId, classId, status, studentOnly, myClassId);
-            return await repository.Db.SqlQueryable<HomeworkExtend>(sql).ToPageListAsync(pagination);
+            return await repository.SqlQueryable<HomeworkExtend>(sql).ToPageListAsync(pagination);
         }
 
         private string BuildQuerySql(string keyword, string courseId, string classId, string status, bool studentOnly, string myClassId)
@@ -202,7 +202,7 @@ WHERE ISNULL(a.F_DeleteMark,0) = 0");
             }
             var myClassId = await GetMyClassId();
             var sql = BuildMyQuerySql(keyword, status, myClassId);
-            return await repository.Db.SqlQueryable<HomeworkExtend>(sql).ToPageListAsync(pagination);
+            return await repository.SqlQueryable<HomeworkExtend>(sql).ToPageListAsync(pagination);
         }
 
         private string BuildMyQuerySql(string keyword, string status, string classId)
@@ -394,7 +394,7 @@ WHERE ISNULL(a.F_DeleteMark,0) = 0 AND ISNULL(a.F_Status,0) = 1");
                 }
                 sql = BuildSubmitSql(homeworkId, status);
             }
-            return await repository.Db.SqlQueryable<HomeworkSubmitExtend>(sql).ToPageListAsync(pagination);
+            return await repository.SqlQueryable<HomeworkSubmitExtend>(sql).ToPageListAsync(pagination);
         }
 
         private string BuildSubmitSql(string homeworkId, string status)
@@ -470,7 +470,7 @@ LEFT JOIN sys_user u ON s.F_StudentId = u.F_Id COLLATE Chinese_PRC_CI_AS
 LEFT JOIN school_homework h ON s.F_HomeworkId = h.F_Id COLLATE Chinese_PRC_CI_AS
 LEFT JOIN sys_organize o ON h.F_ClassId = o.F_Id COLLATE Chinese_PRC_CI_AS
 WHERE s.F_Id = '" + Q(keyValue) + @"' AND ISNULL(s.F_DeleteMark,0) = 0";
-            var data = await repository.Db.SqlQueryable<HomeworkSubmitExtend>(sql).FirstAsync();
+            var data = await repository.SqlQueryable<HomeworkSubmitExtend>(sql).FirstAsync();
             if (data == null)
             {
                 throw new Exception("提交记录不存在");

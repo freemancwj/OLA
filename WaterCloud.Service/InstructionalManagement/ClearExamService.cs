@@ -61,7 +61,7 @@ namespace WaterCloud.Service.InstructionalManagement
             {
                 sb.Append(" AND ISNULL(a.F_Status,0) = " + status.Value);
             }
-            return await repository.Db.SqlQueryable<ClearExamExtend>(sb.ToString()).ToPageListAsync(pagination);
+            return await repository.SqlQueryable<ClearExamExtend>(sb.ToString()).ToPageListAsync(pagination);
         }
 
         /// <summary>
@@ -71,7 +71,7 @@ namespace WaterCloud.Service.InstructionalManagement
         {
             var sb = BuildBaseSql();
             sb.Append(" AND a.F_Id = '" + Q(keyValue) + "'");
-            return await repository.Db.SqlQueryable<ClearExamExtend>(sb.ToString()).FirstAsync();
+            return await repository.SqlQueryable<ClearExamExtend>(sb.ToString()).FirstAsync();
         }
 
         /// <summary>
@@ -101,7 +101,7 @@ namespace WaterCloud.Service.InstructionalManagement
         /// </summary>
         public async Task<List<ClassroomOptionExtend>> GetClassroomList()
         {
-            return await repository.Db.SqlQueryable<ClassroomOptionExtend>(@"
+            return await repository.SqlQueryable<ClassroomOptionExtend>(@"
 SELECT c.F_Id, c.F_Name, c.F_Capacity, b.F_Name AS F_BuildingName
 FROM school_classroom c
 LEFT JOIN school_building b ON c.F_BuildingId = b.F_Id COLLATE Chinese_PRC_CI_AS
@@ -113,7 +113,7 @@ ORDER BY b.F_Name, c.F_Name").ToListAsync();
         /// </summary>
         public async Task<List<PeriodOptionExtend>> GetPeriodList()
         {
-            return await repository.Db.SqlQueryable<PeriodOptionExtend>(@"
+            return await repository.SqlQueryable<PeriodOptionExtend>(@"
 SELECT p.F_Id, p.F_Name,
        CONVERT(varchar(5), p.F_StartTime, 108) AS F_StartTime,
        CONVERT(varchar(5), p.F_EndTime, 108) AS F_EndTime
@@ -170,7 +170,7 @@ WHERE ISNULL(s.F_DeleteMark,0) = 0 AND ISNULL(s.F_AuditStatus,0) = 1 AND s.F_Sco
             {
                 sb.Append(" AND s.F_Semester = '" + Q(semester.Trim()) + "'");
             }
-            var rows = await repository.Db.SqlQueryable<ClearExamEntity>(sb.ToString()).ToListAsync();
+            var rows = await repository.SqlQueryable<ClearExamEntity>(sb.ToString()).ToListAsync();
             if (rows.Count == 0)
             {
                 throw new Exception("没有需要清考的学生");

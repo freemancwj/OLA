@@ -71,7 +71,7 @@ WHERE ISNULL(a.F_DeleteMark,0) = 0");
                   .Append(" OR c.F_ItemName COLLATE Chinese_PRC_CI_AS LIKE N'%" + kw + "%'")
                   .Append(" OR tu.F_RealName COLLATE Chinese_PRC_CI_AS LIKE N'%" + kw + "%')");
             }
-            return await repository.Db.SqlQueryable<ScheduleChangeExtend>(sb.ToString()).ToPageListAsync(pagination);
+            return await repository.SqlQueryable<ScheduleChangeExtend>(sb.ToString()).ToPageListAsync(pagination);
         }
 
         public async Task<ScheduleChangeEntity> GetForm(string keyValue)
@@ -97,7 +97,7 @@ LEFT JOIN sys_user au ON a.F_ApplicantId = au.F_Id COLLATE Chinese_PRC_CI_AS
 LEFT JOIN school_classroom cr ON a.F_NewClassroomId = cr.F_Id COLLATE Chinese_PRC_CI_AS
 LEFT JOIN sys_user du ON a.F_AuditUserId = du.F_Id COLLATE Chinese_PRC_CI_AS
 WHERE a.F_Id = '" + Q(keyValue) + "'");
-            return await repository.Db.SqlQueryable<ScheduleChangeExtend>(sb.ToString()).FirstAsync();
+            return await repository.SqlQueryable<ScheduleChangeExtend>(sb.ToString()).FirstAsync();
         }
 
         /// <summary>

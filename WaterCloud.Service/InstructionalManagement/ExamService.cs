@@ -200,7 +200,7 @@ namespace WaterCloud.Service.InstructionalManagement
                 }
             }
             var sql = BuildExamQuerySql(keyword, courseId, classId, type, status, studentClassId);
-            return await repository.Db.SqlQueryable<ExamExtend>(sql).ToPageListAsync(pagination);
+            return await repository.SqlQueryable<ExamExtend>(sql).ToPageListAsync(pagination);
         }
 
         /// <summary>
@@ -252,7 +252,7 @@ WHERE ISNULL(a.F_DeleteMark,0)=0
             {
                 sb.Append(" AND a.F_Type = " + typeValue);
             }
-            return await repository.Db.SqlQueryable<ExamExtend>(sb.ToString()).ToPageListAsync(pagination);
+            return await repository.SqlQueryable<ExamExtend>(sb.ToString()).ToPageListAsync(pagination);
         }
 
         private string BuildExamQuerySql(string keyword, string courseId, string classId, string type, string status, string studentClassId)
@@ -358,7 +358,7 @@ LEFT JOIN school_question q ON eq.F_QuestionId = q.F_Id COLLATE Chinese_PRC_CI_A
 LEFT JOIN sys_itemsdetail c ON q.F_CourseId = c.F_Id COLLATE Chinese_PRC_CI_AS
 WHERE eq.F_ExamId = '" + Q(examId) + @"' AND ISNULL(eq.F_DeleteMark,0)=0
 ORDER BY ISNULL(eq.F_SortCode,0), eq.F_CreatorTime";
-            var list = await repository.Db.SqlQueryable<ExamQuestionExtend>(sql).ToListAsync();
+            var list = await repository.SqlQueryable<ExamQuestionExtend>(sql).ToListAsync();
             foreach (var item in list)
             {
                 item.F_TypeName = GetTypeName(item.F_Type);
@@ -373,7 +373,7 @@ ORDER BY ISNULL(eq.F_SortCode,0), eq.F_CreatorTime";
         {
             var sb = new StringBuilder();
             sb.Append(@"
-SELECT TOP 1000 q.F_Id, q.F_Id AS F_QuestionId, q.F_Type, q.F_Content,
+SELECT " + SqlDialect.Top(1000) + @"q.F_Id, q.F_Id AS F_QuestionId, q.F_Type, q.F_Content,
        q.F_OptionA, q.F_OptionB, q.F_OptionC, q.F_OptionD, q.F_Answer, q.F_Analysis,
        q.F_Score AS F_Score, q.F_Score AS F_FullScore,
        c.F_ItemName AS F_CourseName
@@ -392,8 +392,8 @@ WHERE ISNULL(q.F_DeleteMark,0)=0");
             {
                 sb.Append(" AND q.F_Type = " + typeValue);
             }
-            sb.Append(" ORDER BY q.F_Type, q.F_CreatorTime DESC");
-            var list = await repository.Db.SqlQueryable<ExamQuestionExtend>(sb.ToString()).ToListAsync();
+            sb.Append(" ORDER BY q.F_Type, q.F_CreatorTime DESC" + SqlDialect.Limit(1000));
+            var list = await repository.SqlQueryable<ExamQuestionExtend>(sb.ToString()).ToListAsync();
             foreach (var item in list)
             {
                 item.F_TypeName = GetTypeName(item.F_Type);
@@ -913,9 +913,9 @@ WHERE ISNULL(q.F_DeleteMark,0)=0");
             sb.Append(@"
 SELECT a.F_Id, a.F_ExamId, e.F_Title AS F_ExamTitle, a.F_StudentId,
        u.F_Account, u.F_RealName,
-       (SELECT TOP 1 o.F_FullName FROM sys_organize o
+       (SELECT " + SqlDialect.Top(1) + @"o.F_FullName FROM sys_organize o
           WHERE o.F_CategoryId = 'banji' AND ISNULL(o.F_DeleteMark,0)=0
-            AND (',' + ISNULL(u.F_OrganizeId,'') + ',') LIKE ('%,' + o.F_Id COLLATE Chinese_PRC_CI_AS + ',%')) AS F_ClassName,
+            AND (',' + ISNULL(u.F_OrganizeId,'') + ',') LIKE ('%,' + o.F_Id COLLATE Chinese_PRC_CI_AS + ',%')" + SqlDialect.Limit(1) + @") AS F_ClassName,
        a.F_StartTime, a.F_SubmitTime, a.F_ObjectiveScore, a.F_SubjectiveScore, a.F_TotalScore,
        a.F_Status, a.F_IsPassed, a.F_GradeTime, a.F_GraderId, a.F_GraderName,
        e.F_TotalScore AS F_ExamTotalScore, e.F_PassScore, e.F_Duration,
@@ -943,7 +943,7 @@ WHERE ISNULL(a.F_DeleteMark,0)=0 AND a.F_SubmitTime IS NOT NULL");
             {
                 sb.Append(" AND ISNULL(a.F_Status,0) = " + statusValue);
             }
-            return await repository.Db.SqlQueryable<ExamRecordExtend>(sb.ToString()).ToPageListAsync(pagination);
+            return await repository.SqlQueryable<ExamRecordExtend>(sb.ToString()).ToPageListAsync(pagination);
         }
 
         /// <summary>
@@ -958,9 +958,9 @@ WHERE ISNULL(a.F_DeleteMark,0)=0 AND a.F_SubmitTime IS NOT NULL");
             var sql = @"
 SELECT a.F_Id, a.F_ExamId, e.F_Title AS F_ExamTitle, a.F_StudentId,
        u.F_Account, u.F_RealName,
-       (SELECT TOP 1 o.F_FullName FROM sys_organize o
+       (SELECT " + SqlDialect.Top(1) + @"o.F_FullName FROM sys_organize o
           WHERE o.F_CategoryId = 'banji' AND ISNULL(o.F_DeleteMark,0)=0
-            AND (',' + ISNULL(u.F_OrganizeId,'') + ',') LIKE ('%,' + o.F_Id COLLATE Chinese_PRC_CI_AS + ',%')) AS F_ClassName,
+            AND (',' + ISNULL(u.F_OrganizeId,'') + ',') LIKE ('%,' + o.F_Id COLLATE Chinese_PRC_CI_AS + ',%')" + SqlDialect.Limit(1) + @") AS F_ClassName,
        a.F_StartTime, a.F_SubmitTime, a.F_ObjectiveScore, a.F_SubjectiveScore, a.F_TotalScore,
        a.F_Status, a.F_IsPassed, a.F_GradeTime, a.F_GraderId, a.F_GraderName,
        e.F_TotalScore AS F_ExamTotalScore, e.F_PassScore, e.F_Duration,
@@ -969,7 +969,7 @@ FROM school_exam_record a
 INNER JOIN school_exam e ON a.F_ExamId = e.F_Id COLLATE Chinese_PRC_CI_AS
 LEFT JOIN sys_user u ON a.F_StudentId = u.F_Id COLLATE Chinese_PRC_CI_AS
 WHERE a.F_Id = '" + Q(recordId) + @"' AND ISNULL(a.F_DeleteMark,0)=0";
-            var list = await repository.Db.SqlQueryable<ExamRecordExtend>(sql).ToListAsync();
+            var list = await repository.SqlQueryable<ExamRecordExtend>(sql).ToListAsync();
             var data = list.FirstOrDefault();
             if (data == null)
             {
@@ -1000,7 +1000,7 @@ LEFT JOIN school_exam_question eq ON eq.F_ExamId = an.F_ExamId COLLATE Chinese_P
      AND ISNULL(eq.F_DeleteMark,0)=0
 WHERE an.F_RecordId = '" + Q(recordId) + @"' AND ISNULL(an.F_DeleteMark,0)=0
 ORDER BY ISNULL(eq.F_SortCode,0), an.F_CreatorTime";
-            var list = await repository.Db.SqlQueryable<ExamAnswerExtend>(sql).ToListAsync();
+            var list = await repository.SqlQueryable<ExamAnswerExtend>(sql).ToListAsync();
             foreach (var item in list)
             {
                 item.F_TypeName = GetTypeName(item.F_QuestionType);
@@ -1163,7 +1163,7 @@ WHERE ISNULL(a.F_DeleteMark,0)=0 AND ISNULL(r.F_DeleteMark,0)=0
             {
                 sb.Append(" AND e.F_CourseId = '" + Q(courseId) + "'");
             }
-            return await repository.Db.SqlQueryable<WrongQuestionExtend>(sb.ToString()).ToPageListAsync(pagination);
+            return await repository.SqlQueryable<WrongQuestionExtend>(sb.ToString()).ToPageListAsync(pagination);
         }
 
         #endregion

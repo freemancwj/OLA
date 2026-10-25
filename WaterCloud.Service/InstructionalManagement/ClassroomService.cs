@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -53,7 +53,7 @@ WHERE ISNULL(a.F_DeleteMark,0) = 0");
             {
                 sb.Append(" AND a.F_BuildingId = '" + Q(buildingId) + "'");
             }
-            return await repository.Db.SqlQueryable<ClassroomExtend>(sb.ToString()).ToPageListAsync(pagination);
+            return await repository.SqlQueryable<ClassroomExtend>(sb.ToString()).ToPageListAsync(pagination);
         }
 
         public async Task<ClassroomEntity> GetForm(string keyValue)

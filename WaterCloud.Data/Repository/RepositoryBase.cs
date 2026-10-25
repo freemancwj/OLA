@@ -1,4 +1,4 @@
-﻿/*******************************************************************************
+/*******************************************************************************
  * Copyright © 2020 WaterCloud.Framework 版权所有
  * Author: WaterCloud
  * Description: WaterCloud快速开发平台
@@ -119,7 +119,15 @@ namespace WaterCloud.DataBase
 
 		public ISugarQueryable<TEntity> IQueryable(string strSql)
 		{
-			return _db.SqlQueryable<TEntity>(strSql);
+			return _db.SqlQueryable<TEntity>(SqlDialect.Trans(strSql));
+		}
+
+		/// <summary>
+		/// 原生 SQL 查询（自动按当前数据库类型转换方言，原生 SQL 按 SqlServer 语法书写）
+		/// </summary>
+		public ISugarQueryable<TResult> SqlQueryable<TResult>(string sql) where TResult : class, new()
+		{
+			return _db.SqlQueryable<TResult>(SqlDialect.Trans(sql));
 		}
 	}
 }

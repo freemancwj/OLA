@@ -62,7 +62,7 @@ WHERE ISNULL(s.F_DeleteMark,0) = 0 AND ISNULL(s.F_AuditStatus,0) = 1");
                 sb.Append(" AND s.F_ClassId = '" + Q(classId) + "'");
             }
             sb.Append(" GROUP BY s.F_Semester, c.F_Name, o.F_FullName ORDER BY s.F_Semester DESC, c.F_Name, o.F_FullName");
-            return await repository.Db.SqlQueryable<ScoreStatModel>(sb.ToString()).ToListAsync();
+            return await repository.SqlQueryable<ScoreStatModel>(sb.ToString()).ToListAsync();
         }
 
         #endregion
@@ -91,7 +91,7 @@ WHERE ISNULL(ec.F_DeleteMark,0) = 0");
                 sb.Append(" AND ec.F_RoundId = '" + Q(roundId) + "'");
             }
             sb.Append(" ORDER BY r.F_Name, c.F_Name, u.F_RealName");
-            return await repository.Db.SqlQueryable<ElectiveStatModel>(sb.ToString()).ToListAsync();
+            return await repository.SqlQueryable<ElectiveStatModel>(sb.ToString()).ToListAsync();
         }
 
         #endregion
@@ -120,7 +120,7 @@ WHERE ISNULL(t.F_DeleteMark,0) = 0 AND t.F_TeacherId IS NOT NULL");
                 lessonSb.Append(" AND t.F_Semester = '" + Q(semester) + "'");
             }
             lessonSb.Append(" GROUP BY t.F_TeacherId");
-            var lessons = await repository.Db.SqlQueryable<WorkloadStatModel>(lessonSb.ToString()).ToListAsync();
+            var lessons = await repository.SqlQueryable<WorkloadStatModel>(lessonSb.ToString()).ToListAsync();
             var lessonMap = lessons.Where(a => !string.IsNullOrEmpty(a.F_TeacherId))
                 .ToDictionary(a => a.F_TeacherId, a => a, StringComparer.OrdinalIgnoreCase);
 
@@ -133,7 +133,7 @@ WHERE ISNULL(t.F_DeleteMark,0) = 0 AND t.F_TeacherId IS NOT NULL");
 	UNION ALL SELECT F_MainInvigilatorId COLLATE Chinese_PRC_CI_AS FROM school_clear_exam WHERE ISNULL(F_DeleteMark,0)=0 AND F_MainInvigilatorId IS NOT NULL
 	UNION ALL SELECT F_SubInvigilatorId COLLATE Chinese_PRC_CI_AS FROM school_clear_exam WHERE ISNULL(F_DeleteMark,0)=0 AND F_SubInvigilatorId IS NOT NULL
 ) x GROUP BY tid";
-            var invList = await repository.Db.SqlQueryable<InvigilateCountModel>(invSql).ToListAsync();
+            var invList = await repository.SqlQueryable<InvigilateCountModel>(invSql).ToListAsync();
             var invMap = invList.Where(a => !string.IsNullOrEmpty(a.F_TeacherId))
                 .ToDictionary(a => a.F_TeacherId, a => a.F_Count, StringComparer.OrdinalIgnoreCase);
 
@@ -182,7 +182,7 @@ WHERE ISNULL(m.F_DeleteMark,0) = 0");
                 makeupSb.Append(" AND s.F_Semester = '" + Q(semester) + "'");
             }
             makeupSb.Append(" GROUP BY s.F_Semester, c.F_Name");
-            var makeupList = await repository.Db.SqlQueryable<ExamStatModel>(makeupSb.ToString()).ToListAsync();
+            var makeupList = await repository.SqlQueryable<ExamStatModel>(makeupSb.ToString()).ToListAsync();
 
             var clearSb = new StringBuilder();
             clearSb.Append(@"SELECT s.F_Semester, c.F_Name AS F_CourseName,
@@ -197,7 +197,7 @@ WHERE ISNULL(m.F_DeleteMark,0) = 0");
                 clearSb.Append(" AND s.F_Semester = '" + Q(semester) + "'");
             }
             clearSb.Append(" GROUP BY s.F_Semester, c.F_Name");
-            var clearList = await repository.Db.SqlQueryable<ExamStatModel>(clearSb.ToString()).ToListAsync();
+            var clearList = await repository.SqlQueryable<ExamStatModel>(clearSb.ToString()).ToListAsync();
 
             //按 学期+课程 合并
             var map = new Dictionary<string, ExamStatModel>(StringComparer.OrdinalIgnoreCase);
@@ -238,7 +238,7 @@ WHERE ISNULL(m.F_DeleteMark,0) = 0");
 	UNION
 	SELECT F_Semester COLLATE Chinese_PRC_CI_AS FROM school_elective_round WHERE ISNULL(F_DeleteMark,0)=0 AND F_Semester IS NOT NULL AND F_Semester <> ''
 ) x ORDER BY sem DESC";
-            return await repository.Db.SqlQueryable<SemesterItem>(sql).ToListAsync();
+            return await repository.SqlQueryable<SemesterItem>(sql).ToListAsync();
         }
 
         /// <summary>

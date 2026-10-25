@@ -35,7 +35,7 @@ namespace WaterCloud.Service.InstructionalManagement
                 pagination.order = "asc";
             }
             var sql = BuildQuerySql(keyword, categoryId, status, false);
-            return await repository.Db.SqlQueryable<CourseExtend>(sql).ToPageListAsync(pagination);
+            return await repository.SqlQueryable<CourseExtend>(sql).ToPageListAsync(pagination);
         }
 
         private string BuildQuerySql(string keyword, string categoryId, string status, bool onlyOnline)
@@ -88,7 +88,7 @@ WHERE ISNULL(a.F_DeleteMark,0) = 0");
         public async Task<List<CourseCardModel>> GetStudyCards(string keyword, string categoryId)
         {
             var sql = BuildQuerySql(keyword, categoryId, "1", true);
-            var list = await repository.Db.SqlQueryable<CourseExtend>(sql).ToListAsync();
+            var list = await repository.SqlQueryable<CourseExtend>(sql).ToListAsync();
             var userId = currentuser.UserId;
             var result = list.Select(a => new CourseCardModel
             {

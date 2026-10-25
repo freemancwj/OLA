@@ -62,7 +62,7 @@ WHERE ISNULL(a.F_DeleteMark,0) = 0");
             {
                 sb.Append(" AND a.F_ClassId = '" + Q(classId) + "'");
             }
-            return await repository.Db.SqlQueryable<TeachingTaskExtend>(sb.ToString()).ToPageListAsync(pagination);
+            return await repository.SqlQueryable<TeachingTaskExtend>(sb.ToString()).ToPageListAsync(pagination);
         }
 
         public async Task<TeachingTaskEntity> GetForm(string keyValue)

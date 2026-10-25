@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using MySql.Data.MySqlClient;
 using Quartz;
 using Quartz.Impl;
@@ -44,7 +44,25 @@ namespace WaterCloud.Service
 			//注入数据库连接
 			// 注册 SqlSugar
 			services.AddSingleton<ISqlSugarClient>(sqlSugarScope);
+			//空库初始化：按实体自动建表（主要用于 PostgreSQL）
+			if (GlobalContext.SystemConfig.AutoCreateTable == true)
+			{
+				CreateTables(sqlSugarScope);
+			}
 			return services;
+		}
+
+		/// <summary>
+		/// 根据实体创建表结构（实体列类型会按当前数据库类型自动转换）
+		/// </summary>
+		private static void CreateTables(SqlSugarScope db)
+		{
+			var types = typeof(UserEntity).Assembly.GetTypes()
+				.Where(a => a.IsClass && !a.IsAbstract && !a.IsGenericType)
+				.Where(a => a.GetCustomAttributes(typeof(SugarTable), false).Any())
+				.Where(a => !a.Name.EndsWith("Extend") && !a.Name.EndsWith("Model"))
+				.ToArray();
+			db.CodeFirst.InitTables(types);
 		}
 
 		/// <summary>
@@ -79,6 +97,11 @@ namespace WaterCloud.Service
 					if (attributes.Any(it => it is SugarColumn) && column.DataType == "longtext" && db.CurrentConnectionConfig.DbType == DbType.SqlServer)
 					{
 						column.DataType = "nvarchar(4000)";
+					}
+					//PostgreSQL：按 CLR 类型把 SqlServer 列类型转换为 PostgreSQL 类型
+					if (db.CurrentConnectionConfig.DbType == DbType.PostgreSQL)
+					{
+						column.DataType = SqlDialect.ToPostgreSqlType(property.PropertyType, column.DataType);
 					}
 				}
 			};
