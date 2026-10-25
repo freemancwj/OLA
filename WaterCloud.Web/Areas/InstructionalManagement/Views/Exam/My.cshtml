@@ -1,0 +1,162 @@
+@{
+    ViewBag.Title = "我的考试";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<div class="layuimini-container">
+    <div class="layuimini-main">
+        <fieldset class="table-search-fieldset" id="searchField">
+            <div>
+                <form class="layui-form layui-form-pane">
+                    <div class="layui-form-item" style="margin-bottom:0;">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">关键字:</label>
+                            <div class="layui-input-inline">
+                                <input type="text" id="txt_keyword" name="txt_keyword" autocomplete="off" class="layui-input" placeholder="考试名称/科目">
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">类型:</label>
+                            <div class="layui-input-inline">
+                                <select id="ddl_type" name="ddl_type">
+                                    <option value="">全部类型</option>
+                                    <option value="1">章节测试</option>
+                                    <option value="2">模拟考试</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <button type="submit" class="layui-btn layui-btn-primary" lay-submit lay-filter="data-search-btn">
+                                <i class="layui-icon">&#xe615;</i> 搜 索
+                            </button>
+                            <button type="button" class="layui-btn layui-btn-primary" id="btn-reset">
+                                <i class="layui-icon">&#xe666;</i> 重 置
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </fieldset>
+        <script type="text/html" id="toolbarDemo">
+            <div class="layui-btn-container" id="toolbar"></div>
+        </script>
+        <table class="layui-hide" id="currentTableId" lay-filter="currentTableFilter"></table>
+        <script type="text/html" id="currentTableBar">
+            {{# if(d.F_RecordId){ }}
+                {{# if(d.F_RecordStatus == 0){ }}
+                <span class="layui-badge layui-bg-orange">待批改</span>
+                {{# } else { }}
+                <a id="NF-result" authorize class="layui-btn layui-btn-xs layui-btn-normal" lay-event="result">查看成绩</a>
+                {{# } }}
+            {{# } else if(d.F_Status == 1){ }}
+            <a id="NF-take" authorize class="layui-btn layui-btn-xs" lay-event="take">开始考试</a>
+            {{# } else { }}
+            <span class="layui-color-gray">已结束</span>
+            {{# } }}
+        </script>
+        <script type="text/html" id="typeTpl">
+            {{# if(d.F_Type == 2){ }}
+            <span class="layui-badge layui-bg-blue">模拟考试</span>
+            {{# } else { }}
+            <span class="layui-badge layui-bg-green">章节测试</span>
+            {{# } }}
+        </script>
+        <script type="text/html" id="statusTpl">
+            {{# if(d.F_Status == 2){ }}
+            <span class="layui-badge layui-bg-gray">已结束</span>
+            {{# } else { }}
+            <span class="layui-badge layui-bg-green">已发布</span>
+            {{# } }}
+        </script>
+        <script type="text/html" id="timeTpl">
+            <div>{{d.F_StartTime || '-'}}</div>
+            <div class="layui-color-gray">至 {{d.F_EndTime || '-'}}</div>
+        </script>
+        <script type="text/html" id="scoreTpl">
+            {{# if(!d.F_RecordId){ }}
+            <span class="layui-color-gray">未参加</span>
+            {{# } else if(d.F_RecordStatus == 0){ }}
+            <span class="layui-badge layui-bg-orange">待批改</span>
+            {{# } else { }}
+            <span style="font-weight:bold;color:#1e9fff;">{{d.F_GotScore == null ? '-' : d.F_GotScore}}</span>
+            {{# if(d.F_IsPassed == 1){ }}
+            <span class="layui-badge layui-bg-green">及格</span>
+            {{# } else { }}
+            <span class="layui-badge layui-bg-red">不及格</span>
+            {{# } }}
+            {{# } }}
+        </script>
+    </div>
+</div>
+<script>
+    layui.use(['jquery', 'form', 'table', 'commonTable', 'common'], function () {
+        var $ = layui.jquery,
+            form = layui.form,
+            table = layui.table,
+            commonTable = layui.commonTable,
+            common = layui.common;
+
+        function getSearchParams() {
+            return {
+                keyword: $.trim($('#txt_keyword').val()),
+                type: $('#ddl_type').val()
+            };
+        }
+
+        //操作列需要授权时按权限过滤，未配置按钮权限时保留原按钮
+        var barHtml = $('#currentTableBar').html();
+        var barAuthorized = common.authorizeButtonNew(barHtml);
+        if (barAuthorized && barAuthorized.indexOf('lay-event=') > -1) {
+            $('#currentTableBar').html(barAuthorized);
+        }
+
+        commonTable.rendertable({
+            elem: '#currentTableId',
+            id: 'currentTableId',
+            url: '/InstructionalManagement/Exam/GetMyGridJson',
+            where: getSearchParams(),
+            request: { pageName: 'page', limitName: 'limit' },
+            parseData: function (res) {
+                return { code: res.code, msg: res.msg, count: res.count, data: res.data };
+            },
+            cols: [[
+                { field: 'F_Title', title: '考试名称', minWidth: 200 },
+                { field: 'F_CourseName', title: '科目', width: 140 },
+                { field: 'F_Type', title: '类型', width: 110, templet: '#typeTpl', align: 'center' },
+                { field: 'F_StartTime', title: '考试时间', width: 200, templet: '#timeTpl' },
+                { field: 'F_Duration', title: '时长', width: 90, align: 'center', templet: function (d) { return (d.F_Duration || 0) + ' 分钟'; } },
+                { field: 'F_TotalScore', title: '总分/及格分', width: 120, align: 'center', templet: function (d) { return (d.F_TotalScore || 0) + ' / ' + (d.F_PassScore || 0); } },
+                { field: 'F_Status', title: '状态', width: 90, templet: '#statusTpl', align: 'center' },
+                { field: 'F_RecordId', title: '我的成绩', width: 150, templet: '#scoreTpl', align: 'center' },
+                { title: '操作', width: 110, toolbar: '#currentTableBar', align: 'center', fixed: 'right' }
+            ]]
+        });
+
+        function reloadTable() {
+            commonTable.reloadtable({ elem: 'currentTableId', curr: 1, where: getSearchParams() });
+        }
+
+        form.on('submit(data-search-btn)', function () {
+            reloadTable();
+            return false;
+        });
+
+        $('#btn-reset').click(function () {
+            $('#txt_keyword').val('');
+            $('#ddl_type').val('');
+            form.render('select');
+            common.reload('data-search-btn');
+        });
+
+        table.on('tool(currentTableFilter)', function (obj) {
+            if (obj.event === 'take') {
+                location.href = '/InstructionalManagement/Exam/Take?examId=' + obj.data.F_Id;
+            }
+            else if (obj.event === 'result') {
+                location.href = '/InstructionalManagement/Exam/Result?recordId=' + obj.data.F_RecordId;
+            }
+            return false;
+        });
+
+        wcLoading.close();
+    });
+</script>

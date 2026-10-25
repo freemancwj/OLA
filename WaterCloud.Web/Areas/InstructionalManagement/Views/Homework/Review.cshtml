@@ -1,0 +1,114 @@
+@{
+    ViewBag.Title = "提交与批改";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'table', 'element', 'common', 'commonTable'], function () {
+        var $ = layui.jquery,
+            form = layui.form,
+            table = layui.table,
+            element = layui.element,
+            common = layui.common,
+            commonTable = layui.commonTable;
+        var homeworkId = $.request("homeworkId");
+        var curStatus = '';
+
+        common.ajax({
+            url: '/InstructionalManagement/Homework/GetFormJson',
+            data: { keyValue: homeworkId },
+            async: false,
+            success: function (data) {
+                $('#v_Title').text(data.F_Title || '');
+                $('#v_Meta').text('满分 ' + (data.F_FullScore == null ? 100 : data.F_FullScore) + ' ｜ 截止：' + (data.F_Deadline ? String(data.F_Deadline).replace(/\//g, '-').replace('T', ' ').substring(0, 16) : '不限') + ' ｜ ' + (data.F_Status === 1 ? '已发布' : '草稿'));
+            }
+        });
+        wcLoading.close();
+
+        commonTable.rendertable({
+            elem: '#currentTableId',
+            id: 'currentTableId',
+            url: '/InstructionalManagement/Homework/GetSubmitListJson',
+            where: { homeworkId: homeworkId, status: '' },
+            page: { limit: 10 },
+            cols: [[
+                { field: 'F_RealName', title: '学生', width: 100, sort: true },
+                { field: 'F_Account', title: '学号', width: 120, sort: true },
+                { field: 'F_ClassName', title: '班级', width: 120 },
+                {
+                    field: 'F_SubmitTime', title: '提交时间', width: 150, sort: true,
+                    templet: function (d) {
+                        return d.F_SubmitTime ? String(d.F_SubmitTime).replace(/\//g, '-').replace('T', ' ').substring(0, 16) : '';
+                    }
+                },
+                {
+                    field: 'F_Status', title: '状态', width: 100, align: 'center',
+                    templet: function (d) {
+                        if (!d.F_IsSubmitted) {
+                            return '<span class="layui-badge layui-bg-gray">未提交</span>';
+                        }
+                        return d.F_Status === 1 ? '<span class="layui-badge layui-bg-green">已批改</span>' : '<span class="layui-badge layui-bg-orange">待批改</span>';
+                    }
+                },
+                {
+                    field: 'F_Score', title: '分数', width: 80, align: 'center',
+                    templet: function (d) {
+                        return d.F_Status === 1 ? '<span style="color:#FF5722;font-weight:bold;">' + d.F_Score + '</span>' : '';
+                    }
+                },
+                { title: '操作', width: 130, align: 'center', fixed: 'right', templet: '#barTpl' }
+            ]]
+        });
+
+        element.on('tab(statusTab)', function (data) {
+            curStatus = this.getAttribute('lay-id');
+            commonTable.reloadtable({
+                elem: 'currentTableId',
+                curr: 1,
+                where: { homeworkId: homeworkId, status: curStatus }
+            });
+        });
+
+        table.on('tool(currentTableFilter)', function (obj) {
+            if (obj.event === 'grade') {
+                common.modalOpen({
+                    title: '批改作业 - ' + obj.data.F_RealName,
+                    url: '/InstructionalManagement/Homework/Grade?keyValue=' + obj.data.F_Id,
+                    width: '900px',
+                    height: '92%'
+                });
+            }
+        });
+
+        // 供批改页回调刷新
+        window.reloadReview = function () {
+            commonTable.reloadtable({ elem: 'currentTableId', where: { homeworkId: homeworkId, status: curStatus } });
+        };
+    });
+</script>
+
+<div class="layuimini-container">
+    <div class="layuimini-main">
+        <div style="padding:10px 15px;background:#f7f7f7;border-radius:4px;margin-bottom:10px;">
+            <div style="font-size:16px;font-weight:bold;" id="v_Title"></div>
+            <div style="color:#888;font-size:12px;margin-top:4px;" id="v_Meta"></div>
+        </div>
+        <div class="layui-tab layui-tab-brief" lay-filter="statusTab">
+            <ul class="layui-tab-title">
+                <li class="layui-this" lay-id="">已提交</li>
+                <li lay-id="0">未提交</li>
+                <li lay-id="2">待批改</li>
+                <li lay-id="3">已批改</li>
+            </ul>
+            <div class="layui-tab-content" style="padding:0;">
+                <div class="layui-tab-item layui-show">
+                    <table class="layui-hide" id="currentTableId" lay-filter="currentTableFilter"></table>
+                </div>
+            </div>
+        </div>
+        <script type="text/html" id="barTpl">
+            {{# if(d.F_IsSubmitted){ }}
+            <a class="layui-btn layui-btn-xs layui-btn-warm" lay-event="grade" id="NF-grade" authorize><i class="layui-icon">&#xe60a;</i>批改</a>
+            {{# } }}
+        </script>
+    </div>
+</div>

@@ -1,0 +1,186 @@
+@{
+    ViewBag.Title = "考务安排信息";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'laydate', 'common', 'optimizeSelectOption'], function () {
+        var form = layui.form,
+            $ = layui.jquery,
+            common = layui.common,
+            laydate = layui.laydate;
+        var keyValue = $.request("keyValue");
+
+        laydate.render({
+            elem: '#F_ExamDate',
+            type: 'date',
+            format: 'yyyy-MM-dd',
+            trigger: 'click'
+        });
+
+        function initControl() {
+            $("#F_CourseId").bindSelect({
+                url: "/InstructionalManagement/ExamArrange/GetCourseListJson",
+                id: "F_Id",
+                text: "F_Name",
+                search: true
+            });
+            $("#F_ClassId").bindSelect({
+                url: "/InstructionalManagement/ExamArrange/GetClassListJson",
+                id: "F_Id",
+                text: "F_FullName",
+                search: true
+            });
+            $("#F_ClassroomId").bindSelect({
+                url: "/InstructionalManagement/ExamArrange/GetClassroomListJson",
+                id: "F_Id",
+                text: "ClassroomName",
+                search: true
+            });
+            $("#F_PeriodId").bindSelect({
+                url: "/InstructionalManagement/ExamArrange/GetPeriodListJson",
+                id: "F_Id",
+                text: "PeriodName",
+                search: true
+            });
+            $("#F_MainInvigilatorId").bindSelect({
+                url: "/InstructionalManagement/ExamArrange/GetTeacherListJson",
+                id: "F_Id",
+                text: "TeacherName",
+                search: true
+            });
+            $("#F_SubInvigilatorId").bindSelect({
+                url: "/InstructionalManagement/ExamArrange/GetTeacherListJson",
+                id: "F_Id",
+                text: "TeacherName",
+                search: true
+            });
+        }
+
+        $(function () {
+            initControl();
+            if (!!keyValue) {
+                common.ajax({
+                    url: '/InstructionalManagement/ExamArrange/GetFormJson',
+                    data: { keyValue: keyValue },
+                    async: false,
+                    success: function (data) {
+                        $('#F_ExamName').val(data.F_ExamName);
+                        $('#F_CourseId').val(data.F_CourseId);
+                        $('#F_ClassId').val(data.F_ClassId);
+                        $('#F_ClassroomId').val(data.F_ClassroomId);
+                        //日期截取前10位回填
+                        $('#F_ExamDate').val(data.F_ExamDate ? String(data.F_ExamDate).replace(/\//g, '-').substring(0, 10) : '');
+                        $('#F_PeriodId').val(data.F_PeriodId);
+                        $('#F_MainInvigilatorId').val(data.F_MainInvigilatorId);
+                        $('#F_SubInvigilatorId').val(data.F_SubInvigilatorId);
+                        $('#F_Status').val(data.F_Status == null ? 0 : data.F_Status);
+                        $('#F_Remark').val(data.F_Remark);
+                        form.render();
+                    }
+                });
+            }
+            form.render();
+        });
+        wcLoading.close();
+
+        //监听提交
+        form.on('submit(saveBtn)', function (data) {
+            common.submitForm({
+                url: '/InstructionalManagement/ExamArrange/SubmitForm?keyValue=' + (keyValue || ''),
+                param: data.field,
+                success: function () {
+                    common.parentreload('data-search-btn');
+                }
+            });
+            return false;
+        });
+    });
+</script>
+
+<body>
+    <div class="layuimini-container">
+        <div class="layuimini-main">
+            <div class="layui-form layuimini-form" lay-filter="adminform">
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">考试名称</label>
+                    <div class="layui-input-block">
+                        <input type="text" id="F_ExamName" name="F_ExamName" autocomplete="off" lay-verify="required" placeholder="如 2025-2026学年第一学期期末" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">课程</label>
+                    <div class="layui-input-block">
+                        <select id="F_CourseId" name="F_CourseId" lay-verify="required" lay-search>
+                            <option value="">请选择课程</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">班级</label>
+                    <div class="layui-input-block">
+                        <select id="F_ClassId" name="F_ClassId" lay-verify="required" lay-search>
+                            <option value="">请选择班级</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">考场教室</label>
+                    <div class="layui-input-block">
+                        <select id="F_ClassroomId" name="F_ClassroomId" lay-verify="required" lay-search>
+                            <option value="">请选择教室</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">考试日期</label>
+                    <div class="layui-input-block">
+                        <input type="text" id="F_ExamDate" name="F_ExamDate" autocomplete="off" lay-verify="required" placeholder="请选择考试日期" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">时间段</label>
+                    <div class="layui-input-block">
+                        <select id="F_PeriodId" name="F_PeriodId" lay-verify="required" lay-search>
+                            <option value="">请选择时间段</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">主监考</label>
+                    <div class="layui-input-block">
+                        <select id="F_MainInvigilatorId" name="F_MainInvigilatorId" lay-verify="required" lay-search>
+                            <option value="">请选择主监考</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">副监考</label>
+                    <div class="layui-input-block">
+                        <select id="F_SubInvigilatorId" name="F_SubInvigilatorId" lay-search>
+                            <option value="">请选择副监考</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">状态</label>
+                    <div class="layui-input-block">
+                        <select id="F_Status" name="F_Status">
+                            <option value="0" selected>未开考</option>
+                            <option value="1">已开考</option>
+                            <option value="2">已结束</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-form-text">
+                    <label class="layui-form-label">备注</label>
+                    <div class="layui-input-block">
+                        <textarea id="F_Remark" name="F_Remark" placeholder="请输入备注" class="layui-textarea"></textarea>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-hide">
+                    <button class="layui-btn site-demo-active" lay-submit id="submit" lay-filter="saveBtn">确认保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>

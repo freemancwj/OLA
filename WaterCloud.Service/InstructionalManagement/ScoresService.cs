@@ -26,6 +26,11 @@ namespace WaterCloud.Service.InstructionalManagement
 
         private ScoresRoleInfo _roleInfo;
 
+        /// <summary>
+        /// 任课班级服务（按教师带班过滤数据范围）
+        /// </summary>
+        public TeacherClassService teacherClassApp { get; set; }
+
         public ScoresService(ISqlSugarClient context) : base(context)
         {
         }
@@ -86,7 +91,8 @@ namespace WaterCloud.Service.InstructionalManagement
             {
                 pagination.order = "desc";
             }
-            var sql = BuildQuerySql(keyword, classId, courseId, semester, scoreType, auditStatus, minScore, maxScore);
+            var visibleClassIds = await teacherClassApp.GetVisibleClassIds();
+            var sql = BuildQuerySql(keyword, classId, courseId, semester, scoreType, auditStatus, minScore, maxScore, visibleClassIds);
             var query = repository.Db.SqlQueryable<ScoresExtend>(sql);
             return await query.ToPageListAsync(pagination);
         }
@@ -96,11 +102,12 @@ namespace WaterCloud.Service.InstructionalManagement
         /// </summary>
         public async Task<List<ScoresExtend>> GetLookListAll(string keyword, string classId = "", string courseId = "", string semester = "", string scoreType = "", string auditStatus = "", string minScore = "", string maxScore = "")
         {
-            var sql = BuildQuerySql(keyword, classId, courseId, semester, scoreType, auditStatus, minScore, maxScore);
+            var visibleClassIds = await teacherClassApp.GetVisibleClassIds();
+            var sql = BuildQuerySql(keyword, classId, courseId, semester, scoreType, auditStatus, minScore, maxScore, visibleClassIds);
             return await repository.Db.SqlQueryable<ScoresExtend>(sql).ToListAsync();
         }
 
-        private string BuildQuerySql(string keyword, string classId, string courseId, string semester, string scoreType, string auditStatus, string minScore, string maxScore)
+        private string BuildQuerySql(string keyword, string classId, string courseId, string semester, string scoreType, string auditStatus, string minScore, string maxScore, List<string> visibleClassIds)
         {
             var sb = new StringBuilder();
             sb.Append(@"
@@ -131,6 +138,18 @@ WHERE a.F_DeleteMark = 0");
             else if (!string.IsNullOrEmpty(auditStatus) && int.TryParse(auditStatus, out var audit))
             {
                 sb.Append(" AND ISNULL(a.F_AuditStatus,0) = " + audit);
+            }
+            //按教师任课班级限制数据范围（null 不限制，空列表表示无任何可见班级）
+            if (visibleClassIds != null)
+            {
+                if (visibleClassIds.Count == 0)
+                {
+                    sb.Append(" AND 1 = 0");
+                }
+                else
+                {
+                    sb.Append(" AND a.F_ClassId IN ('" + string.Join("','", visibleClassIds.Select(Q)) + "')");
+                }
             }
             if (!string.IsNullOrWhiteSpace(keyword))
             {
@@ -180,6 +199,15 @@ WHERE a.F_DeleteMark = 0");
             {
                 throw new Exception("只能查看自己的成绩！");
             }
+            //非管理员只能查看任课班级的成绩
+            if (data != null && !RoleInfo.IsStudent)
+            {
+                var visibleClassIds = await teacherClassApp.GetVisibleClassIds();
+                if (visibleClassIds != null && (string.IsNullOrEmpty(data.F_ClassId) || !visibleClassIds.Contains(data.F_ClassId)))
+                {
+                    throw new Exception("只能查看任课班级的成绩！");
+                }
+            }
             return data;
         }
 
@@ -190,14 +218,18 @@ WHERE a.F_DeleteMark = 0");
         }
 
         /// <summary>
-        /// 班级列表
+        /// 班级列表（非管理员仅返回任课/本班班级）
         /// </summary>
         public async Task<List<OrganizeEntity>> GetClassList()
         {
-            return await repository.Db.Queryable<OrganizeEntity>()
-                .Where(a => a.F_CategoryId == "banji" && a.F_DeleteMark == false && a.F_EnabledMark == true)
-                .OrderBy(a => a.F_EnCode)
-                .ToListAsync();
+            var visibleClassIds = await teacherClassApp.GetVisibleClassIds();
+            var query = repository.Db.Queryable<OrganizeEntity>()
+                .Where(a => a.F_CategoryId == "banji" && a.F_DeleteMark == false && a.F_EnabledMark == true);
+            if (visibleClassIds != null)
+            {
+                query = query.Where(a => visibleClassIds.Contains(a.F_Id));
+            }
+            return await query.OrderBy(a => a.F_EnCode).ToListAsync();
         }
 
         /// <summary>
@@ -236,6 +268,7 @@ WHERE a.F_DeleteMark = 0");
         public async Task<List<ScoresBatchStudent>> GetStudentList(string classId)
         {
             var studentRoleId = GetStudentRoleId();
+            var visibleClassIds = await teacherClassApp.GetVisibleClassIds();
             var query = repository.Db.Queryable<UserEntity>()
                 .Where(a => a.F_DeleteMark == false && a.F_EnabledMark == true);
             if (!string.IsNullOrEmpty(studentRoleId))
@@ -244,7 +277,21 @@ WHERE a.F_DeleteMark = 0");
             }
             if (!string.IsNullOrEmpty(classId))
             {
+                //非管理员指定班级时，该班必须在可见范围内，防止遍历班级越权
+                if (visibleClassIds != null && !visibleClassIds.Contains(classId))
+                {
+                    return new List<ScoresBatchStudent>();
+                }
                 query = query.Where(a => a.F_OrganizeId != null && (a.F_OrganizeId == classId || a.F_OrganizeId.Contains(classId)));
+            }
+            else if (visibleClassIds != null)
+            {
+                //未指定班级时，非管理员只能看到任课/本班学生
+                if (visibleClassIds.Count == 0)
+                {
+                    return new List<ScoresBatchStudent>();
+                }
+                query = query.Where(a => a.F_OrganizeId != null && visibleClassIds.Contains(a.F_OrganizeId));
             }
             var users = await query.OrderBy(a => a.F_Account).ToListAsync();
             var classList = await GetClassList();
@@ -419,6 +466,12 @@ WHERE a.F_DeleteMark = 0");
                 throw new Exception("学生不存在！");
             }
             entity.F_ClassId = await GetStudentClassId(student);
+            //非管理员只能给任课班级学生录入成绩
+            var visibleClassIds = await teacherClassApp.GetVisibleClassIds();
+            if (visibleClassIds != null && (string.IsNullOrEmpty(entity.F_ClassId) || !visibleClassIds.Contains(entity.F_ClassId)))
+            {
+                throw new Exception("只能给任课班级的学生录入成绩！");
+            }
             entity.F_ScoreLevel = CalculateScoreLevel(entity.F_Score.Value);
             entity.F_ExamTime = entity.F_ExamTime ?? DateTime.Now;
             entity.F_Semester = entity.F_Semester.Trim();

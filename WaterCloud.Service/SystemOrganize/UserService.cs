@@ -1,4 +1,4 @@
-﻿/*******************************************************************************
+/*******************************************************************************
  * Copyright © 2020 WaterCloud.Framework 版权所有
  * Author: WaterCloud
  * Description: WaterCloud快速开发平台
@@ -341,7 +341,11 @@ namespace WaterCloud.Service.SystemOrganize
 					if (userLogOnEntity == null)
 					{
 						userLogOnEntity = new OperatorUserInfo();
-						UserLogOnEntity entity = await repository.Db.Queryable<UserLogOnEntity>().InSingleAsync(userEntity.F_Id);
+						UserLogOnEntity entity = await repository.Db.Queryable<UserLogOnEntity>().Where(a => a.F_UserId == userEntity.F_Id).FirstAsync();
+						if (entity == null)
+						{
+							throw new Exception("账户登录信息缺失，请在用户管理中重置该账户密码");
+						}
 						userLogOnEntity.F_UserPassword = entity.F_UserPassword;
 						userLogOnEntity.F_UserSecretkey = entity.F_UserSecretkey;
 						userLogOnEntity.F_AllowEndTime = entity.F_AllowEndTime;

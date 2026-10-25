@@ -1,0 +1,157 @@
+@{
+    ViewBag.Title = "教学任务";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'table', 'common', 'commonTable', 'optimizeSelectOption'], function () {
+        var $ = layui.jquery,
+            form = layui.form,
+            table = layui.table,
+            common = layui.common,
+            commonTable = layui.commonTable;
+
+        wcLoading.close();
+
+        $("#F_ClassId").bindSelect({
+            url: "/InstructionalManagement/TeachingTask/GetClassListJson",
+            id: "F_Id",
+            text: "F_FullName",
+            search: true
+        });
+
+        commonTable.rendertable({
+            elem: '#currentTableId',
+            id: 'currentTableId',
+            url: '/InstructionalManagement/TeachingTask/GetGridJson',
+            cols: [[
+                { type: 'checkbox', fixed: 'left' },
+                { field: 'F_Semester', title: '学期', width: 130, sort: true },
+                { field: 'F_TeacherName', title: '教师', width: 110, sort: true },
+                { field: 'F_CourseName', title: '课程', width: 160, sort: true },
+                { field: 'F_ClassName', title: '班级', width: 160, sort: true },
+                { field: 'F_WeekPeriod', title: '周学时', width: 90, align: 'center', sort: true },
+                { field: 'F_Remark', title: '备注', minWidth: 150 },
+                { title: '操作', width: 130, toolbar: '#currentTableBar', align: 'center', fixed: 'right' }
+            ]]
+        });
+
+        //监听搜索
+        form.on('submit(data-search-btn)', function (data) {
+            commonTable.reloadtable({
+                elem: 'currentTableId',
+                curr: 1,
+                where: {
+                    keyword: $('#txt_keyword').val(),
+                    semester: $('#F_Semester').val(),
+                    classId: $('#F_ClassId').val()
+                }
+            });
+            return false;
+        });
+
+        //行点击事件监听，控制按钮显示
+        var oneList = ["NF-edit"];//选择1条显示
+        var moreList = ["NF-delete"];//选中多条显示
+        commonTable.tableRowClick("checkbox", "currentTableFilter", "currentTableId", oneList, moreList);
+
+        //工具栏事件
+        table.on('toolbar(currentTableFilter)', function (obj) {
+            var checkStatus = table.checkStatus('currentTableId');
+            if (obj.event === 'add') {
+                common.modalOpen({
+                    title: '新增教学任务',
+                    url: '/InstructionalManagement/TeachingTask/Form',
+                    width: '500px',
+                    height: '480px'
+                });
+            }
+            else if (obj.event === 'delete') {
+                if (checkStatus.data.length == 0) {
+                    common.modalMsg('请选择需要删除的数据', 'warning');
+                    return false;
+                }
+                var ids = [];
+                for (var i = 0; i < checkStatus.data.length; i++) {
+                    ids.push(checkStatus.data[i].F_Id);
+                }
+                common.deleteForm({
+                    url: '/InstructionalManagement/TeachingTask/DeleteForm',
+                    param: { keyValue: ids.join(',') },
+                    success: function () {
+                        commonTable.reloadtable({ elem: 'currentTableId' });
+                    }
+                });
+            }
+        });
+
+        //行操作事件
+        table.on('tool(currentTableFilter)', function (obj) {
+            var data = obj.data;
+            if (obj.event === 'edit') {
+                common.modalOpen({
+                    title: '修改教学任务',
+                    url: '/InstructionalManagement/TeachingTask/Form?keyValue=' + data.F_Id,
+                    width: '500px',
+                    height: '480px'
+                });
+            }
+            else if (obj.event === 'delete') {
+                common.deleteForm({
+                    url: '/InstructionalManagement/TeachingTask/DeleteForm',
+                    param: { keyValue: data.F_Id },
+                    success: function () {
+                        commonTable.reloadtable({ elem: 'currentTableId' });
+                    }
+                });
+            }
+        });
+    });
+</script>
+
+<div class="layuimini-container">
+    <div class="layuimini-main">
+        <fieldset class="table-search-fieldset">
+            <legend>搜索信息</legend>
+            <div style="margin: 10px 10px 10px 10px">
+                <form class="layui-form layui-form-pane">
+                    <div class="layui-form-item">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">关键字:</label>
+                            <div class="layui-input-inline">
+                                <input type="text" id="txt_keyword" name="txt_keyword" autocomplete="off" class="layui-input" placeholder="教师/课程/班级">
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">学期:</label>
+                            <div class="layui-input-inline">
+                                <input type="text" id="F_Semester" name="F_Semester" autocomplete="off" class="layui-input" placeholder="如 2025-2026-1">
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">班级:</label>
+                            <div class="layui-input-inline">
+                                <select id="F_ClassId" name="F_ClassId" lay-search>
+                                    <option value="">全部班级</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <button type="submit" class="layui-btn layui-btn-primary" lay-submit lay-filter="data-search-btn"><i class="layui-icon">&#xe615;</i> 搜 索</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </fieldset>
+        <script type="text/html" id="toolbarDemo">
+            <div class="layui-btn-container">
+                <button class="layui-btn layui-btn-sm" lay-event="add" id="NF-add" name="NF-add" authorize><i class="layui-icon">&#xe654;</i>新增</button>
+                <button class="layui-btn layui-btn-sm layui-btn-danger" lay-event="delete" id="NF-delete" name="NF-delete" authorize><i class="layui-icon">&#xe640;</i>删除</button>
+            </div>
+        </script>
+        <script type="text/html" id="currentTableBar">
+            <a class="layui-btn layui-btn-xs layui-btn-warm" lay-event="edit" id="NF-edit" authorize><i class="layui-icon">&#xe642;</i>修改</a>
+            <a class="layui-btn layui-btn-xs layui-btn-danger" lay-event="delete" id="NF-delete" authorize><i class="layui-icon">&#xe640;</i>删除</a>
+        </script>
+        <table class="layui-hide" id="currentTableId" lay-filter="currentTableFilter"></table>
+    </div>
+</div>

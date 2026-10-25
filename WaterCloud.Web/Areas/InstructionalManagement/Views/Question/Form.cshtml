@@ -1,0 +1,259 @@
+@{
+    ViewBag.Title = "题目";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'common', 'optimizeSelectOption'], function () {
+        var form = layui.form,
+            $ = layui.jquery,
+            common = layui.common;
+        var keyValue = $.request("keyValue");
+
+        common.authorizeFields('adminform');
+
+        function fillSelect(selector, list, idField, nameField, placeholder) {
+            var html = '<option value="">' + placeholder + '</option>';
+            $.each(list, function (i, item) {
+                html += '<option value="' + item[idField] + '">' + item[nameField] + '</option>';
+            });
+            $(selector).html(html);
+        }
+
+        //根据题型动态显示/隐藏选项与答案控件
+        function toggleByType(type) {
+            type = String(type || '1');
+            //选项区域
+            $('#item_OptionA,#item_OptionB,#item_OptionC,#item_OptionD').removeClass('layui-hide');
+            $('#label_OptionA').text('选项A');
+            $('#label_OptionB').text('选项B');
+            if (type === '3') {
+                //判断题只保留A(正确)、B(错误)
+                $('#item_OptionC,#item_OptionD').addClass('layui-hide');
+                $('#label_OptionA').text('正确');
+                $('#label_OptionB').text('错误');
+            } else if (type === '4') {
+                //简答题不需要选项
+                $('#item_OptionA,#item_OptionB,#item_OptionC,#item_OptionD').addClass('layui-hide');
+            }
+            //答案区域
+            $('#item_AnswerSingle,#item_AnswerMulti,#item_AnswerJudge,#item_AnswerText').addClass('layui-hide');
+            if (type === '1') {
+                $('#item_AnswerSingle').removeClass('layui-hide');
+            } else if (type === '2') {
+                $('#item_AnswerMulti').removeClass('layui-hide');
+            } else if (type === '3') {
+                $('#item_AnswerJudge').removeClass('layui-hide');
+            } else {
+                $('#item_AnswerText').removeClass('layui-hide');
+            }
+            form.render();
+        }
+
+        //读取当前题型对应的答案
+        function collectAnswer(type) {
+            if (type === '1') {
+                return $('#F_AnswerSingle').val() || '';
+            }
+            if (type === '2') {
+                var arr = [];
+                $('#item_AnswerMulti input[type=checkbox]:checked').each(function () {
+                    arr.push($(this).val());
+                });
+                arr.sort();
+                return arr.join('');
+            }
+            if (type === '3') {
+                return $('#F_AnswerJudge').val() || '';
+            }
+            return $('#F_AnswerText').val() || '';
+        }
+
+        $(function () {
+            initControl();
+            if (!!keyValue) {
+                common.ajax({
+                    url: '/InstructionalManagement/Question/GetFormJson',
+                    data: { keyValue: keyValue },
+                    async: false,
+                    success: function (data) {
+                        $('#F_CourseId').val(data.F_CourseId || '');
+                        $('#F_Type').val(data.F_Type || 1);
+                        $('#F_Content').val(data.F_Content || '');
+                        $('#F_OptionA').val(data.F_OptionA || '');
+                        $('#F_OptionB').val(data.F_OptionB || '');
+                        $('#F_OptionC').val(data.F_OptionC || '');
+                        $('#F_OptionD').val(data.F_OptionD || '');
+                        $('#F_Analysis').val(data.F_Analysis || '');
+                        $('#F_Difficulty').val(data.F_Difficulty || 2);
+                        $('#F_Score').val(data.F_Score === null || data.F_Score === undefined ? 1 : data.F_Score);
+                        var type = String(data.F_Type || 1);
+                        toggleByType(type);
+                        if (type === '1') {
+                            $('#F_AnswerSingle').val(data.F_Answer || '');
+                        } else if (type === '2') {
+                            var letters = (data.F_Answer || '').toUpperCase();
+                            $('#item_AnswerMulti input[type=checkbox]').each(function () {
+                                $(this).prop('checked', letters.indexOf($(this).val()) >= 0);
+                            });
+                        } else if (type === '3') {
+                            $('#F_AnswerJudge').val(data.F_Answer || '');
+                        } else {
+                            $('#F_AnswerText').val(data.F_Answer || '');
+                        }
+                        form.render();
+                    }
+                });
+            }
+            else {
+                toggleByType($('#F_Type').val());
+            }
+            form.render();
+        });
+        wcLoading.close();
+
+        function initControl() {
+            common.ajax({
+                url: '/InstructionalManagement/Question/GetCourseListJson', async: false,
+                success: function (data) { fillSelect('#F_CourseId', data, 'F_Id', 'F_ItemName', '请选择科目'); }
+            });
+            form.on('select(F_Type)', function (data) {
+                toggleByType(data.value);
+            });
+        }
+
+        //监听提交
+        form.on('submit(saveBtn)', function (data) {
+            var postData = data.field;
+            var type = String($('#F_Type').val() || '1');
+            postData['F_Type'] = type;
+            postData['F_Answer'] = collectAnswer(type);
+            common.submitForm({
+                url: '/InstructionalManagement/Question/SubmitForm?keyValue=' + (keyValue || ''),
+                param: postData,
+                success: function () {
+                    common.parentreload('data-search-btn');
+                }
+            });
+            return false;
+        });
+    });
+</script>
+
+<body>
+    <div class="layuimini-container">
+        <div class="layuimini-main">
+            <div class="layui-form layuimini-form" lay-filter="adminform">
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">所属科目</label>
+                    <div class="layui-input-block">
+                        <select id="F_CourseId" name="F_CourseId" lay-verify="required" lay-search>
+                            <option value="">请选择科目</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">题型</label>
+                    <div class="layui-input-block">
+                        <select id="F_Type" name="F_Type" lay-filter="F_Type" lay-verify="required">
+                            <option value="1">单选题</option>
+                            <option value="2">多选题</option>
+                            <option value="3">判断题</option>
+                            <option value="4">简答题</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-form-text">
+                    <label class="layui-form-label required">题目内容</label>
+                    <div class="layui-input-block">
+                        <textarea id="F_Content" name="F_Content" lay-verify="required" placeholder="请输入题目内容" class="layui-textarea"></textarea>
+                    </div>
+                </div>
+                <div class="layui-form-item" id="item_OptionA">
+                    <label class="layui-form-label" id="label_OptionA">选项A</label>
+                    <div class="layui-input-block">
+                        <input type="text" id="F_OptionA" name="F_OptionA" autocomplete="off" maxlength="500" placeholder="请输入选项A内容" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item" id="item_OptionB">
+                    <label class="layui-form-label" id="label_OptionB">选项B</label>
+                    <div class="layui-input-block">
+                        <input type="text" id="F_OptionB" name="F_OptionB" autocomplete="off" maxlength="500" placeholder="请输入选项B内容" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item" id="item_OptionC">
+                    <label class="layui-form-label">选项C</label>
+                    <div class="layui-input-block">
+                        <input type="text" id="F_OptionC" name="F_OptionC" autocomplete="off" maxlength="500" placeholder="请输入选项C内容" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item" id="item_OptionD">
+                    <label class="layui-form-label">选项D</label>
+                    <div class="layui-input-block">
+                        <input type="text" id="F_OptionD" name="F_OptionD" autocomplete="off" maxlength="500" placeholder="请输入选项D内容" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item" id="item_AnswerSingle">
+                    <label class="layui-form-label">答案</label>
+                    <div class="layui-input-block">
+                        <select id="F_AnswerSingle" name="F_Answer">
+                            <option value="">请选择答案</option>
+                            <option value="A">A</option>
+                            <option value="B">B</option>
+                            <option value="C">C</option>
+                            <option value="D">D</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item" id="item_AnswerMulti">
+                    <label class="layui-form-label">答案</label>
+                    <div class="layui-input-block">
+                        <input type="checkbox" name="F_Answer" value="A" title="A" lay-skin="primary">
+                        <input type="checkbox" name="F_Answer" value="B" title="B" lay-skin="primary">
+                        <input type="checkbox" name="F_Answer" value="C" title="C" lay-skin="primary">
+                        <input type="checkbox" name="F_Answer" value="D" title="D" lay-skin="primary">
+                    </div>
+                </div>
+                <div class="layui-form-item" id="item_AnswerJudge">
+                    <label class="layui-form-label">答案</label>
+                    <div class="layui-input-block">
+                        <select id="F_AnswerJudge" name="F_Answer">
+                            <option value="A">正确</option>
+                            <option value="B">错误</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-form-text" id="item_AnswerText">
+                    <label class="layui-form-label">参考答案</label>
+                    <div class="layui-input-block">
+                        <textarea id="F_AnswerText" name="F_Answer" placeholder="请输入参考答案" class="layui-textarea"></textarea>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-form-text">
+                    <label class="layui-form-label">解析</label>
+                    <div class="layui-input-block">
+                        <textarea id="F_Analysis" name="F_Analysis" placeholder="请输入题目解析" class="layui-textarea"></textarea>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">难度</label>
+                    <div class="layui-input-block">
+                        <select id="F_Difficulty" name="F_Difficulty">
+                            <option value="1">易</option>
+                            <option value="2" selected>中</option>
+                            <option value="3">难</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">默认分值</label>
+                    <div class="layui-input-block">
+                        <input type="number" id="F_Score" name="F_Score" autocomplete="off" lay-verify="required|number" min="0" step="0.5" value="1" placeholder="请输入默认分值" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item layui-hide">
+                    <button class="layui-btn site-demo-active" lay-submit id="submit" lay-filter="saveBtn">确认保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>

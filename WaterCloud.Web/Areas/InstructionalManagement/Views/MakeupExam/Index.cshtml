@@ -1,0 +1,197 @@
+@{
+    ViewBag.Title = "补考管理";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'table', 'common', 'commonTable', 'optimizeSelectOption'], function () {
+        var $ = layui.jquery,
+            form = layui.form,
+            table = layui.table,
+            common = layui.common,
+            commonTable = layui.commonTable;
+
+        wcLoading.close();
+
+        $("#F_ClassId").bindSelect({
+            url: "/InstructionalManagement/MakeupExam/GetClassListJson",
+            id: "F_Id",
+            text: "F_FullName",
+            search: true
+        });
+        $("#F_CourseId").bindSelect({
+            url: "/InstructionalManagement/MakeupExam/GetCourseListJson",
+            id: "F_Id",
+            text: "F_Name",
+            search: true
+        });
+
+        commonTable.rendertable({
+            elem: '#currentTableId',
+            id: 'currentTableId',
+            url: '/InstructionalManagement/MakeupExam/GetGridJson',
+            cols: [[
+                { type: 'checkbox', fixed: 'left' },
+                { field: 'F_StudentName', title: '学生', width: 100, sort: true },
+                { field: 'F_Account', title: '学号', width: 110, sort: true },
+                { field: 'F_ClassName', title: '班级', width: 140 },
+                { field: 'F_CourseName', title: '课程', width: 130 },
+                { field: 'F_OldScore', title: '原成绩', width: 80 },
+                {
+                    field: 'F_ExamDate', title: '补考日期', width: 110, sort: true,
+                    templet: function (d) {
+                        return d.F_ExamDate ? String(d.F_ExamDate).replace(/\//g, '-').substring(0, 10) : '';
+                    }
+                },
+                { field: 'F_PeriodName', title: '时间段', width: 130 },
+                { field: 'F_ClassroomName', title: '考场', width: 140 },
+                { field: 'F_MainInvigilatorName', title: '主监考', width: 90 },
+                { field: 'F_SubInvigilatorName', title: '副监考', width: 90 },
+                { field: 'F_NewScore', title: '补考成绩', width: 90 },
+                { field: 'F_Status', title: '状态', width: 90, templet: '#statusTpl' },
+                { title: '操作', width: 160, toolbar: '#currentTableBar', align: 'center', fixed: 'right' }
+            ]]
+        });
+
+        //监听搜索
+        form.on('submit(data-search-btn)', function (data) {
+            commonTable.reloadtable({
+                elem: 'currentTableId',
+                curr: 1,
+                where: {
+                    keyword: $('#txt_keyword').val(),
+                    classId: $('#F_ClassId').val(),
+                    courseId: $('#F_CourseId').val(),
+                    status: $('#F_Status').val()
+                }
+            });
+            return false;
+        });
+
+        //行点击事件监听，控制按钮显示
+        var oneList = ["NF-edit"];//选择1条显示
+        var moreList = ["NF-delete"];//选中多条显示
+        commonTable.tableRowClick("checkbox", "currentTableFilter", "currentTableId", oneList, moreList);
+
+        //工具栏事件
+        table.on('toolbar(currentTableFilter)', function (obj) {
+            var checkStatus = table.checkStatus('currentTableId');
+            if (obj.event === 'generate') {
+                common.modalOpen({
+                    title: '生成补考名单',
+                    url: '/InstructionalManagement/MakeupExam/Generate',
+                    width: '450px',
+                    height: '360px'
+                });
+            }
+            else if (obj.event === 'delete') {
+                if (checkStatus.data.length == 0) {
+                    common.modalMsg('请选择需要删除的数据', 'warning');
+                    return false;
+                }
+                var ids = [];
+                for (var i = 0; i < checkStatus.data.length; i++) {
+                    ids.push(checkStatus.data[i].F_Id);
+                }
+                common.deleteForm({
+                    url: '/InstructionalManagement/MakeupExam/DeleteForm',
+                    param: { keyValue: ids.join(',') },
+                    success: function () {
+                        commonTable.reloadtable({ elem: 'currentTableId' });
+                    }
+                });
+            }
+        });
+
+        //行操作事件
+        table.on('tool(currentTableFilter)', function (obj) {
+            var data = obj.data;
+            if (obj.event === 'edit') {
+                common.modalOpen({
+                    title: '补考安排/录分',
+                    url: '/InstructionalManagement/MakeupExam/Form?keyValue=' + data.F_Id,
+                    width: '550px',
+                    height: '620px'
+                });
+            }
+            else if (obj.event === 'delete') {
+                common.deleteForm({
+                    url: '/InstructionalManagement/MakeupExam/DeleteForm',
+                    param: { keyValue: data.F_Id },
+                    success: function () {
+                        commonTable.reloadtable({ elem: 'currentTableId' });
+                    }
+                });
+            }
+        });
+    });
+</script>
+
+<div class="layuimini-container">
+    <div class="layuimini-main">
+        <fieldset class="table-search-fieldset">
+            <legend>搜索信息</legend>
+            <div style="margin: 10px 10px 10px 10px">
+                <form class="layui-form layui-form-pane">
+                    <div class="layui-form-item">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">关键字:</label>
+                            <div class="layui-input-inline">
+                                <input type="text" id="txt_keyword" name="txt_keyword" autocomplete="off" class="layui-input" placeholder="学生/学号">
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">班级:</label>
+                            <div class="layui-input-inline">
+                                <select id="F_ClassId" name="F_ClassId" lay-search>
+                                    <option value="">请选择班级</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">课程:</label>
+                            <div class="layui-input-inline">
+                                <select id="F_CourseId" name="F_CourseId" lay-search>
+                                    <option value="">请选择课程</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">状态:</label>
+                            <div class="layui-input-inline">
+                                <select id="F_Status" name="F_Status">
+                                    <option value="">全部</option>
+                                    <option value="0">待安排</option>
+                                    <option value="1">已安排</option>
+                                    <option value="2">已录分</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <button type="submit" class="layui-btn layui-btn-primary" lay-submit lay-filter="data-search-btn"><i class="layui-icon">&#xe615;</i> 搜 索</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </fieldset>
+        <script type="text/html" id="toolbarDemo">
+            <div class="layui-btn-container">
+                <button class="layui-btn layui-btn-sm layui-btn-normal" lay-event="generate" id="NF-generate" name="NF-generate" authorize><i class="layui-icon">&#xe65e;</i>生成补考名单</button>
+                <button class="layui-btn layui-btn-sm layui-btn-danger" lay-event="delete" id="NF-delete" name="NF-delete" authorize><i class="layui-icon">&#xe640;</i>删除</button>
+            </div>
+        </script>
+        <script type="text/html" id="currentTableBar">
+            <a class="layui-btn layui-btn-xs layui-btn-warm" lay-event="edit" id="NF-edit" authorize><i class="layui-icon">&#xe642;</i>安排/录分</a>
+            <a class="layui-btn layui-btn-xs layui-btn-danger" lay-event="delete" id="NF-delete" authorize><i class="layui-icon">&#xe640;</i>删除</a>
+        </script>
+        <script type="text/html" id="statusTpl">
+            {{# if(d.F_Status === 1){ }}
+            <span class="layui-badge layui-bg-blue">已安排</span>
+            {{# } else if(d.F_Status === 2){ }}
+            <span class="layui-badge layui-bg-green">已录分</span>
+            {{# } else { }}
+            <span class="layui-badge layui-bg-orange">待安排</span>
+            {{# } }}
+        </script>
+        <table class="layui-hide" id="currentTableId" lay-filter="currentTableFilter"></table>
+    </div>
+</div>

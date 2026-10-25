@@ -1,0 +1,84 @@
+@{
+    ViewBag.Title = "任课信息";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'common', 'optimizeSelectOption'], function () {
+        var form = layui.form,
+            $ = layui.jquery,
+            common = layui.common;
+        var keyValue = $.request("keyValue");
+
+        function initControl() {
+            $("#F_TeacherId").bindSelect({
+                url: "/InstructionalManagement/TeacherClass/GetTeacherListJson",
+                id: "F_Id",
+                text: "TeacherName",
+                search: true
+            });
+            $("#F_ClassId").bindSelect({
+                url: "/InstructionalManagement/TeacherClass/GetClassListJson",
+                id: "F_Id",
+                text: "F_FullName",
+                search: true
+            });
+        }
+
+        $(function () {
+            initControl();
+            if (!!keyValue) {
+                common.ajax({
+                    url: '/InstructionalManagement/TeacherClass/GetFormJson',
+                    data: { keyValue: keyValue },
+                    async: false,
+                    success: function (data) {
+                        $('#F_TeacherId').val(data.F_TeacherId);
+                        $('#F_ClassId').val(data.F_ClassId);
+                    }
+                });
+            }
+            form.render();
+        });
+        wcLoading.close();
+
+        //监听提交
+        form.on('submit(saveBtn)', function (data) {
+            common.submitForm({
+                url: '/InstructionalManagement/TeacherClass/SubmitForm?keyValue=' + (keyValue || ''),
+                param: data.field,
+                success: function () {
+                    common.parentreload('data-search-btn');
+                }
+            });
+            return false;
+        });
+    });
+</script>
+
+<body>
+    <div class="layuimini-container">
+        <div class="layuimini-main">
+            <div class="layui-form layuimini-form" lay-filter="adminform">
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">教师</label>
+                    <div class="layui-input-block">
+                        <select id="F_TeacherId" name="F_TeacherId" lay-verify="required" lay-search>
+                            <option value="">请选择教师</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">任课班级</label>
+                    <div class="layui-input-block">
+                        <select id="F_ClassId" name="F_ClassId" lay-verify="required" lay-search>
+                            <option value="">请选择班级</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-hide">
+                    <button class="layui-btn site-demo-active" lay-submit id="submit" lay-filter="saveBtn">确认保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>

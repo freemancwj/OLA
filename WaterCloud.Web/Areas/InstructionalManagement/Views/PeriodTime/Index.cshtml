@@ -1,0 +1,105 @@
+@{
+    ViewBag.Title = "节次时间";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'table', 'common', 'commonTable'], function () {
+        var $ = layui.jquery,
+            form = layui.form,
+            table = layui.table,
+            common = layui.common,
+            commonTable = layui.commonTable;
+
+        wcLoading.close();
+
+        commonTable.rendertable({
+            elem: '#currentTableId',
+            id: 'currentTableId',
+            url: '/InstructionalManagement/PeriodTime/GetGridJson',
+            page: false,
+            limit: 9999,
+            search: false,
+            cols: [[
+                { type: 'checkbox', fixed: 'left' },
+                { field: 'F_Section', title: '第几节', width: 110, align: 'center', sort: true },
+                { field: 'F_StartTime', title: '开始时间', width: 140, align: 'center' },
+                { field: 'F_EndTime', title: '结束时间', width: 140, align: 'center' },
+                { field: 'F_SortCode', title: '排序', width: 90, align: 'center' },
+                { title: '操作', width: 130, toolbar: '#currentTableBar', align: 'center', fixed: 'right' }
+            ]]
+        });
+
+        //行点击事件监听，控制按钮显示
+        var oneList = ["NF-edit"];//选择1条显示
+        var moreList = ["NF-delete"];//选中多条显示
+        commonTable.tableRowClick("checkbox", "currentTableFilter", "currentTableId", oneList, moreList);
+
+        //工具栏事件
+        table.on('toolbar(currentTableFilter)', function (obj) {
+            var checkStatus = table.checkStatus('currentTableId');
+            if (obj.event === 'add') {
+                common.modalOpen({
+                    title: '新增节次',
+                    url: '/InstructionalManagement/PeriodTime/Form',
+                    width: '450px',
+                    height: '380px'
+                });
+            }
+            else if (obj.event === 'delete') {
+                if (checkStatus.data.length == 0) {
+                    common.modalMsg('请选择需要删除的数据', 'warning');
+                    return false;
+                }
+                var ids = [];
+                for (var i = 0; i < checkStatus.data.length; i++) {
+                    ids.push(checkStatus.data[i].F_Id);
+                }
+                common.deleteForm({
+                    url: '/InstructionalManagement/PeriodTime/DeleteForm',
+                    param: { keyValue: ids.join(',') },
+                    success: function () {
+                        commonTable.reloadtable({ elem: 'currentTableId' });
+                    }
+                });
+            }
+        });
+
+        //行操作事件
+        table.on('tool(currentTableFilter)', function (obj) {
+            var data = obj.data;
+            if (obj.event === 'edit') {
+                common.modalOpen({
+                    title: '修改节次',
+                    url: '/InstructionalManagement/PeriodTime/Form?keyValue=' + data.F_Id,
+                    width: '450px',
+                    height: '380px'
+                });
+            }
+            else if (obj.event === 'delete') {
+                common.deleteForm({
+                    url: '/InstructionalManagement/PeriodTime/DeleteForm',
+                    param: { keyValue: data.F_Id },
+                    success: function () {
+                        commonTable.reloadtable({ elem: 'currentTableId' });
+                    }
+                });
+            }
+        });
+    });
+</script>
+
+<div class="layuimini-container">
+    <div class="layuimini-main">
+        <script type="text/html" id="toolbarDemo">
+            <div class="layui-btn-container">
+                <button class="layui-btn layui-btn-sm" lay-event="add" id="NF-add" name="NF-add" authorize><i class="layui-icon">&#xe654;</i>新增</button>
+                <button class="layui-btn layui-btn-sm layui-btn-danger" lay-event="delete" id="NF-delete" name="NF-delete" authorize><i class="layui-icon">&#xe640;</i>删除</button>
+            </div>
+        </script>
+        <script type="text/html" id="currentTableBar">
+            <a class="layui-btn layui-btn-xs layui-btn-warm" lay-event="edit" id="NF-edit" authorize><i class="layui-icon">&#xe642;</i>修改</a>
+            <a class="layui-btn layui-btn-xs layui-btn-danger" lay-event="delete" id="NF-delete" authorize><i class="layui-icon">&#xe640;</i>删除</a>
+        </script>
+        <table class="layui-hide" id="currentTableId" lay-filter="currentTableFilter"></table>
+    </div>
+</div>

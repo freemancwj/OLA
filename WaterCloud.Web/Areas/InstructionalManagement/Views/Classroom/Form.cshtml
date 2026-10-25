@@ -1,0 +1,97 @@
+@{
+    ViewBag.Title = "教室信息";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'common', 'optimizeSelectOption'], function () {
+        var form = layui.form,
+            $ = layui.jquery,
+            common = layui.common;
+        var keyValue = $.request("keyValue");
+
+        function initControl() {
+            $("#F_BuildingId").bindSelect({
+                url: "/InstructionalManagement/Classroom/GetBuildingListJson",
+                id: "F_Id",
+                text: "F_Name",
+                search: true
+            });
+        }
+
+        $(function () {
+            initControl();
+            if (!!keyValue) {
+                common.ajax({
+                    url: '/InstructionalManagement/Classroom/GetFormJson',
+                    data: { keyValue: keyValue },
+                    async: false,
+                    success: function (data) {
+                        $('#F_BuildingId').val(data.F_BuildingId);
+                        $('#F_Name').val(data.F_Name);
+                        $('#F_Capacity').val(data.F_Capacity);
+                        $('#F_Type').val(data.F_Type || '');
+                    }
+                });
+            }
+            form.render();
+        });
+        wcLoading.close();
+
+        //监听提交
+        form.on('submit(saveBtn)', function (data) {
+            common.submitForm({
+                url: '/InstructionalManagement/Classroom/SubmitForm?keyValue=' + (keyValue || ''),
+                param: data.field,
+                success: function () {
+                    common.parentreload('data-search-btn');
+                }
+            });
+            return false;
+        });
+    });
+</script>
+
+<body>
+    <div class="layuimini-container">
+        <div class="layuimini-main">
+            <div class="layui-form layuimini-form" lay-filter="adminform">
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">教学楼</label>
+                    <div class="layui-input-block">
+                        <select id="F_BuildingId" name="F_BuildingId" lay-verify="required" lay-search>
+                            <option value="">请选择教学楼</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">教室名称</label>
+                    <div class="layui-input-block">
+                        <input type="text" id="F_Name" name="F_Name" autocomplete="off" maxlength="100" lay-verify="required" placeholder="请输入教室名称" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">容量</label>
+                    <div class="layui-input-block">
+                        <input type="number" pattern="[0-9]*" id="F_Capacity" name="F_Capacity" lay-verify="number" placeholder="请输入容纳人数" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">类型</label>
+                    <div class="layui-input-block">
+                        <select id="F_Type" name="F_Type">
+                            <option value="">请选择类型</option>
+                            <option value="普通教室">普通教室</option>
+                            <option value="多媒体教室">多媒体教室</option>
+                            <option value="机房">机房</option>
+                            <option value="实验室">实验室</option>
+                            <option value="语音室">语音室</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-hide">
+                    <button class="layui-btn site-demo-active" lay-submit id="submit" lay-filter="saveBtn">确认保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>

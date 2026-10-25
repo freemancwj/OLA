@@ -1,0 +1,105 @@
+@{
+    ViewBag.Title = "调课审批";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'common'], function () {
+        var form = layui.form,
+            $ = layui.jquery,
+            common = layui.common;
+        var keyValue = $.request("keyValue");
+        var WEEK = ['', '周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+
+        $(function () {
+            if (!!keyValue) {
+                common.ajax({
+                    url: '/InstructionalManagement/ScheduleChange/GetFormJson',
+                    data: { keyValue: keyValue },
+                    async: false,
+                    success: function (data) {
+                        $('#v_ClassName').text(data.F_ClassName || '');
+                        $('#v_CourseName').text(data.F_CourseName || '');
+                        $('#v_TeacherName').text(data.F_TeacherName || '');
+                        $('#v_ApplicantName').text(data.F_ApplicantName || '');
+                        $('#v_OldTime').text(WEEK[data.F_OldWeekDay] + ' 第' + data.F_OldSection + '节');
+                        $('#v_NewTime').text(WEEK[data.F_NewWeekDay] + ' 第' + data.F_NewSection + '节' + (data.F_NewClassroomName ? ' · ' + data.F_NewClassroomName : ''));
+                        $('#v_Reason').text(data.F_Reason || '');
+                    }
+                });
+            }
+            form.render();
+        });
+        wcLoading.close();
+
+        //监听提交
+        form.on('submit(saveBtn)', function (data) {
+            common.submitForm({
+                url: '/InstructionalManagement/ScheduleChange/Audit?keyValue=' + (keyValue || ''),
+                param: data.field,
+                success: function () {
+                    common.parentreload('data-search-btn');
+                }
+            });
+            return false;
+        });
+    });
+</script>
+
+<body>
+    <div class="layuimini-container">
+        <div class="layuimini-main">
+            <div class="layui-form layuimini-form" lay-filter="adminform">
+                <div class="layui-form-item">
+                    <label class="layui-form-label">申请人</label>
+                    <div class="layui-input-block">
+                        <div class="layui-form-mid" id="v_ApplicantName"></div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">班级</label>
+                    <div class="layui-input-block">
+                        <div class="layui-form-mid" id="v_ClassName"></div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">课程/教师</label>
+                    <div class="layui-input-block">
+                        <div class="layui-form-mid"><span id="v_CourseName"></span>（<span id="v_TeacherName"></span>）</div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">时间调整</label>
+                    <div class="layui-input-block">
+                        <div class="layui-form-mid"><span id="v_OldTime"></span> → <span id="v_NewTime" style="color:red;font-weight:bold;"></span></div>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-form-text">
+                    <label class="layui-form-label">调课原因</label>
+                    <div class="layui-input-block">
+                        <div class="layui-form-mid" id="v_Reason"></div>
+                    </div>
+                </div>
+                <hr />
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">审批结果</label>
+                    <div class="layui-input-block">
+                        <select id="F_Status" name="status" lay-verify="required">
+                            <option value="">请选择</option>
+                            <option value="1">通过（自动更新课表）</option>
+                            <option value="2">拒绝</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-form-text">
+                    <label class="layui-form-label">审批意见</label>
+                    <div class="layui-input-block">
+                        <textarea id="F_AuditRemark" name="remark" maxlength="500" placeholder="请输入审批意见" class="layui-textarea"></textarea>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-hide">
+                    <button class="layui-btn site-demo-active" lay-submit id="submit" lay-filter="saveBtn">确认保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>

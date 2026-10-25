@@ -1,0 +1,81 @@
+@{
+    ViewBag.Title = "生成补考名单";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'common', 'optimizeSelectOption'], function () {
+        var form = layui.form,
+            $ = layui.jquery,
+            common = layui.common;
+
+        function initControl() {
+            $("#classId").bindSelect({
+                url: "/InstructionalManagement/MakeupExam/GetClassListJson",
+                id: "F_Id",
+                text: "F_FullName",
+                search: true
+            });
+            $("#courseId").bindSelect({
+                url: "/InstructionalManagement/MakeupExam/GetCourseListJson",
+                id: "F_Id",
+                text: "F_Name",
+                search: true
+            });
+        }
+
+        $(function () {
+            initControl();
+            form.render();
+        });
+        wcLoading.close();
+
+        //监听提交
+        form.on('submit(saveBtn)', function (data) {
+            common.submitForm({
+                url: '/InstructionalManagement/MakeupExam/GenerateList',
+                param: data.field,
+                success: function () {
+                    common.parentreload('data-search-btn');
+                }
+            });
+            return false;
+        });
+    });
+</script>
+
+<body>
+    <div class="layuimini-container">
+        <div class="layuimini-main">
+            <div class="layui-form layuimini-form" lay-filter="adminform">
+                <div class="layui-form-item">
+                    <div class="layui-form-mid layui-word-aux">从成绩表中筛选“审核通过且不及格”的学生生成补考名单，已在名单中的学生不会重复生成。不选条件则针对全部成绩。</div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">班级</label>
+                    <div class="layui-input-block">
+                        <select id="classId" name="classId" lay-search>
+                            <option value="">全部班级</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">课程</label>
+                    <div class="layui-input-block">
+                        <select id="courseId" name="courseId" lay-search>
+                            <option value="">全部课程</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">学期</label>
+                    <div class="layui-input-block">
+                        <input type="text" id="semester" name="semester" autocomplete="off" placeholder="如 2025-2026-1，留空为全部学期" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item layui-hide">
+                    <button class="layui-btn site-demo-active" lay-submit id="submit" lay-filter="saveBtn">确认生成</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>

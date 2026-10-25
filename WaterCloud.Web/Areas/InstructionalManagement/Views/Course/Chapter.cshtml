@@ -1,0 +1,380 @@
+@{
+    ViewBag.Title = "章节管理";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<style>
+    .chapter-wrap { padding: 10px; }
+    .chapter-title { font-weight: bold; margin: 5px 0; color: #333; }
+</style>
+<div class="chapter-wrap">
+    <div class="chapter-title">章节列表</div>
+    <script type="text/html" id="chapterToolbar">
+        <div class="layui-btn-container">
+            <button class="layui-btn layui-btn-sm" lay-event="addChapter"><i class="layui-icon">&#xe654;</i>新增章节</button>
+        </div>
+    </script>
+    <table class="layui-hide" id="chapterTable" lay-filter="chapterTableFilter"></table>
+    <script type="text/html" id="chapterBar">
+        <a class="layui-btn layui-btn-xs layui-btn-warm" lay-event="editChapter">修改</a>
+        <a class="layui-btn layui-btn-xs" lay-event="upChapter">上移</a>
+        <a class="layui-btn layui-btn-xs" lay-event="downChapter">下移</a>
+        <a class="layui-btn layui-btn-xs layui-btn-danger" lay-event="delChapter">删除</a>
+    </script>
+
+    <div class="chapter-title" style="margin-top:15px;">课时列表 <span id="curChapterName" class="layui-font-12 layui-color-gray"></span></div>
+    <script type="text/html" id="lessonToolbar">
+        <div class="layui-btn-container">
+            <button class="layui-btn layui-btn-sm" lay-event="addLesson"><i class="layui-icon">&#xe654;</i>新增课时</button>
+        </div>
+    </script>
+    <table class="layui-hide" id="lessonTable" lay-filter="lessonTableFilter"></table>
+    <script type="text/html" id="lessonBar">
+        <a class="layui-btn layui-btn-xs layui-btn-warm" lay-event="editLesson">修改</a>
+        <a class="layui-btn layui-btn-xs" lay-event="upLesson">上移</a>
+        <a class="layui-btn layui-btn-xs" lay-event="downLesson">下移</a>
+        <a class="layui-btn layui-btn-xs layui-btn-danger" lay-event="delLesson">删除</a>
+    </script>
+</div>
+
+<!-- 章节表单 -->
+<div id="chapterFormDiv" class="layui-hide">
+    <div class="layui-form layuimini-form" lay-filter="chapterForm" style="padding:15px;">
+        <div class="layui-form-item">
+            <label class="layui-form-label required">章节名称</label>
+            <div class="layui-input-block">
+                <input type="text" id="C_F_Name" name="F_Name" autocomplete="off" maxlength="100" lay-verify="required" placeholder="请输入章节名称" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item layui-hide">
+            <button class="layui-btn" lay-submit id="chapterSubmit" lay-filter="chapterSave">保存</button>
+        </div>
+    </div>
+</div>
+
+<!-- 课时表单 -->
+<div id="lessonFormDiv" class="layui-hide">
+    <div class="layui-form layuimini-form" lay-filter="lessonForm" style="padding:15px;">
+        <div class="layui-form-item">
+            <label class="layui-form-label required">课时名称</label>
+            <div class="layui-input-block">
+                <input type="text" id="L_F_Name" name="F_Name" autocomplete="off" maxlength="100" lay-verify="required" placeholder="请输入课时名称" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">视频</label>
+            <div class="layui-input-block">
+                <input type="hidden" id="L_F_VideoUrl" name="F_VideoUrl">
+                <input type="hidden" id="L_F_VideoDuration" name="F_VideoDuration">
+                <input type="hidden" id="L_F_VideoSize" name="F_VideoSize">
+                <button type="button" class="layui-btn layui-btn-sm layui-btn-primary" id="btnUploadVideo"><i class="layui-icon">&#xe67c;</i> 上传视频</button>
+                <span id="videoTip" class="layui-font-12 layui-color-gray" style="margin-left:8px;"></span>
+            </div>
+        </div>
+        <div class="layui-form-item layui-hide" id="videoPreviewWrap">
+            <label class="layui-form-label">预览</label>
+            <div class="layui-input-block">
+                <video id="videoPreview" controls style="max-width:100%;max-height:220px;"></video>
+            </div>
+        </div>
+        <div class="layui-form-item layui-hide">
+            <button class="layui-btn" lay-submit id="lessonSubmit" lay-filter="lessonSave">保存</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    layui.use(['jquery', 'form', 'table', 'upload', 'layer', 'commonTable', 'common'], function () {
+        var $ = layui.jquery,
+            form = layui.form,
+            table = layui.table,
+            upload = layui.upload,
+            layer = layui.layer,
+            commonTable = layui.commonTable,
+            common = layui.common;
+        var courseId = $.request("courseId");
+        var curChapterId = '', curChapterName = '';
+        var chapterLayerIndex = null, lessonLayerIndex = null;
+        var editChapterId = '', editLessonId = '';
+
+        if (!courseId) {
+            common.modalMsg("缺少课程参数", "warning");
+        }
+        wcLoading.close();
+
+        function fmtDuration(sec) {
+            sec = parseInt(sec || 0);
+            if (sec <= 0) return '-';
+            var m = Math.floor(sec / 60), s = sec % 60;
+            return (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
+        }
+        function fmtSize(size) {
+            size = parseInt(size || 0);
+            if (size <= 0) return '-';
+            if (size < 1024 * 1024) return (size / 1024).toFixed(1) + ' KB';
+            return (size / 1024 / 1024).toFixed(1) + ' MB';
+        }
+
+        //================ 章节表 ================
+        commonTable.rendertable({
+            elem: '#chapterTable',
+            id: 'chapterTable',
+            url: '/InstructionalManagement/CourseLesson/GetChapterGridJson?courseId=' + courseId,
+            toolbar: '#chapterToolbar',
+            defaultToolbar: [],
+            search: false,
+            page: false,
+            limit: 9999,
+            height: 260,
+            cols: [[
+                { field: 'F_SortCode', title: '排序', width: 70, align: 'center' },
+                { field: 'F_Name', title: '章节名称', minWidth: 220 },
+                { field: 'F_CreatorTime', title: '创建时间', width: 170 },
+                { title: '操作', width: 240, toolbar: '#chapterBar', align: 'center' }
+            ]]
+        });
+
+        function reloadChapter() {
+            table.reload('chapterTable', { where: { time: new Date().Format("yyyy-MM-dd hh:mm:ss") } }, 'data');
+        }
+
+        //点击章节行加载课时
+        table.on('row(chapterTableFilter)', function (obj) {
+            obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');
+            curChapterId = obj.data.F_Id;
+            curChapterName = obj.data.F_Name;
+            $('#curChapterName').text('（' + curChapterName + '）');
+            reloadLesson();
+        });
+
+        table.on('toolbar(chapterTableFilter)', function (obj) {
+            if (obj.event === 'addChapter') {
+                editChapterId = '';
+                $('#C_F_Name').val('');
+                openChapterLayer('新增章节');
+            }
+            return false;
+        });
+
+        table.on('tool(chapterTableFilter)', function (obj) {
+            var data = obj.data;
+            if (obj.event === 'editChapter') {
+                editChapterId = data.F_Id;
+                $('#C_F_Name').val(data.F_Name);
+                openChapterLayer('修改章节');
+            }
+            else if (obj.event === 'delChapter') {
+                common.deleteForm({
+                    url: "/InstructionalManagement/CourseLesson/DeleteChapterForm",
+                    param: { keyValue: data.F_Id },
+                    success: function () {
+                        if (curChapterId === data.F_Id) { curChapterId = ''; $('#curChapterName').text(''); reloadLesson(); }
+                        reloadChapter();
+                    }
+                });
+            }
+            else if (obj.event === 'upChapter' || obj.event === 'downChapter') {
+                common.submitForm({
+                    url: '/InstructionalManagement/CourseLesson/MoveChapter',
+                    param: { keyValue: data.F_Id, direction: obj.event === 'upChapter' ? 'up' : 'down' },
+                    close: false,
+                    success: function () { reloadChapter(); }
+                });
+            }
+            return false;
+        });
+
+        function openChapterLayer(title) {
+            chapterLayerIndex = layer.open({
+                type: 1,
+                title: title,
+                area: ['440px', '220px'],
+                shade: 0.3,
+                content: $('#chapterFormDiv'),
+                success: function () {
+                    $('#chapterFormDiv').removeClass('layui-hide');
+                    form.render();
+                },
+                btn: ['保存', '关闭'],
+                yes: function () {
+                    $('#chapterSubmit').trigger('click');
+                },
+                end: function () {
+                    $('#chapterFormDiv').addClass('layui-hide');
+                }
+            });
+        }
+
+        form.on('submit(chapterSave)', function (data) {
+            var postData = { F_CourseId: courseId, F_Name: data.field.F_Name };
+            common.submitForm({
+                url: '/InstructionalManagement/CourseLesson/SubmitChapterForm?keyValue=' + editChapterId,
+                param: postData,
+                close: false,
+                success: function () {
+                    layer.close(chapterLayerIndex);
+                    reloadChapter();
+                }
+            });
+            return false;
+        });
+
+        //================ 课时表 ================
+        commonTable.rendertable({
+            elem: '#lessonTable',
+            id: 'lessonTable',
+            url: '/InstructionalManagement/CourseLesson/GetLessonGridJson',
+            where: { chapterId: '' },
+            toolbar: '#lessonToolbar',
+            defaultToolbar: [],
+            search: false,
+            page: false,
+            limit: 9999,
+            height: 300,
+            cols: [[
+                { field: 'F_SortCode', title: '排序', width: 70, align: 'center' },
+                { field: 'F_Name', title: '课时名称', minWidth: 200 },
+                { field: 'F_VideoDuration', title: '时长', width: 90, align: 'center', templet: function (d) { return fmtDuration(d.F_VideoDuration); } },
+                { field: 'F_VideoSize', title: '大小', width: 100, align: 'center', templet: function (d) { return fmtSize(d.F_VideoSize); } },
+                { title: '操作', width: 240, toolbar: '#lessonBar', align: 'center' }
+            ]]
+        });
+
+        function reloadLesson() {
+            table.reload('lessonTable', { where: { chapterId: curChapterId, time: new Date().Format("yyyy-MM-dd hh:mm:ss") } }, 'data');
+        }
+
+        table.on('toolbar(lessonTableFilter)', function (obj) {
+            if (obj.event === 'addLesson') {
+                if (!curChapterId) { common.modalMsg("请先选择章节", "warning"); return false; }
+                editLessonId = '';
+                $('#L_F_Name').val('');
+                $('#L_F_VideoUrl,#L_F_VideoDuration,#L_F_VideoSize').val('');
+                $('#videoTip').text('');
+                $('#videoPreviewWrap').addClass('layui-hide');
+                $('#videoPreview').attr('src', '');
+                openLessonLayer('新增课时');
+            }
+            return false;
+        });
+
+        table.on('tool(lessonTableFilter)', function (obj) {
+            var data = obj.data;
+            if (obj.event === 'editLesson') {
+                editLessonId = data.F_Id;
+                $('#L_F_Name').val(data.F_Name);
+                $('#L_F_VideoUrl').val(data.F_VideoUrl || '');
+                $('#L_F_VideoDuration').val(data.F_VideoDuration || '');
+                $('#L_F_VideoSize').val(data.F_VideoSize || '');
+                if (data.F_VideoUrl) {
+                    $('#videoTip').text('已上传（' + fmtDuration(data.F_VideoDuration) + '，' + fmtSize(data.F_VideoSize) + '），重新上传将覆盖');
+                    $('#videoPreview').attr('src', data.F_VideoUrl);
+                    $('#videoPreviewWrap').removeClass('layui-hide');
+                } else {
+                    $('#videoTip').text('');
+                    $('#videoPreview').attr('src', '');
+                    $('#videoPreviewWrap').addClass('layui-hide');
+                }
+                openLessonLayer('修改课时');
+            }
+            else if (obj.event === 'delLesson') {
+                common.deleteForm({
+                    url: "/InstructionalManagement/CourseLesson/DeleteLessonForm",
+                    param: { keyValue: data.F_Id },
+                    success: function () { reloadLesson(); }
+                });
+            }
+            else if (obj.event === 'upLesson' || obj.event === 'downLesson') {
+                common.submitForm({
+                    url: '/InstructionalManagement/CourseLesson/MoveLesson',
+                    param: { keyValue: data.F_Id, direction: obj.event === 'upLesson' ? 'up' : 'down' },
+                    close: false,
+                    success: function () { reloadLesson(); }
+                });
+            }
+            return false;
+        });
+
+        //视频上传
+        upload.render({
+            elem: '#btnUploadVideo',
+            url: '/InstructionalManagement/Course/UploadFile',
+            accept: 'video',
+            size: 512000,
+            before: function () {
+                layer.load(0, { shade: [0.5, '#000'], content: '视频上传中，请稍候...' });
+            },
+            done: function (res) {
+                layer.closeAll('loading');
+                if (res.code > 0) {
+                    common.modalMsg(res.msg, "warning");
+                    return false;
+                }
+                var file = res.data[0];
+                $('#L_F_VideoUrl').val(file.src);
+                $('#L_F_VideoSize').val(file.size);
+                $('#videoTip').text(file.title + '（' + fmtSize(file.size) + '）');
+                //预读视频时长
+                var tmpVideo = document.createElement('video');
+                tmpVideo.preload = 'metadata';
+                tmpVideo.onloadedmetadata = function () {
+                    var duration = Math.floor(tmpVideo.duration || 0);
+                    $('#L_F_VideoDuration').val(duration);
+                    $('#videoTip').text(file.title + '（' + fmtDuration(duration) + '，' + fmtSize(file.size) + '）');
+                    tmpVideo = null;
+                };
+                tmpVideo.src = file.src;
+                $('#videoPreview').attr('src', file.src);
+                $('#videoPreviewWrap').removeClass('layui-hide');
+                common.modalMsg("视频上传成功", "success");
+            },
+            error: function () {
+                layer.closeAll('loading');
+                common.modalMsg("视频上传失败", "warning");
+            }
+        });
+
+        function openLessonLayer(title) {
+            lessonLayerIndex = layer.open({
+                type: 1,
+                title: title + (curChapterName ? '（' + curChapterName + '）' : ''),
+                area: ['560px', '420px'],
+                shade: 0.3,
+                content: $('#lessonFormDiv'),
+                success: function () {
+                    $('#lessonFormDiv').removeClass('layui-hide');
+                    form.render();
+                },
+                btn: ['保存', '关闭'],
+                yes: function () {
+                    $('#lessonSubmit').trigger('click');
+                },
+                end: function () {
+                    $('#lessonFormDiv').addClass('layui-hide');
+                    var vp = document.getElementById('videoPreview');
+                    if (vp) { vp.pause(); }
+                }
+            });
+        }
+
+        form.on('submit(lessonSave)', function (data) {
+            var postData = {
+                F_CourseId: courseId,
+                F_ChapterId: curChapterId,
+                F_Name: data.field.F_Name,
+                F_VideoUrl: $('#L_F_VideoUrl').val(),
+                F_VideoDuration: $('#L_F_VideoDuration').val(),
+                F_VideoSize: $('#L_F_VideoSize').val()
+            };
+            common.submitForm({
+                url: '/InstructionalManagement/CourseLesson/SubmitLessonForm?keyValue=' + editLessonId,
+                param: postData,
+                close: false,
+                success: function () {
+                    layer.close(lessonLayerIndex);
+                    reloadLesson();
+                }
+            });
+            return false;
+        });
+    });
+</script>

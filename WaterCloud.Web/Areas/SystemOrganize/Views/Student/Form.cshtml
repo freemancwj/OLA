@@ -1,0 +1,247 @@
+@{
+    ViewBag.Title = "学生信息";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'laydate', 'common', 'optimizeSelectOption'], function () {
+        var form = layui.form,
+            laydate = layui.laydate,
+            $ = layui.jquery,
+            common = layui.common;
+        var keyValue = $.request("keyValue");
+        var isEdit = !!keyValue;
+
+        common.authorizeFields('adminform');
+
+        // 密码校验：新增必填，修改留空表示不修改
+        form.verify({
+            studentPass: function (value) {
+                if (!isEdit && !$.trim(value)) {
+                    return '请输入密码';
+                }
+                if ($.trim(value) && (value.length < 6 || value.length > 20)) {
+                    return '密码长度需为 6-20 位';
+                }
+            }
+        });
+
+        function initControl() {
+            $("#F_CompanyId").bindSelect({
+                url: "/SystemOrganize/SystemSet/GetListJson",
+                id: "F_Id",
+                text: "F_CompanyName",
+                search: true
+            });
+            $("#F_OrganizeId").bindSelect({
+                url: "/SystemOrganize/Student/GetClassListJson",
+                id: "F_Id",
+                text: "F_FullName",
+                search: true
+            });
+            $("#F_DutyId").bindSelect({
+                url: "/SystemOrganize/Duty/GetListJson",
+                id: "F_Id",
+                text: "F_FullName",
+                search: true
+            });
+            laydate.render({
+                elem: '#F_Birthday',
+                type: 'date',
+                trigger: 'click',
+                format: 'yyyy-MM-dd',
+                max: 0
+            });
+        }
+
+        $(function () {
+            initControl();
+            if (isEdit) {
+                common.ajax({
+                    url: '/SystemOrganize/Student/GetFormJson',
+                    data: { keyValue: keyValue },
+                    async: false,
+                    success: function (data) {
+                        $('#F_Account').val(data.F_Account);
+                        $('#F_CompanyId').val(data.F_CompanyId);
+                        $('#F_OrganizeId').val(data.F_OrganizeId);
+                        $('#F_RoleId').val(data.F_RoleId);
+                        $('#F_RoleName').val(data.F_RoleName);
+                        $('#F_DutyId').val(data.F_DutyId);
+                        $('#F_RealName').val(data.F_RealName);
+                        $('#F_Gender').val(data.F_Gender === true ? 'true' : 'false');
+                        $('#F_Birthday').val(data.F_Birthday ? data.F_Birthday.substring(0, 10) : '');
+                        $('#F_NativePlace').val(data.F_NativePlace);
+                        $('#F_ParentName').val(data.F_ParentName);
+                        $('#F_ParentPhone').val(data.F_ParentPhone);
+                        $('#F_StudentNo').val(data.F_StudentNo);
+                        $('#F_MobilePhone').val(data.F_MobilePhone);
+                    }
+                });
+                $('#F_UserPassword').attr('placeholder', '留空则不修改密码');
+                $('#lbPassword').removeClass('required');
+            }
+            else {
+                common.ajax({
+                    url: '/SystemOrganize/Student/GetInitJson',
+                    async: false,
+                    success: function (data) {
+                        $('#F_CompanyId').val(data.F_CompanyId);
+                        $('#F_RoleId').val(data.F_RoleId);
+                        $('#F_RoleName').val(data.F_RoleName);
+                        $('#F_DutyId').val(data.F_DutyId);
+                    }
+                });
+            }
+            form.render();
+        });
+        wcLoading.close();
+
+        //监听提交
+        form.on('submit(saveBtn)', function (data) {
+            var postData = data.field;
+            common.submitForm({
+                url: '/SystemOrganize/Student/SubmitForm?keyValue=' + (keyValue || ''),
+                param: postData,
+                success: function () {
+                    common.parentreload('data-search-btn');
+                }
+            });
+            return false;
+        });
+    });
+
+    function search(fileds) {
+        layui.use(['jquery', 'form', 'common'], function () {
+            var $ = layui.jquery,
+                common = layui.common;
+            if (fileds == '角色') {
+                common.modalOpen({
+                    title: "选择角色",
+                    url: "/SystemOrganize/Role/AddForm?name=" + "F_RoleName" + "&value=" + "F_RoleId" + "&ids=" + $('#F_RoleId').val(),
+                    width: "650px",
+                    height: "600px"
+                });
+            }
+        });
+    }
+</script>
+
+<body>
+    <div class="layuimini-container">
+        <div class="layuimini-main">
+            <div class="layui-form layuimini-form" lay-filter="adminform">
+                <div class="layui-form-item">
+                    <div class="layui-col-md6 layui-col-sm6">
+                        <label class="layui-form-label required">账号</label>
+                        <div class="layui-input-block">
+                            <input type="text" id="F_Account" name="F_Account" autocomplete="off" maxlength="50" lay-verify="required" placeholder="请输入登录账号" class="layui-input">
+                        </div>
+                    </div>
+                    <div class="layui-col-md6 layui-col-sm6">
+                        <label class="layui-form-label required" id="lbPassword">密码</label>
+                        <div class="layui-input-block">
+                            <input type="password" id="F_UserPassword" name="F_UserPassword" autocomplete="off" lay-verify="studentPass" placeholder="请输入登录密码" class="layui-input">
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-col-md6 layui-col-sm6">
+                        <label class="layui-form-label required">学校名称</label>
+                        <div class="layui-input-block">
+                            <select id="F_CompanyId" name="F_CompanyId" lay-verify="required" lay-search>
+                                <option value="">请选择学校</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="layui-col-md6 layui-col-sm6">
+                        <label class="layui-form-label required">所属班级</label>
+                        <div class="layui-input-block">
+                            <select id="F_OrganizeId" name="F_OrganizeId" lay-verify="required" lay-search>
+                                <option value="">请选择班级</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-col-md6 layui-col-sm6">
+                        <label class="layui-form-label required">角色</label>
+                        <div class="layui-input-block">
+                            <input type="text" id="F_RoleName" name="F_RoleName" autocomplete="off" maxlength="50" lay-verify="required" placeholder="点击选择角色" class="layui-input" onclick="search('角色')" readonly>
+                            <input type="text" id="F_RoleId" name="F_RoleId" hidden>
+                        </div>
+                    </div>
+                    <div class="layui-col-md6 layui-col-sm6">
+                        <label class="layui-form-label required">职位</label>
+                        <div class="layui-input-block">
+                            <select id="F_DutyId" name="F_DutyId" lay-verify="required" lay-search>
+                                <option value="">请选择职位</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-col-md6 layui-col-sm6">
+                        <label class="layui-form-label required">学生姓名</label>
+                        <div class="layui-input-block">
+                            <input type="text" id="F_RealName" name="F_RealName" autocomplete="off" maxlength="50" lay-verify="required" placeholder="请输入学生姓名" class="layui-input">
+                        </div>
+                    </div>
+                    <div class="layui-col-md6 layui-col-sm6">
+                        <label class="layui-form-label required">性别</label>
+                        <div class="layui-input-block">
+                            <select id="F_Gender" name="F_Gender" lay-verify="required">
+                                <option value="true">男</option>
+                                <option value="false">女</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-col-md6 layui-col-sm6">
+                        <label class="layui-form-label required">出生日期</label>
+                        <div class="layui-input-block">
+                            <input type="text" id="F_Birthday" name="F_Birthday" autocomplete="off" readonly="readonly" lay-verify="required" placeholder="请选择出生日期" class="layui-input">
+                        </div>
+                    </div>
+                    <div class="layui-col-md6 layui-col-sm6">
+                        <label class="layui-form-label">籍贯</label>
+                        <div class="layui-input-block">
+                            <input type="text" id="F_NativePlace" name="F_NativePlace" autocomplete="off" maxlength="100" placeholder="如：湖南长沙" class="layui-input">
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-col-md6 layui-col-sm6">
+                        <label class="layui-form-label required">家长姓名</label>
+                        <div class="layui-input-block">
+                            <input type="text" id="F_ParentName" name="F_ParentName" autocomplete="off" maxlength="50" lay-verify="required" placeholder="请输入家长姓名" class="layui-input">
+                        </div>
+                    </div>
+                    <div class="layui-col-md6 layui-col-sm6">
+                        <label class="layui-form-label required">家长手机</label>
+                        <div class="layui-input-block">
+                            <input type="text" id="F_ParentPhone" name="F_ParentPhone" autocomplete="off" maxlength="11" lay-verify="required|phone" placeholder="请输入家长手机号" class="layui-input">
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-col-md6 layui-col-sm6">
+                        <label class="layui-form-label">学籍号</label>
+                        <div class="layui-input-block">
+                            <input type="text" id="F_StudentNo" name="F_StudentNo" autocomplete="off" maxlength="50" placeholder="选填" class="layui-input">
+                        </div>
+                    </div>
+                    <div class="layui-col-md6 layui-col-sm6">
+                        <label class="layui-form-label">学生手机号</label>
+                        <div class="layui-input-block">
+                            <input type="text" id="F_MobilePhone" name="F_MobilePhone" autocomplete="off" maxlength="11" lay-verify="phone" placeholder="选填" class="layui-input">
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-hide">
+                    <button class="layui-btn site-demo-active" lay-submit id="submit" lay-filter="saveBtn">确认保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>

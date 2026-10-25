@@ -1,0 +1,88 @@
+@{
+    ViewBag.Title = "专业信息";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'common', 'optimizeSelectOption'], function () {
+        var form = layui.form,
+            $ = layui.jquery,
+            common = layui.common;
+        var keyValue = $.request("keyValue");
+
+        $(function () {
+            if (!!keyValue) {
+                common.ajax({
+                    url: '/InstructionalManagement/Major/GetFormJson',
+                    data: { keyValue: keyValue },
+                    async: false,
+                    success: function (data) {
+                        $('#F_EnCode').val(data.F_EnCode);
+                        $('#F_FullName').val(data.F_FullName);
+                        $('#F_ShortName').val(data.F_ShortName || '');
+                        $('#F_SortCode').val(data.F_SortCode);
+                        $('#F_Description').val(data.F_Description || '');
+                    }
+                });
+            }
+            form.render();
+        });
+        wcLoading.close();
+
+        //监听提交
+        form.on('submit(saveBtn)', function (data) {
+            common.submitForm({
+                url: '/InstructionalManagement/Major/SubmitForm?keyValue=' + (keyValue || ''),
+                param: data.field,
+                success: function () {
+                    common.parentreload('data-search-btn');
+                }
+            });
+            return false;
+        });
+    });
+</script>
+
+<body>
+    <div class="layuimini-container">
+        <div class="layuimini-main">
+            <div class="layui-form layuimini-form" lay-filter="adminform">
+                @*OrganizeEntity 带 [Required] 校验，隐藏提交固定值（服务端会覆盖）*@
+                <input type="hidden" id="F_CategoryId" name="F_CategoryId" value="zhuanye">
+                <input type="hidden" id="F_ParentId" name="F_ParentId" value="0">
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">专业代码</label>
+                    <div class="layui-input-block">
+                        <input type="text" id="F_EnCode" name="F_EnCode" autocomplete="off" maxlength="50" lay-verify="required" placeholder="请输入专业代码" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">专业名称</label>
+                    <div class="layui-input-block">
+                        <input type="text" id="F_FullName" name="F_FullName" autocomplete="off" maxlength="50" lay-verify="required" placeholder="请输入专业名称" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">简称</label>
+                    <div class="layui-input-block">
+                        <input type="text" id="F_ShortName" name="F_ShortName" autocomplete="off" maxlength="50" placeholder="请输入简称" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">排序</label>
+                    <div class="layui-input-block">
+                        <input type="number" pattern="[0-9]*" id="F_SortCode" name="F_SortCode" lay-verify="required|number" oninput="if(value.length>8)value=value.slice(0,8)" value="99" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item layui-form-text">
+                    <label class="layui-form-label">备注</label>
+                    <div class="layui-input-block">
+                        <textarea id="F_Description" name="F_Description" placeholder="请输入备注" class="layui-textarea"></textarea>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-hide">
+                    <button class="layui-btn site-demo-active" lay-submit id="submit" lay-filter="saveBtn">确认保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>

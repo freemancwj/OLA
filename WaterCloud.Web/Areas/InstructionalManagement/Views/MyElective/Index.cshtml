@@ -1,0 +1,121 @@
+@{
+    ViewBag.Title = "学生选课";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<style>
+    .ec-wrap { padding: 12px; }
+    .ec-round { background: #fff; padding: 12px 15px; border-left: 4px solid #1e9fff; margin-bottom: 12px; }
+    .ec-round .t { font-weight: bold; font-size: 15px; }
+    .ec-round .s { color: #999; margin-left: 10px; font-size: 12px; }
+    .ec-card { background: #fff; border: 1px solid #e6e6e6; border-radius: 4px; padding: 12px; margin-bottom: 10px; position: relative; }
+    .ec-card .name { font-weight: bold; font-size: 14px; color: #333; }
+    .ec-card .meta { color: #888; font-size: 12px; margin-top: 6px; line-height: 1.8; }
+    .ec-card .act { position: absolute; right: 12px; top: 12px; }
+    .ec-full { color: #f44336; }
+    .ec-left { color: #009688; }
+</style>
+<div class="ec-wrap">
+    <div class="ec-round" id="roundInfo" style="display:none;">
+        <span class="t" id="roundName"></span>
+        <span class="s" id="roundTime"></span>
+    </div>
+    <div class="ec-round" id="noRound" style="border-left-color:#ff5722;display:none;">
+        当前不在选课时间内，暂无可选课程。
+    </div>
+    <ul class="layui-tab layui-tab-brief" lay-filter="ecTab" id="ecTab" style="display:none;">
+        <li class="layui-this">可选课程</li>
+        <li>我的选课</li>
+    </ul>
+    <div id="courseList"></div>
+</div>
+<script>
+    layui.use(['jquery', 'form', 'common'], function () {
+        var $ = layui.jquery, form = layui.form, common = layui.common;
+        var WEEK = ['', '周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+        var round = null, tab = 0;
+
+        wcLoading.close();
+
+        function fmt(d) {
+            return d ? String(d).replace(/\//g, '-').substring(0, 16) : '';
+        }
+        function renderList(list, mine) {
+            if (!list || list.length === 0) {
+                $('#courseList').html('<div class="layui-color-gray" style="padding:30px;text-align:center;">暂无数据</div>');
+                return;
+            }
+            var html = '';
+            $.each(list, function (i, c) {
+                var left = (c.F_Capacity || 0) - (c.F_SelectedCount || 0);
+                var time = c.F_WeekDay ? WEEK[c.F_WeekDay] + ' 第' + c.F_Section + '节' : '时间待定';
+                html += '<div class="ec-card">' +
+                    '<div class="name">' + (c.F_CourseName || '') + '</div>' +
+                    '<div class="meta">授课教师：' + (c.F_TeacherName || '') + '　' + time + '　教室：' + (c.F_ClassroomName || '待定') + '<br>' +
+                    '容量：' + c.F_Capacity + '　已选：' + c.F_SelectedCount + '　剩余：<span class="' + (left > 0 ? 'ec-left' : 'ec-full') + '">' + (left > 0 ? left : 0) + '</span></div>';
+                if (mine || c.F_IsSelected) {
+                    html += '<div class="act"><button class="layui-btn layui-btn-sm layui-btn-danger btn-drop" data-id="' + c.F_Id + '">退课</button></div>';
+                } else if (left > 0) {
+                    html += '<div class="act"><button class="layui-btn layui-btn-sm btn-select" data-id="' + c.F_Id + '">选课</button></div>';
+                } else {
+                    html += '<div class="act"><button class="layui-btn layui-btn-sm layui-btn-disabled" disabled>已满</button></div>';
+                }
+                html += '</div>';
+            });
+            $('#courseList').html(html);
+        }
+        function loadData() {
+            if (!round || !round.F_Id) { return; }
+            var url = tab === 0 ? '/InstructionalManagement/MyElective/GetAvailableJson' : '/InstructionalManagement/MyElective/GetMineJson';
+            common.ajax({
+                url: url,
+                data: { roundId: round.F_Id },
+                success: function (res) {
+                    renderList(res.data || [], tab === 1);
+                }
+            });
+        }
+        common.ajax({
+            url: '/InstructionalManagement/MyElective/GetOpenRoundJson',
+            async: false,
+            success: function (d) {
+                if (d && d.F_Id) {
+                    round = d;
+                    $('#roundName').text(d.F_Semester + ' ' + d.F_Name);
+                    $('#roundTime').text('选课时间：' + fmt(d.F_StartTime) + ' 至 ' + fmt(d.F_EndTime));
+                    $('#roundInfo').show();
+                    $('#ecTab').show();
+                    loadData();
+                } else {
+                    $('#noRound').show();
+                }
+            }
+        });
+
+        $('.ec-wrap').on('click', '.btn-select', function () {
+            var id = $(this).data('id');
+            common.submitForm({
+                url: '/InstructionalManagement/MyElective/Select',
+                param: { keyValue: id },
+                close: false,
+                success: function () { loadData(); }
+            });
+        });
+        $('.ec-wrap').on('click', '.btn-drop', function () {
+            var id = $(this).data('id');
+            layui.layer.confirm('确定退选该课程吗？', function (idx) {
+                layui.layer.close(idx);
+                common.submitForm({
+                    url: '/InstructionalManagement/MyElective/Drop',
+                    param: { keyValue: id },
+                    close: false,
+                    success: function () { loadData(); }
+                });
+            });
+        });
+        //tab切换
+        $('#ecTab li').on('click', function () {
+            tab = $(this).index();
+            loadData();
+        });
+    });
+</script>

@@ -1,0 +1,198 @@
+@{
+    ViewBag.Title = "批改试卷";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<div class="layuimini-container">
+    <div class="layuimini-main">
+        <div class="layui-form" lay-filter="gradeForm">
+            <div style="padding:12px 15px;background:#f8f8f8;border:1px solid #eee;margin-bottom:12px;line-height:26px;">
+                <div id="recordInfo" class="layui-row"></div>
+            </div>
+            <div id="answerList"></div>
+            <div id="submitBar" class="layui-form-item" style="text-align:center;">
+                <button type="button" id="submit" class="layui-btn site-demo-active" lay-submit lay-filter="gradeBtn">
+                    <i class="layui-icon">&#xe605;</i> 完成批改
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    layui.use(['jquery', 'form', 'common', 'optimizeSelectOption'], function () {
+        var $ = layui.jquery,
+            form = layui.form,
+            common = layui.common;
+        var recordId = $.request('recordId') || '';
+        var readonly = $.request('readonly') === '1';
+        var record = null;
+
+        function esc(text) {
+            return String(text == null ? '' : text)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        function toDateText(value) {
+            if (!value) { return '-'; }
+            var text = String(value).replace('T', ' ');
+            return text.length > 19 ? text.substring(0, 19) : text;
+        }
+
+        function typeName(type) {
+            if (type === 1) { return '单选题'; }
+            if (type === 2) { return '多选题'; }
+            if (type === 3) { return '判断题'; }
+            if (type === 4) { return '简答题'; }
+            return '';
+        }
+
+        function optionHtml(item) {
+            var labels = ['A', 'B', 'C', 'D'];
+            var values = [item.F_OptionA, item.F_OptionB, item.F_OptionC, item.F_OptionD];
+            var html = '';
+            for (var i = 0; i < labels.length; i++) {
+                if (values[i] != null && values[i] !== '') {
+                    html += '<div style="padding-left:12px;color:#333;">' + labels[i] + '. ' + esc(values[i]) + '</div>';
+                }
+            }
+            return html;
+        }
+
+        function renderInfo() {
+            var statusText = record.F_Status === 1
+                ? '<span class="layui-badge layui-bg-green">已完成</span>'
+                : '<span class="layui-badge layui-bg-orange">待批改</span>';
+            var passText = record.F_IsPassed === 1
+                ? '<span class="layui-badge layui-bg-green">及格</span>'
+                : (record.F_IsPassed === 0 ? '<span class="layui-badge layui-bg-red">不及格</span>' : '-');
+            var html = ''
+                + '<div class="layui-col-md6">考试：<b>' + esc(record.F_ExamTitle) + '</b></div>'
+                + '<div class="layui-col-md6">学生：<b>' + esc(record.F_RealName) + '</b>（' + esc(record.F_Account) + '）</div>'
+                + '<div class="layui-col-md6">班级：' + esc(record.F_ClassName || '-') + '</div>'
+                + '<div class="layui-col-md6">提交时间：' + toDateText(record.F_SubmitTime) + '</div>'
+                + '<div class="layui-col-md6">客观分：<b>' + (record.F_ObjectiveScore || 0) + '</b>　主观分：<b>' + (record.F_SubjectiveScore || 0) + '</b></div>'
+                + '<div class="layui-col-md6">总分：<b style="color:#1e9fff;">' + (record.F_TotalScore || 0) + '</b> / 试卷总分：' + (record.F_ExamTotalScore || 0) + '　及格分：' + (record.F_PassScore || 0) + '</div>'
+                + '<div class="layui-col-md6">状态：' + statusText + '　是否及格：' + passText + '</div>'
+                + '<div class="layui-col-md6">批改人：' + esc(record.F_GraderName || '-') + '　批改时间：' + toDateText(record.F_GradeTime) + '</div>';
+            $('#recordInfo').html(html);
+        }
+
+        function renderAnswers() {
+            var list = record.Answers || [];
+            if (list.length === 0) {
+                $('#answerList').html('<div class="layui-color-gray" style="padding:20px;text-align:center;">没有答题明细</div>');
+                return;
+            }
+            var html = '';
+            for (var i = 0; i < list.length; i++) {
+                var item = list[i];
+                var isSubjective = item.F_QuestionType === 4;
+                var correctText = '';
+                if (!isSubjective) {
+                    correctText = item.F_IsCorrect === 1
+                        ? '<span class="layui-badge layui-bg-green">正确</span>'
+                        : '<span class="layui-badge layui-bg-red">错误</span>';
+                }
+                else if (item.F_IsCorrect === 2) {
+                    correctText = '<span class="layui-badge layui-bg-orange">待批改</span>';
+                }
+                var scoreText = item.F_Score != null ? item.F_Score : 0;
+                html += '<div class="ans-item" style="border:1px solid #eee;padding:12px;margin-bottom:12px;">'
+                    + '<div style="margin-bottom:8px;">'
+                    + '<b style="color:#1e9fff;">第 ' + (i + 1) + ' 题</b>'
+                    + '　题型：' + esc(item.F_TypeName || typeName(item.F_QuestionType))
+                    + '　得分：<b>' + scoreText + '</b> / ' + (item.F_FullScore || 0)
+                    + '　' + correctText
+                    + '</div>'
+                    + '<div style="margin-bottom:6px;">' + esc(item.F_Content) + '</div>'
+                    + optionHtml(item)
+                    + '<div style="margin-top:8px;">学生答案：<span style="color:#1e9fff;">' + (item.F_StudentAnswer ? esc(item.F_StudentAnswer) : '未作答') + '</span></div>'
+                    + '<div>正确答案：<span style="color:#009688;">' + esc(item.F_Answer || '-') + '</span></div>'
+                    + '<div>解析：<span class="layui-color-gray">' + esc(item.F_Analysis || '无') + '</span></div>';
+                if (isSubjective) {
+                    if (readonly) {
+                        html += '<div style="margin-top:8px;">评语：<span class="layui-color-gray">' + esc(item.F_Comment || '无') + '</span></div>';
+                    }
+                    else {
+                        html += '<div class="ans-subjective" data-id="' + esc(item.F_Id) + '" data-full="' + (item.F_FullScore || 0) + '" style="margin-top:10px;padding-top:10px;border-top:1px dashed #ddd;">'
+                            + '<div class="layui-form-item" style="margin-bottom:8px;">'
+                            + '<label class="layui-form-label" style="width:70px;">得分</label>'
+                            + '<div class="layui-input-inline" style="width:140px;">'
+                            + '<input type="number" class="layui-input grade-score" min="0" max="' + (item.F_FullScore || 0) + '" step="0.5" value="' + scoreText + '">'
+                            + '</div>'
+                            + '<div class="layui-form-mid layui-word-aux">满分 ' + (item.F_FullScore || 0) + ' 分</div>'
+                            + '</div>'
+                            + '<div class="layui-form-item layui-form-text" style="margin-bottom:0;">'
+                            + '<label class="layui-form-label" style="width:70px;">评语</label>'
+                            + '<div class="layui-input-block" style="margin-left:100px;">'
+                            + '<textarea class="layui-textarea grade-comment" maxlength="500" placeholder="可填写批改评语">' + esc(item.F_Comment || '') + '</textarea>'
+                            + '</div>'
+                            + '</div>'
+                            + '</div>';
+                    }
+                }
+                html += '</div>';
+            }
+            $('#answerList').html(html);
+            form.render();
+        }
+
+        function loadRecord() {
+            common.ajax({
+                url: '/InstructionalManagement/Exam/GetRecordFormJson',
+                data: { keyValue: recordId },
+                async: false,
+                success: function (data) {
+                    record = data;
+                }
+            });
+        }
+
+        loadRecord();
+        if (record) {
+            renderInfo();
+            renderAnswers();
+        }
+        if (readonly) {
+            $('#submitBar').hide();
+        }
+        wcLoading.close();
+
+        form.on('submit(gradeBtn)', function () {
+            if (!record) { return false; }
+            var rows = [];
+            var invalid = false;
+            $('#answerList .ans-subjective').each(function () {
+                var $box = $(this);
+                var full = parseFloat($box.data('full')) || 0;
+                var score = parseFloat($box.find('.grade-score').val());
+                if (isNaN(score) || score < 0 || score > full) {
+                    common.modalMsg('简答题得分必须在 0 到 ' + full + ' 分之间', 'warning');
+                    invalid = true;
+                    return false;
+                }
+                rows.push({
+                    F_Id: $box.data('id'),
+                    F_Score: score,
+                    F_Comment: $box.find('.grade-comment').val()
+                });
+            });
+            if (invalid) { return false; }
+            if (rows.length === 0) {
+                common.modalMsg('没有需要批改的简答题', 'warning');
+                return false;
+            }
+            common.submitForm({
+                url: '/InstructionalManagement/Exam/GradeForm',
+                param: {
+                    recordId: recordId,
+                    answersJson: JSON.stringify(rows)
+                },
+                success: function () {
+                    common.parentreload('data-search-btn');
+                }
+            });
+            return false;
+        });
+    });
+</script>

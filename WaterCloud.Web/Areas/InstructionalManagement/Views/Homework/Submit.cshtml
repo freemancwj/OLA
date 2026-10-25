@@ -1,0 +1,175 @@
+@{
+    ViewBag.Title = "提交作业";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<style>
+    .hw-info { margin-bottom: 10px; padding: 10px 15px; background: #f7f7f7; border-radius: 4px; }
+    .hw-info .hw-title { font-size: 16px; font-weight: bold; color: #333; }
+    .hw-info .hw-meta { color: #888; font-size: 12px; margin-top: 6px; }
+    .hw-content { border: 1px solid #eee; border-radius: 4px; padding: 10px; max-height: 220px; overflow-y: auto; }
+    .hw-content img { max-width: 100%; }
+</style>
+<script>
+    layui.use(['jquery', 'form', 'common', 'wangEditor', 'upload'], function () {
+        var form = layui.form,
+            $ = layui.jquery,
+            upload = layui.upload,
+            common = layui.common,
+            wangEditor = layui.wangEditor;
+        var keyValue = $.request("keyValue");
+        var fullScore = 100;
+
+        var editor = new wangEditor('#editor');
+        editor.config.uploadImgServer = '/FileManage/Uploadfile/Upload';
+        editor.config.uploadImgMaxSize = 3 * 1024 * 1024;
+        editor.config.uploadImgMaxLength = 5;
+        editor.config.uploadImgParams = { filetype: 1, fileby: '作业管理/学生作答' };
+        editor.config.showLinkImg = false;
+        editor.config.uploadImgHooks = {
+            customInsert: function (insertImg, result) {
+                if (result.code == 0 && !!result.data) {
+                    for (var i = 0; i < result.data.length; i++) {
+                        insertImg(result.data[i].src);
+                    }
+                } else {
+                    common.modalMsg(result.msg || '图片上传失败', 'warning');
+                }
+            }
+        };
+        editor.config.menus = [
+            'head', 'bold', 'fontSize', 'fontName', 'italic', 'underline', 'strikeThrough',
+            'foreColor', 'backColor', 'link', 'list', 'justify', 'undo', 'redo'
+        ];
+        editor.create();
+
+        $(function () {
+            common.ajax({
+                url: '/InstructionalManagement/Homework/GetHomeworkDetailJson',
+                data: { keyValue: keyValue },
+                async: false,
+                success: function (data) {
+                    fullScore = data.F_FullScore == null ? 100 : data.F_FullScore;
+                    $('#v_Title').text(data.F_Title || '');
+                    $('#v_Meta').text((data.F_CourseName || '') + ' ｜ ' + (data.F_ClassName || '') + ' ｜ 满分 ' + fullScore + ' ｜ 截止：' + (data.F_Deadline ? String(data.F_Deadline).replace(/\//g, '-').replace('T', ' ').substring(0, 16) : '不限'));
+                    $('#v_Content').html(data.F_Content || '<span style="color:#999">（无文字要求）</span>');
+                    if (!!data.F_FileUrl) {
+                        $('#v_File').html('作业附件：<a href="' + data.F_FileUrl + '" target="_blank" style="color:#1E9FFF">' + (data.F_FileName || '下载附件') + '</a>');
+                    }
+                    if (!!data.F_MySubmitId) {
+                        editor.txt.html(data.F_MyContent || '');
+                        if (!!data.F_MyFileUrl) {
+                            setFile(data.F_MyFileUrl, data.F_MyFileName, data.F_MyFileSize);
+                        }
+                        if (data.F_MyStatus === 1) {
+                            $('#v_Graded').html('已批改：<span style="color:#FF5722;font-weight:bold;font-size:16px;">' + data.F_MyScore + '</span> / ' + fullScore +
+                                '<span style="margin-left:15px;color:#666;">评语：' + (data.F_MyComment || '无') + '</span>');
+                        } else {
+                            $('#v_Graded').html('<span class="layui-badge layui-bg-orange">待批改</span>');
+                        }
+                    }
+                }
+            });
+            form.render();
+        });
+        wcLoading.close();
+
+        function setFile(url, name, size) {
+            $('#F_FileUrl').val(url || '');
+            $('#F_FileName').val(name || '');
+            $('#F_FileSize').val(size || '');
+            if (!!url) {
+                $('#fileInfo').html('已上传：<a href="' + url + '" target="_blank" style="color:#1E9FFF">' + (name || '附件') + '</a> <a href="javascript:;" id="removeFile" style="color:#FF5722">删除</a>');
+                $('#removeFile').on('click', function () {
+                    setFile('', '', '');
+                    $('#fileInfo').html('');
+                });
+            }
+        }
+
+        function renderUpload(elem, accept, tip) {
+            upload.render({
+                elem: elem,
+                url: '/InstructionalManagement/Homework/UploadFile',
+                accept: accept,
+                size: 51200,
+                done: function (res) {
+                    if (res.code > 0) {
+                        common.modalMsg(res.msg, 'warning');
+                        return false;
+                    }
+                    setFile(res.data.url, res.data.name, res.data.size);
+                }
+            });
+        }
+        renderUpload('#btnUpload', 'file', '');
+        renderUpload('#btnCamera', 'images', '');
+
+        form.on('submit(saveBtn)', function (data) {
+            $('#F_Content').val(editor.txt.html());
+            common.submitForm({
+                url: '/InstructionalManagement/Homework/SaveAnswer',
+                param: {
+                    homeworkId: keyValue,
+                    content: $('#F_Content').val(),
+                    fileUrl: $('#F_FileUrl').val(),
+                    fileName: $('#F_FileName').val(),
+                    fileSize: $('#F_FileSize').val() || 0
+                },
+                success: function () {
+                    common.parentreload('data-search-btn');
+                }
+            });
+            return false;
+        });
+    });
+</script>
+
+<body>
+    <div class="layuimini-container">
+        <div class="layuimini-main">
+            <div class="layui-form layuimini-form" lay-filter="adminform">
+                <div class="hw-info">
+                    <div class="hw-title" id="v_Title"></div>
+                    <div class="hw-meta" id="v_Meta"></div>
+                    <div style="margin-top:8px;" id="v_File"></div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">作业要求</label>
+                    <div class="layui-input-block">
+                        <div class="hw-content" id="v_Content"></div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">批改结果</label>
+                    <div class="layui-input-block">
+                        <div class="layui-form-mid" id="v_Graded"></div>
+                    </div>
+                </div>
+                <hr />
+                <div class="layui-form-item layui-form-text">
+                    <label class="layui-form-label">在线作答</label>
+                    <div class="layui-input-block">
+                        <div id="editor" style="height:260px;"></div>
+                        <div class="layui-form-mid layui-word-aux">可直接在编辑器中填写文字、插入图片；也可只上传附件</div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">附件/拍照</label>
+                    <div class="layui-input-block">
+                        <button type="button" class="layui-btn layui-btn-primary" id="btnUpload"><i class="layui-icon">&#xe67c;</i>选择文件</button>
+                        <button type="button" class="layui-btn layui-btn-normal" id="btnCamera"><i class="layui-icon">&#xe60d;</i>拍照上传</button>
+                        <div id="fileInfo" style="display:inline-block;margin-left:10px;"></div>
+                        <div class="layui-form-mid layui-word-aux">支持手机拍照上传，单个文件最大50MB（图片、Word、PDF等）</div>
+                    </div>
+                </div>
+                <input type="hidden" id="F_Content" name="F_Content" />
+                <input type="hidden" id="F_FileUrl" name="F_FileUrl" />
+                <input type="hidden" id="F_FileName" name="F_FileName" />
+                <input type="hidden" id="F_FileSize" name="F_FileSize" />
+                <div class="layui-form-item layui-hide">
+                    <button class="layui-btn site-demo-active" lay-submit id="submit" lay-filter="saveBtn">提交作业</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>

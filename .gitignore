@@ -343,4 +343,13 @@ healthchecksdb
 
 # 运行期上传目录
 /WaterCloud.Web/wwwroot/file/local/
+/WaterCloud.Web/wwwroot/file/course/
+/WaterCloud.Web/wwwroot/file/homework/
 /LayIM/uploads/
+
+# 本地工具与临时文件
+/.trae/
+/.vscode/
+/node_modules/
+package.json
+package-lock.json

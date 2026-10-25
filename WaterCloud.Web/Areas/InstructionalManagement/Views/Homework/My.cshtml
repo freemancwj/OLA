@@ -1,0 +1,120 @@
+@{
+    ViewBag.Title = "我的作业";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'table', 'common', 'commonTable', 'optimizeSelectOption'], function () {
+        var $ = layui.jquery,
+            form = layui.form,
+            table = layui.table,
+            common = layui.common,
+            commonTable = layui.commonTable;
+
+        wcLoading.close();
+
+        commonTable.rendertable({
+            elem: '#currentTableId',
+            id: 'currentTableId',
+            url: '/InstructionalManagement/Homework/GetMyGridJson',
+            cols: [[
+                { field: 'F_Title', title: '作业标题', width: 240 },
+                { field: 'F_CourseName', title: '课程', width: 140 },
+                { field: 'F_ClassName', title: '班级', width: 130 },
+                {
+                    field: 'F_Deadline', title: '截止时间', width: 160, sort: true,
+                    templet: function (d) {
+                        return d.F_Deadline ? String(d.F_Deadline).replace(/\//g, '-').replace('T', ' ').substring(0, 16) : '不限';
+                    }
+                },
+                { field: 'F_FullScore', title: '满分', width: 70, align: 'center' },
+                {
+                    title: '提交状态', width: 110, align: 'center',
+                    templet: function (d) {
+                        if (!d.F_SubmitId) {
+                            return '<span class="layui-badge layui-bg-gray">未提交</span>';
+                        }
+                        if (d.F_SubmitStatus === 1) {
+                            return '<span class="layui-badge layui-bg-green">已批改</span>';
+                        }
+                        return '<span class="layui-badge layui-bg-orange">待批改</span>';
+                    }
+                },
+                {
+                    field: 'F_Score', title: '得分', width: 80, align: 'center',
+                    templet: function (d) {
+                        return d.F_SubmitStatus === 1 ? '<span style="color:#FF5722;font-weight:bold;">' + d.F_Score + '</span>' : '';
+                    }
+                },
+                {
+                    field: 'F_SubmitTime', title: '提交时间', width: 160, sort: true,
+                    templet: function (d) {
+                        return d.F_SubmitTime ? String(d.F_SubmitTime).replace(/\//g, '-').replace('T', ' ').substring(0, 16) : '';
+                    }
+                },
+                { title: '操作', width: 140, toolbar: '#currentTableBar', align: 'center', fixed: 'right' }
+            ]]
+        });
+
+        form.on('submit(data-search-btn)', function (data) {
+            commonTable.reloadtable({
+                elem: 'currentTableId',
+                curr: 1,
+                where: {
+                    keyword: $('#txt_keyword').val(),
+                    status: $('#F_Status').val()
+                }
+            });
+            return false;
+        });
+
+        table.on('tool(currentTableFilter)', function (obj) {
+            var data = obj.data;
+            if (obj.event === 'submit') {
+                common.modalOpen({
+                    title: (data.F_SubmitId ? '查看/修改作业' : '提交作业') + ' - ' + data.F_Title,
+                    url: '/InstructionalManagement/Homework/Submit?keyValue=' + data.F_Id,
+                    width: '900px',
+                    height: '92%'
+                });
+            }
+        });
+    });
+</script>
+
+<div class="layuimini-container">
+    <div class="layuimini-main">
+        <fieldset class="table-search-fieldset">
+            <legend>搜索信息</legend>
+            <div style="margin: 10px 10px 10px 10px">
+                <form class="layui-form layui-form-pane">
+                    <div class="layui-form-item">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">关键字:</label>
+                            <div class="layui-input-inline">
+                                <input type="text" id="txt_keyword" name="txt_keyword" autocomplete="off" class="layui-input" placeholder="作业标题/课程">
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">状态:</label>
+                            <div class="layui-input-inline">
+                                <select id="F_Status" name="F_Status">
+                                    <option value="">全部</option>
+                                    <option value="0">未提交</option>
+                                    <option value="1">待批改</option>
+                                    <option value="2">已批改</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <button type="submit" class="layui-btn layui-btn-primary" lay-submit lay-filter="data-search-btn"><i class="layui-icon">&#xe615;</i> 搜 索</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </fieldset>
+        <script type="text/html" id="currentTableBar">
+            <a class="layui-btn layui-btn-xs layui-btn-normal" lay-event="submit" id="NF-submit" authorize><i class="layui-icon">&#xe642;</i>查看/提交</a>
+        </script>
+        <table class="layui-hide" id="currentTableId" lay-filter="currentTableFilter"></table>
+    </div>
+</div>

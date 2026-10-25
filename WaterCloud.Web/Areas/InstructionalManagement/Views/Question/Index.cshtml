@@ -1,0 +1,223 @@
+@{
+    ViewBag.Title = "题库管理";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<div class="layuimini-container">
+    <div class="layuimini-main">
+        <div class="layui-btn-group">
+            <button id="btn-expand" type="button" class="layui-btn layui-btn-primary layui-btn-sm">
+                <i class="layui-icon layui-icon-spread-left"></i> 展开搜索
+            </button>
+            <button id="btn-refresh" type="button" class="layui-btn layui-btn-primary layui-btn-sm">
+                <i class="layui-icon layui-icon-refresh"></i> 刷新
+            </button>
+        </div>
+        <fieldset class="table-search-fieldset layui-hide" id="searchField">
+            <div>
+                <form class="layui-form layui-form-pane">
+                    <div class="layui-form-item">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">关键字:</label>
+                            <div class="layui-input-inline">
+                                <input type="text" id="txt_keyword" name="txt_keyword" autocomplete="off" class="layui-input" placeholder="题目/解析/科目">
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">科目:</label>
+                            <div class="layui-input-inline">
+                                <select id="ddl_course" name="ddl_course" lay-search>
+                                    <option value="">全部科目</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">题型:</label>
+                            <div class="layui-input-inline">
+                                <select id="ddl_type" name="ddl_type">
+                                    <option value="">全部题型</option>
+                                    <option value="1">单选题</option>
+                                    <option value="2">多选题</option>
+                                    <option value="3">判断题</option>
+                                    <option value="4">简答题</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <button type="submit" class="layui-btn layui-btn-primary" lay-submit lay-filter="data-search-btn">
+                                <i class="layui-icon">&#xe615;</i> 搜 索
+                            </button>
+                            <button type="button" class="layui-btn layui-btn-primary" id="btn-reset">
+                                <i class="layui-icon">&#xe666;</i> 重 置
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </fieldset>
+        <script type="text/html" id="toolbarDemo">
+            <div class="layui-btn-container" id="toolbar">
+                <button id="NF-add" name="NF-add" authorize class="layui-btn layui-btn-sm" lay-event="add"><i class="layui-icon">&#xe654;</i>新增题目</button>
+                <button id="NF-edit" name="NF-edit" authorize class="layui-btn layui-btn-sm layui-btn-warm layui-hide" lay-event="edit"><i class="layui-icon">&#xe642;</i>修改</button>
+                <button id="NF-delete" name="NF-delete" authorize class="layui-btn layui-btn-sm layui-btn-danger layui-hide" lay-event="delete"><i class="layui-icon">&#xe640;</i>删除</button>
+            </div>
+        </script>
+        <table class="layui-hide" id="currentTableId" lay-filter="currentTableFilter"></table>
+        <script type="text/html" id="currentTableBar">
+            <a id="NF-edit" authorize class="layui-btn layui-btn-xs layui-btn-warm" lay-event="edit">修改</a>
+            <a id="NF-delete" authorize class="layui-btn layui-btn-xs layui-btn-danger" lay-event="delete">删除</a>
+        </script>
+    </div>
+</div>
+<script>
+    layui.use(['jquery', 'form', 'table', 'commonTable', 'common', 'optimizeSelectOption'], function () {
+        var $ = layui.jquery,
+            form = layui.form,
+            table = layui.table,
+            commonTable = layui.commonTable,
+            common = layui.common;
+
+        //HTML转义，避免题目内容中的特殊字符破坏表格
+        function escapeHtml(text) {
+            if (text === null || text === undefined) return '';
+            return String(text).replace(/[&<>"']/g, function (m) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+            });
+        }
+
+        function loadOptions() {
+            common.ajax({
+                url: '/InstructionalManagement/Question/GetCourseListJson', async: false,
+                success: function (data) {
+                    var html = '<option value="">全部科目</option>';
+                    $.each(data, function (i, item) { html += '<option value="' + item.F_Id + '">' + item.F_ItemName + '</option>'; });
+                    $('#ddl_course').html(html);
+                }
+            });
+            form.render('select');
+        }
+
+        function getSearchParams() {
+            return {
+                keyword: $('#txt_keyword').val(),
+                courseId: $('#ddl_course').val(),
+                type: $('#ddl_type').val()
+            };
+        }
+
+        function reloadTable() {
+            commonTable.reloadtable({ elem: 'currentTableId', curr: 1, where: getSearchParams() });
+        }
+
+        loadOptions();
+        currentTableBar.innerHTML = common.authorizeButtonNew(currentTableBar.innerHTML);
+        toolbarDemo.innerHTML = common.authorizeButtonNew(toolbarDemo.innerHTML);
+
+        commonTable.rendertable({
+            elem: '#currentTableId',
+            id: 'currentTableId',
+            url: '/InstructionalManagement/Question/GetGridJson',
+            where: getSearchParams(),
+            cols: [[
+                { type: "checkbox", width: 50, fixed: 'left' },
+                { field: 'F_TypeName', title: '题型', width: 90, align: 'center', sort: true },
+                {
+                    field: 'F_Content', title: '题目内容', minWidth: 280, sort: true,
+                    templet: function (d) {
+                        var text = escapeHtml(d.F_Content);
+                        return '<span title="' + text + '" style="display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle;">' + text + '</span>';
+                    }
+                },
+                { field: 'F_CourseName', title: '科目', width: 130, sort: true },
+                { field: 'F_DifficultyName', title: '难度', width: 80, align: 'center', sort: true },
+                {
+                    field: 'F_Score', title: '默认分值', width: 100, align: 'center', sort: true,
+                    templet: function (d) {
+                        return d.F_Score === null || d.F_Score === undefined ? '-' : d.F_Score;
+                    }
+                },
+                { field: 'F_CreatorTime', title: '创建时间', width: 160, sort: true },
+                { title: '操作', width: 140, toolbar: '#currentTableBar', align: "center", fixed: 'right' }
+            ]]
+        });
+
+        $('#btn-expand').click(function () {
+            var $searchField = $('#searchField');
+            if ($searchField.hasClass('layui-hide')) {
+                $searchField.removeClass('layui-hide');
+                $(this).html('<i class="layui-icon layui-icon-shrink-right"></i> 收起搜索');
+            } else {
+                $searchField.addClass('layui-hide');
+                $(this).html('<i class="layui-icon layui-icon-spread-left"></i> 展开搜索');
+            }
+            table.resize();
+        });
+        $('#btn-refresh').click(function () { reloadTable(); });
+        $('#btn-reset').click(function () {
+            $('#txt_keyword').val('');
+            $('#ddl_course').val('');
+            $('#ddl_type').val('');
+            form.render();
+        });
+        form.on('submit(data-search-btn)', function () {
+            reloadTable();
+            return false;
+        });
+        wcLoading.close();
+
+        var oneList = ["NF-edit"];
+        var moreList = ["NF-delete"];
+        commonTable.tableRowClick("checkbox", "currentTableFilter", "currentTableId", oneList, moreList);
+
+        function openForm(title, url, width, height) {
+            common.modalOpen({ title: title, url: url, width: width, height: height });
+        }
+
+        function getChecked() {
+            return table.checkStatus('currentTableId').data;
+        }
+
+        table.on('toolbar(currentTableFilter)', function (obj) {
+            var data = getChecked();
+            var id = data.length > 0 ? data[0].F_Id : null;
+            if (obj.event === 'add') {
+                openForm("新增题目", "/InstructionalManagement/Question/Form", "760px", "720px");
+            }
+            else if (obj.event === 'edit') {
+                if (data.length == 0) { common.modalMsg("未选中数据", "warning"); return false; }
+                if (data.length > 1) { common.modalMsg("只能选择一条数据进行编辑", "warning"); return false; }
+                openForm("修改题目", "/InstructionalManagement/Question/Form?keyValue=" + id, "760px", "720px");
+            }
+            else if (obj.event === 'delete') {
+                if (data.length == 0) { common.modalMsg("未选中数据", "warning"); return false; }
+                var ids = [];
+                for (var i = 0; i < data.length; i++) { ids.push(data[i].F_Id); }
+                common.deleteForm({
+                    url: "/InstructionalManagement/Question/DeleteForm",
+                    param: { keyValue: ids.join(',') },
+                    success: function () { reloadTable(); }
+                });
+            }
+            else if (obj.event === 'TABLE_SEARCH') {
+                var _that = $("#searchField");
+                if (_that.hasClass("layui-hide")) { _that.removeClass('layui-hide'); } else { _that.addClass('layui-hide'); }
+                table.resize();
+            }
+            return false;
+        });
+
+        table.on('tool(currentTableFilter)', function (obj) {
+            var data = obj.data;
+            if (obj.event === 'delete') {
+                common.deleteForm({
+                    url: "/InstructionalManagement/Question/DeleteForm",
+                    param: { keyValue: data.F_Id },
+                    success: function () { obj.del(); }
+                });
+            }
+            else if (obj.event === 'edit') {
+                openForm("修改题目", "/InstructionalManagement/Question/Form?keyValue=" + data.F_Id, "760px", "720px");
+            }
+            return false;
+        });
+    });
+</script>

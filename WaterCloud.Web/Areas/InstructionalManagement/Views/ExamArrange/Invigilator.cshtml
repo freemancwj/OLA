@@ -1,0 +1,102 @@
+@{
+    ViewBag.Title = "监考管理";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'table', 'common', 'commonTable', 'optimizeSelectOption'], function () {
+        var $ = layui.jquery,
+            form = layui.form,
+            table = layui.table,
+            common = layui.common,
+            commonTable = layui.commonTable;
+
+        wcLoading.close();
+
+        //教师下拉（非管理员由服务端强制只看自己）
+        $("#F_TeacherId").bindSelect({
+            url: "/InstructionalManagement/ExamArrange/GetTeacherListJson",
+            id: "F_Id",
+            text: "TeacherName",
+            search: true
+        });
+
+        commonTable.rendertable({
+            elem: '#currentTableId',
+            id: 'currentTableId',
+            url: '/InstructionalManagement/ExamArrange/GetInvigilatorGridJson',
+            cols: [[
+                { field: 'F_ExamName', title: '考试名称', width: 200, sort: true },
+                { field: 'F_CourseName', title: '课程', width: 130 },
+                { field: 'F_ClassName', title: '班级', width: 140 },
+                { field: 'F_ClassroomName', title: '考场', width: 150 },
+                {
+                    field: 'F_ExamDate', title: '考试日期', width: 110, sort: true,
+                    templet: function (d) {
+                        return d.F_ExamDate ? String(d.F_ExamDate).replace(/\//g, '-').substring(0, 10) : '';
+                    }
+                },
+                { field: 'F_PeriodName', title: '时间段', width: 140 },
+                { field: 'F_MainInvigilatorName', title: '主监考', width: 100 },
+                { field: 'F_SubInvigilatorName', title: '副监考', width: 100 },
+                { field: 'F_Status', title: '状态', width: 90, templet: '#statusTpl' }
+            ]]
+        });
+
+        //监听搜索
+        form.on('submit(data-search-btn)', function (data) {
+            commonTable.reloadtable({
+                elem: 'currentTableId',
+                curr: 1,
+                where: {
+                    keyword: $('#txt_keyword').val(),
+                    teacherId: $('#F_TeacherId').val()
+                }
+            });
+            return false;
+        });
+    });
+</script>
+
+<div class="layuimini-container">
+    <div class="layuimini-main">
+        <fieldset class="table-search-fieldset">
+            <legend>搜索信息</legend>
+            <div style="margin: 10px 10px 10px 10px">
+                <form class="layui-form layui-form-pane">
+                    <div class="layui-form-item">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">关键字:</label>
+                            <div class="layui-input-inline">
+                                <input type="text" id="txt_keyword" name="txt_keyword" autocomplete="off" class="layui-input" placeholder="考试名称/课程/班级">
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">监考教师:</label>
+                            <div class="layui-input-inline">
+                                <select id="F_TeacherId" name="F_TeacherId" lay-search>
+                                    <option value="">请选择教师</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <button type="submit" class="layui-btn layui-btn-primary" lay-submit lay-filter="data-search-btn"><i class="layui-icon">&#xe615;</i> 搜 索</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </fieldset>
+        <script type="text/html" id="toolbarDemo">
+            <div class="layui-btn-container"></div>
+        </script>
+        <script type="text/html" id="statusTpl">
+            {{# if(d.F_Status === 1){ }}
+            <span class="layui-badge layui-bg-blue">已开考</span>
+            {{# } else if(d.F_Status === 2){ }}
+            <span class="layui-badge layui-bg-green">已结束</span>
+            {{# } else { }}
+            <span class="layui-badge layui-bg-orange">未开考</span>
+            {{# } }}
+        </script>
+        <table class="layui-hide" id="currentTableId" lay-filter="currentTableFilter"></table>
+    </div>
+</div>

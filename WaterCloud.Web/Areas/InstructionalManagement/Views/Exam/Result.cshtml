@@ -1,0 +1,217 @@
+@{
+    ViewBag.Title = "成绩详情";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<style>
+    body { background: #f2f2f2; }
+    .result-wrap { max-width: 960px; margin: 0 auto; padding: 16px; box-sizing: border-box; }
+    .result-loading { padding: 40px; text-align: center; color: #999; }
+    .result-panel { background: #fff; border-radius: 8px; padding: 20px 24px; box-shadow: 0 1px 4px rgba(0,0,0,.1); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+    .result-title { font-size: 18px; font-weight: bold; color: #333; }
+    .result-sub { margin-top: 8px; font-size: 12px; color: #888; }
+    .result-score { text-align: right; }
+    .result-score .score-num { font-size: 42px; font-weight: bold; color: #1e9fff; line-height: 1; }
+    .result-score .score-full { font-size: 14px; color: #999; margin-left: 6px; }
+    .result-pass { margin-top: 8px; text-align: right; }
+    .result-passline { font-size: 12px; color: #888; margin-left: 8px; }
+    .result-meta { background: #fff; border-radius: 8px; padding: 12px 24px; margin-top: 12px; box-shadow: 0 1px 4px rgba(0,0,0,.06); font-size: 13px; color: #666; }
+    .result-meta span { margin-right: 28px; }
+    .result-meta b { color: #333; }
+    .result-q { background: #fff; border-radius: 6px; padding: 14px 18px; margin-top: 12px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+    .result-q-head { display: flex; align-items: center; margin-bottom: 8px; }
+    .result-q-head .q-no { font-weight: bold; color: #333; margin-right: 10px; }
+    .result-q-head .q-score { margin-left: auto; font-size: 12px; color: #999; }
+    .result-q-content { font-size: 14px; color: #333; line-height: 1.7; margin-bottom: 10px; white-space: pre-wrap; word-break: break-word; }
+    .result-options { margin-bottom: 10px; }
+    .result-opt { display: flex; align-items: flex-start; padding: 7px 10px; border: 1px solid #e6e6e6; border-radius: 4px; margin-bottom: 6px; font-size: 13px; color: #444; line-height: 1.6; }
+    .result-opt .opt-label { font-weight: bold; color: #555; margin-right: 6px; flex-shrink: 0; }
+    .result-opt .opt-text { word-break: break-word; }
+    .result-opt.mine { border-color: #1e9fff; background: #f5faff; }
+    .result-opt.right { border-color: #5fb878; background: #f0fbf4; }
+    .opt-badge { margin-left: auto; flex-shrink: 0; font-size: 12px; padding: 0 6px; border-radius: 3px; line-height: 18px; margin-top: 1px; }
+    .opt-badge.mine-badge { color: #1e9fff; background: #e6f4ff; }
+    .opt-badge.right-badge { color: #3a9c5b; background: #e3f6ea; }
+    .result-line { font-size: 13px; color: #444; line-height: 1.8; }
+    .result-label { color: #888; }
+    .answer-mine { color: #1e9fff; font-weight: bold; }
+    .answer-right { color: #3a9c5b; font-weight: bold; }
+    .result-analysis { margin-top: 8px; padding: 10px 12px; background: #fafafa; border-left: 3px solid #1e9fff; font-size: 13px; color: #555; line-height: 1.7; white-space: pre-wrap; word-break: break-word; }
+    .result-analysis b { color: #333; }
+</style>
+<div class="result-wrap" id="resultWrap">
+    <div class="result-loading">正在加载成绩...</div>
+</div>
+<script>
+    layui.use(['jquery', 'common'], function () {
+        var $ = layui.jquery,
+            common = layui.common;
+
+        var recordId = $.request('recordId');
+
+        if (!recordId) {
+            common.modalMsg('缺少成绩记录参数', 'warning');
+            wcLoading.close();
+            return;
+        }
+
+        function esc(text) {
+            if (text === null || text === undefined) return '';
+            return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        function typeName(type) {
+            type = parseInt(type, 10);
+            if (type === 2) return '多选题';
+            if (type === 3) return '判断题';
+            if (type === 4) return '简答题';
+            if (type === 1) return '单选题';
+            return '题目';
+        }
+
+        //答案文字（字母转选项内容）
+        function answerHtml(answer, a, type) {
+            if (answer === null || answer === undefined || answer === '') {
+                return '<span class="layui-color-gray">未作答</span>';
+            }
+            if (type === 4) {
+                return '<span style="white-space:pre-wrap;word-break:break-word;">' + esc(answer) + '</span>';
+            }
+            var letters = String(answer).toUpperCase().split('');
+            var parts = [];
+            $.each(letters, function (i, letter) {
+                var text = a['F_Option' + letter];
+                if (type === 3) {
+                    if (letter === 'A') text = '正确';
+                    else if (letter === 'B') text = '错误';
+                }
+                parts.push(letter + (text ? '. ' + esc(text) : ''));
+            });
+            return parts.join('；');
+        }
+
+        //选项列表（简答题不显示选项）
+        function optionRows(a, type) {
+            if (type === 4) return '';
+            var letters = ['A', 'B', 'C', 'D'];
+            var student = String(a.F_StudentAnswer || '').toUpperCase();
+            var right = String(a.F_Answer || '').toUpperCase();
+            var html = '<div class="result-options">';
+            $.each(letters, function (i, letter) {
+                var text = a['F_Option' + letter];
+                if (type === 3) {
+                    if (letter === 'A' && (text === null || text === undefined || text === '')) text = '正确';
+                    if (letter === 'B' && (text === null || text === undefined || text === '')) text = '错误';
+                }
+                if (text === null || text === undefined || text === '') return;
+                var cls = 'result-opt';
+                var badges = '';
+                if (student.indexOf(letter) >= 0) {
+                    cls += ' mine';
+                    badges += '<span class="opt-badge mine-badge">我的答案</span>';
+                }
+                if (right.indexOf(letter) >= 0) {
+                    cls += ' right';
+                    badges += '<span class="opt-badge right-badge">正确答案</span>';
+                }
+                html += '<div class="' + cls + '">' +
+                    '<span class="opt-label">' + letter + '.</span>' +
+                    '<span class="opt-text">' + esc(text) + '</span>' + badges +
+                    '</div>';
+            });
+            html += '</div>';
+            return html;
+        }
+
+        function render(data) {
+            var record = data.record || {};
+            var answers = data.answers || [];
+            var pending = (record.F_Status == 0);
+
+            var passBadge = pending
+                ? '<span class="layui-badge layui-bg-orange">待批改</span>'
+                : (record.F_IsPassed == 1
+                    ? '<span class="layui-badge layui-bg-green">及格</span>'
+                    : '<span class="layui-badge layui-bg-red">不及格</span>');
+
+            var html = '<div class="result-panel">' +
+                    '<div>' +
+                        '<div class="result-title">' + esc(record.F_ExamTitle || '考试成绩') + '</div>' +
+                        '<div class="result-sub">开始时间：' + esc(record.F_StartTime || '-') + '　提交时间：' + esc(record.F_SubmitTime || '-') + '</div>' +
+                    '</div>' +
+                    '<div>' +
+                        '<div class="result-score">' +
+                            '<span class="score-num">' + (record.F_TotalScore == null ? '-' : record.F_TotalScore) + '</span>' +
+                            '<span class="score-full">/ ' + (record.F_ExamTotalScore == null ? 0 : record.F_ExamTotalScore) + ' 分</span>' +
+                        '</div>' +
+                        '<div class="result-pass">' + passBadge +
+                            '<span class="result-passline">及格分：' + (record.F_PassScore == null ? '-' : record.F_PassScore) + '</span>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="result-meta">' +
+                    '<span>客观分：<b>' + (record.F_ObjectiveScore == null ? '-' : record.F_ObjectiveScore) + '</b></span>' +
+                    '<span>主观分：<b>' + (record.F_SubjectiveScore == null ? '-' : record.F_SubjectiveScore) + '</b></span>' +
+                    '<span>批改人：<b>' + esc(record.F_GraderName || '-') + '</b></span>' +
+                '</div>';
+
+            if (answers.length === 0) {
+                html += '<div class="result-q"><div class="result-loading">暂无作答明细</div></div>';
+            }
+
+            $.each(answers, function (i, a) {
+                var type = parseInt(a.F_QuestionType, 10);
+                //待批改的简答题不显示正确答案
+                var hideAnswer = pending && type === 4;
+                var correctBadge = '';
+                if (a.F_IsCorrect == 1) {
+                    correctBadge = '<span class="layui-badge layui-bg-green">正确</span>';
+                }
+                else if (a.F_IsCorrect == 0) {
+                    correctBadge = '<span class="layui-badge layui-bg-red">错误</span>';
+                }
+                else {
+                    correctBadge = '<span class="layui-badge layui-bg-orange">待批改</span>';
+                }
+                var scoreText = (a.F_Score == null)
+                    ? '待批改'
+                    : (a.F_Score + ' / ' + (a.F_FullScore == null ? 0 : a.F_FullScore) + ' 分');
+
+                html += '<div class="result-q">' +
+                    '<div class="result-q-head">' +
+                        '<span class="q-no">第' + (i + 1) + '题</span>' +
+                        '<span class="layui-badge layui-bg-blue">' + typeName(type) + '</span>' +
+                        '<span style="margin-left:8px;">' + correctBadge + '</span>' +
+                        '<span class="q-score">得分：' + scoreText + '</span>' +
+                    '</div>' +
+                    '<div class="result-q-content">' + esc(a.F_Content) + '</div>' +
+                    optionRows(a, type) +
+                    '<div class="result-line"><span class="result-label">我的答案：</span><span class="answer-mine">' + answerHtml(a.F_StudentAnswer, a, type) + '</span></div>' +
+                    (hideAnswer ? '' : '<div class="result-line"><span class="result-label">正确答案：</span><span class="answer-right">' + answerHtml(a.F_Answer, a, type) + '</span></div>') +
+                    (a.F_Comment ? '<div class="result-line"><span class="result-label">评语：</span>' + esc(a.F_Comment) + '</div>' : '') +
+                    (a.F_Analysis ? '<div class="result-analysis"><b>解析：</b>' + esc(a.F_Analysis) + '</div>' : '') +
+                    '</div>';
+            });
+
+            $('#resultWrap').html(html);
+        }
+
+        common.ajax({
+            url: '/InstructionalManagement/Exam/GetResultJson',
+            data: { recordId: recordId },
+            success: function (res) {
+                if (!res || Number(res.state) < 0 || !res.data) {
+                    common.modalMsg((res && (res.msg || res.message)) || '成绩加载失败', 'warning');
+                    $('#resultWrap').html('<div class="result-loading">成绩加载失败</div>');
+                    return;
+                }
+                render(res.data);
+            },
+            error: function () {
+                common.modalMsg('成绩加载失败', 'error');
+                $('#resultWrap').html('<div class="result-loading">成绩加载失败</div>');
+            }
+        });
+
+        wcLoading.close();
+    });
+</script>

@@ -1,0 +1,86 @@
+@{
+    ViewBag.Title = "排课参数";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'common'], function () {
+        var form = layui.form,
+            $ = layui.jquery,
+            common = layui.common;
+
+        $(function () {
+            common.ajax({
+                url: '/InstructionalManagement/ScheduleParam/GetFormJson',
+                async: false,
+                success: function (data) {
+                    $('#F_DaysPerWeek').val(data.F_DaysPerWeek || 5);
+                    $('#F_SectionsPerDay').val(data.F_SectionsPerDay || 8);
+                    $('#F_MaxSameCourseDaily').val(data.F_MaxSameCourseDaily || 2);
+                    $('#F_MaxConsecutive').val(data.F_MaxConsecutive || 0);
+                    $('#F_Description').val(data.F_Description);
+                }
+            });
+            form.render();
+        });
+        wcLoading.close();
+
+        //监听提交
+        form.on('submit(saveBtn)', function (data) {
+            common.submitForm({
+                url: '/InstructionalManagement/ScheduleParam/SubmitForm',
+                param: data.field,
+                close: false,
+                success: function () {
+                    common.modalMsg('保存成功', 'success');
+                }
+            });
+            return false;
+        });
+    });
+</script>
+
+<body>
+    <div class="layuimini-container">
+        <div class="layuimini-main">
+            <div class="layui-form layuimini-form" lay-filter="adminform" style="max-width:600px;">
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">每周排课天数</label>
+                    <div class="layui-input-block">
+                        <input type="number" id="F_DaysPerWeek" name="F_DaysPerWeek" min="1" max="7" lay-verify="required|number" autocomplete="off" class="layui-input">
+                        <div class="layui-form-mid layui-word-aux">1-7，从周一开始计算</div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">每天节数</label>
+                    <div class="layui-input-block">
+                        <input type="number" id="F_SectionsPerDay" name="F_SectionsPerDay" min="1" max="20" lay-verify="required|number" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">同科每天最多节数</label>
+                    <div class="layui-input-block">
+                        <input type="number" id="F_MaxSameCourseDaily" name="F_MaxSameCourseDaily" min="1" max="10" lay-verify="required|number" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">同科最大连排</label>
+                    <div class="layui-input-block">
+                        <input type="number" id="F_MaxConsecutive" name="F_MaxConsecutive" min="0" max="10" lay-verify="number" autocomplete="off" class="layui-input">
+                        <div class="layui-form-mid layui-word-aux">0表示不限制</div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">说明</label>
+                    <div class="layui-input-block">
+                        <textarea id="F_Description" name="F_Description" maxlength="500" class="layui-textarea" placeholder="选填"></textarea>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-input-block">
+                        <button class="layui-btn" lay-submit lay-filter="saveBtn"><i class="layui-icon">&#xe605;</i> 保存参数</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>

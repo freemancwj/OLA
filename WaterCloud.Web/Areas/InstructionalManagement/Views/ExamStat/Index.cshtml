@@ -1,0 +1,99 @@
+@{
+    ViewBag.Title = "补考清考统计";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'table', 'common', 'commonTable', 'optimizeSelectOption'], function () {
+        var $ = layui.jquery,
+            form = layui.form,
+            table = layui.table,
+            common = layui.common,
+            commonTable = layui.commonTable;
+
+        wcLoading.close();
+
+        $("#F_Semester").bindSelect({
+            url: "/InstructionalManagement/ExamStat/GetSemesterListJson",
+            id: "F_Semester",
+            text: "F_Semester"
+        });
+
+        commonTable.rendertable({
+            elem: '#currentTableId',
+            id: 'currentTableId',
+            url: '/InstructionalManagement/ExamStat/GetGridJson',
+            page: false,
+            limit: 9999,
+            search: false,
+            cols: [[
+                { field: 'F_Semester', title: '学期', width: 130, sort: true },
+                { field: 'F_CourseName', title: '课程', width: 180, sort: true },
+                { field: 'F_MakeupCount', title: '补考人次', width: 110, align: 'center', sort: true },
+                { field: 'F_MakeupPassCount', title: '补考通过', width: 110, align: 'center' },
+                {
+                    field: 'F_MakeupRate', title: '补考通过率', width: 120, align: 'center', sort: true,
+                    templet: function (d) {
+                        if (!d.F_MakeupCount) return '-';
+                        var rate = d.F_MakeupPassCount * 100.0 / d.F_MakeupCount;
+                        var color = rate >= 60 ? 'layui-bg-green' : 'layui-bg-orange';
+                        return '<span class="layui-badge ' + color + '">' + rate.toFixed(1) + '%</span>';
+                    }
+                },
+                { field: 'F_ClearCount', title: '清考人次', width: 110, align: 'center', sort: true },
+                { field: 'F_ClearPassCount', title: '清考通过', width: 110, align: 'center' },
+                {
+                    field: 'F_ClearRate', title: '清考通过率', width: 120, align: 'center', sort: true,
+                    templet: function (d) {
+                        if (!d.F_ClearCount) return '-';
+                        var rate = d.F_ClearPassCount * 100.0 / d.F_ClearCount;
+                        var color = rate >= 60 ? 'layui-bg-green' : 'layui-bg-orange';
+                        return '<span class="layui-badge ' + color + '">' + rate.toFixed(1) + '%</span>';
+                    }
+                }
+            ]]
+        });
+
+        //监听搜索
+        form.on('submit(data-search-btn)', function (data) {
+            commonTable.reloadtable({
+                elem: 'currentTableId',
+                curr: 1,
+                where: {
+                    semester: $('#F_Semester').val()
+                }
+            });
+            return false;
+        });
+    });
+</script>
+
+<div class="layuimini-container">
+    <div class="layuimini-main">
+        <fieldset class="table-search-fieldset">
+            <legend>搜索信息</legend>
+            <div style="margin: 10px 10px 10px 10px">
+                <form class="layui-form layui-form-pane">
+                    <div class="layui-form-item">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">学期:</label>
+                            <div class="layui-input-inline">
+                                <select id="F_Semester" name="F_Semester">
+                                    <option value="">全部学期</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <button type="submit" class="layui-btn layui-btn-primary" lay-submit lay-filter="data-search-btn"><i class="layui-icon">&#xe615;</i> 搜 索</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </fieldset>
+        <script type="text/html" id="toolbarDemo">
+            <div class="layui-btn-container">
+                <span style="color:#888;font-size:12px;">按学期+课程统计补考/清考人次与通过情况（60分及以上为通过）；表格支持右上角导出/打印</span>
+            </div>
+        </script>
+        <table class="layui-hide" id="currentTableId" lay-filter="currentTableFilter"></table>
+    </div>
+</div>

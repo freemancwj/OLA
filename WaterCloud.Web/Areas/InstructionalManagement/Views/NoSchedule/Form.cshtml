@@ -1,0 +1,146 @@
+@{
+    ViewBag.Title = "不排课时间";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'common', 'optimizeSelectOption'], function () {
+        var form = layui.form,
+            $ = layui.jquery,
+            common = layui.common;
+        var keyValue = $.request("keyValue");
+
+        function initControl() {
+            $("#F_ClassroomId").bindSelect({
+                url: "/InstructionalManagement/NoSchedule/GetClassroomListJson",
+                id: "F_Id",
+                text: "F_Name",
+                search: true
+            });
+            $("#F_TeacherId").bindSelect({
+                url: "/InstructionalManagement/NoSchedule/GetTeacherListJson",
+                id: "F_Id",
+                text: "F_RealName",
+                search: true
+            });
+        }
+
+        //类型切换显示对象选择
+        function toggleTarget(type) {
+            $('#div_classroom').addClass('layui-hide');
+            $('#div_teacher').addClass('layui-hide');
+            if (type == '2') { $('#div_classroom').removeClass('layui-hide'); }
+            else if (type == '3') { $('#div_teacher').removeClass('layui-hide'); }
+        }
+        form.on('select(F_Type)', function (data) { toggleTarget(data.value); });
+
+        $(function () {
+            initControl();
+            if (!!keyValue) {
+                common.ajax({
+                    url: '/InstructionalManagement/NoSchedule/GetFormJson',
+                    data: { keyValue: keyValue },
+                    async: false,
+                    success: function (data) {
+                        $('#F_Type').val(String(data.F_Type || ''));
+                        if (data.F_Type == 2) { $('#F_ClassroomId').val(data.F_TargetId); }
+                        if (data.F_Type == 3) { $('#F_TeacherId').val(data.F_TargetId); }
+                        $('#F_WeekDay').val(String(data.F_WeekDay || ''));
+                        $('#F_Section').val(data.F_Section);
+                        $('#F_Reason').val(data.F_Reason);
+                        toggleTarget(String(data.F_Type || ''));
+                    }
+                });
+            }
+            form.render();
+        });
+        wcLoading.close();
+
+        //监听提交
+        form.on('submit(saveBtn)', function (data) {
+            var type = data.field.F_Type;
+            var targetId = '';
+            if (type == '2') { targetId = $('#F_ClassroomId').val(); }
+            else if (type == '3') { targetId = $('#F_TeacherId').val(); }
+            common.submitForm({
+                url: '/InstructionalManagement/NoSchedule/SubmitForm?keyValue=' + (keyValue || ''),
+                param: {
+                    F_Type: type,
+                    F_TargetId: targetId,
+                    F_WeekDay: data.field.F_WeekDay,
+                    F_Section: data.field.F_Section,
+                    F_Reason: data.field.F_Reason
+                },
+                success: function () {
+                    common.parentreload('data-search-btn');
+                }
+            });
+            return false;
+        });
+    });
+</script>
+
+<body>
+    <div class="layuimini-container">
+        <div class="layuimini-main">
+            <div class="layui-form layuimini-form" lay-filter="adminform">
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">类型</label>
+                    <div class="layui-input-block">
+                        <select id="F_Type" name="F_Type" lay-verify="required" lay-filter="F_Type">
+                            <option value="">请选择类型</option>
+                            <option value="1">全校</option>
+                            <option value="2">教室</option>
+                            <option value="3">教师</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-hide" id="div_classroom">
+                    <label class="layui-form-label required">教室</label>
+                    <div class="layui-input-block">
+                        <select id="F_ClassroomId" name="F_ClassroomId" lay-search>
+                            <option value="">请选择教室</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-hide" id="div_teacher">
+                    <label class="layui-form-label required">教师</label>
+                    <div class="layui-input-block">
+                        <select id="F_TeacherId" name="F_TeacherId" lay-search>
+                            <option value="">请选择教师</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">星期</label>
+                    <div class="layui-input-block">
+                        <select id="F_WeekDay" name="F_WeekDay" lay-verify="required">
+                            <option value="">请选择星期</option>
+                            <option value="1">周一</option>
+                            <option value="2">周二</option>
+                            <option value="3">周三</option>
+                            <option value="4">周四</option>
+                            <option value="5">周五</option>
+                            <option value="6">周六</option>
+                            <option value="7">周日</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">节次</label>
+                    <div class="layui-input-block">
+                        <input type="number" id="F_Section" name="F_Section" min="1" max="20" lay-verify="required|number" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">原因</label>
+                    <div class="layui-input-block">
+                        <input type="text" id="F_Reason" name="F_Reason" maxlength="200" autocomplete="off" class="layui-input" placeholder="选填">
+                    </div>
+                </div>
+                <div class="layui-form-item layui-hide">
+                    <button class="layui-btn site-demo-active" lay-submit id="submit" lay-filter="saveBtn">确认保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>

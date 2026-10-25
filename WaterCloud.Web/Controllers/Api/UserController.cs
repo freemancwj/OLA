@@ -1,4 +1,4 @@
-﻿using Jaina.EventBus;
+using Jaina.EventBus;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
@@ -79,10 +79,10 @@ namespace WaterCloud.Web
                 operatorModel.LoginTime = DateTime.Now;
                 operatorModel.DdUserId = userEntity.F_DingTalkUserId;
                 operatorModel.WxOpenId = userEntity.F_WxOpenId;
-                operatorModel.IsAdmin = userEntity.F_IsAdmin.Value;
-                operatorModel.IsBoss = userEntity.F_IsBoss.Value;
-                operatorModel.IsLeaderInDepts = userEntity.F_IsLeaderInDepts.Value;
-                operatorModel.IsSenior = userEntity.F_IsSenior.Value;
+                operatorModel.IsAdmin = userEntity.F_IsAdmin ?? false;
+                operatorModel.IsBoss = userEntity.F_IsBoss ?? false;
+                operatorModel.IsLeaderInDepts = userEntity.F_IsLeaderInDepts ?? false;
+                operatorModel.IsSenior = userEntity.F_IsSenior ?? false;
                 SystemSetEntity setEntity = await _setService.GetForm(userEntity.F_CompanyId);
                 operatorModel.DbNumber = setEntity.F_DbNumber;
                 if (operatorModel.IsAdmin && operatorModel.DbNumber == GlobalContext.SystemConfig.MainDbNumber)

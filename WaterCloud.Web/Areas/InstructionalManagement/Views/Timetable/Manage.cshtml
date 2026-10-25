@@ -1,0 +1,401 @@
+@{
+    ViewBag.Title = "课表管理";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<style>
+    .tt-wrap { padding: 10px; }
+    .tt-title { font-weight: bold; margin: 8px 0; color: #333; }
+    .tt-matrix { width: 100%; border-collapse: collapse; background: #fff; table-layout: fixed; }
+    .tt-matrix th, .tt-matrix td { border: 1px solid #e6e6e6; text-align: center; padding: 4px; font-size: 12px; }
+    .tt-matrix th { background: #f2f2f2; }
+    .tt-cell { min-height: 52px; cursor: pointer; }
+    .tt-cell:hover { background: #ecf5ff; }
+    .tt-course { font-weight: bold; color: #1e9fff; }
+    .tt-sub { color: #999; }
+    .tt-sec { background: #fafafa; width: 46px; color: #666; }
+</style>
+<div class="tt-wrap">
+    <div class="tt-title">授课计划（自动排课依据）</div>
+    <form class="layui-form layui-form-pane" style="margin-bottom:6px;">
+        <div class="layui-form-item" style="margin-bottom:6px;">
+            <div class="layui-inline">
+                <label class="layui-form-label">学期:</label>
+                <div class="layui-input-inline" style="width:160px;">
+                    <input type="text" id="txt_semester" autocomplete="off" class="layui-input" placeholder="如 2025-2026-1">
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">班级:</label>
+                <div class="layui-input-inline" style="width:160px;">
+                    <select id="ddl_planclass" lay-search><option value="">全部班级</option></select>
+                </div>
+            </div>
+            <div class="layui-inline">
+                <button type="submit" class="layui-btn layui-btn-primary" lay-submit lay-filter="plan-search-btn"><i class="layui-icon">&#xe615;</i> 查询</button>
+            </div>
+        </div>
+    </form>
+    <script type="text/html" id="planToolbar">
+        <div class="layui-btn-container">
+            <button class="layui-btn layui-btn-sm" lay-event="addPlan"><i class="layui-icon">&#xe654;</i>新增计划</button>
+            <button class="layui-btn layui-btn-sm layui-btn-normal" lay-event="autoGen"><i class="layui-icon">&#xe629;</i>自动排课</button>
+        </div>
+    </script>
+    <table class="layui-hide" id="planTable" lay-filter="planTableFilter"></table>
+    <script type="text/html" id="planBar">
+        <a class="layui-btn layui-btn-xs layui-btn-warm" lay-event="editPlan">修改</a>
+        <a class="layui-btn layui-btn-xs layui-btn-danger" lay-event="delPlan">删除</a>
+    </script>
+
+    <div class="tt-title" style="margin-top:16px;">课表调整（点击格子编辑）</div>
+    <form class="layui-form layui-form-pane" style="margin-bottom:6px;">
+        <div class="layui-form-item" style="margin-bottom:6px;">
+            <div class="layui-inline">
+                <label class="layui-form-label">班级:</label>
+                <div class="layui-input-inline" style="width:160px;">
+                    <select id="ddl_ttclass" lay-filter="ddl_ttclass" lay-search><option value="">请选择班级</option></select>
+                </div>
+            </div>
+            <div class="layui-inline">
+                <button type="button" class="layui-btn layui-btn-primary" id="btnReloadTt"><i class="layui-icon">&#xe666;</i> 刷新课表</button>
+                <button type="button" class="layui-btn layui-btn-danger" id="btnClearTt"><i class="layui-icon">&#xe640;</i> 清空该班课表</button>
+            </div>
+        </div>
+    </form>
+    <div id="ttMatrix"></div>
+</div>
+
+<!-- 计划表单 -->
+<div id="planFormDiv" class="layui-hide">
+    <div class="layui-form layuimini-form" lay-filter="planForm" style="padding:15px;">
+        <div class="layui-form-item">
+            <label class="layui-form-label required">学期</label>
+            <div class="layui-input-block">
+                <input type="text" id="P_F_Semester" name="F_Semester" autocomplete="off" maxlength="50" lay-verify="required" placeholder="如 2025-2026-1" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label required">班级</label>
+            <div class="layui-input-block">
+                <select id="P_F_ClassId" name="F_ClassId" lay-verify="required" lay-search></select>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label required">科目</label>
+            <div class="layui-input-block">
+                <select id="P_F_CourseId" name="F_CourseId" lay-verify="required" lay-search></select>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">教师</label>
+            <div class="layui-input-block">
+                <select id="P_F_TeacherId" name="F_TeacherId" lay-search></select>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label required">每周课时</label>
+            <div class="layui-input-block">
+                <input type="number" id="P_F_WeeklyHours" name="F_WeeklyHours" lay-verify="required|number" min="1" max="20" value="2" autocomplete="off" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item layui-hide">
+            <button class="layui-btn" lay-submit id="planSubmit" lay-filter="planSave">保存</button>
+        </div>
+    </div>
+</div>
+
+<!-- 格子编辑表单 -->
+<div id="cellFormDiv" class="layui-hide">
+    <div class="layui-form layuimini-form" lay-filter="cellForm" style="padding:15px;">
+        <div class="layui-form-item">
+            <label class="layui-form-label">位置</label>
+            <div class="layui-input-block">
+                <div class="layui-form-mid" id="cellPos"></div>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label required">科目</label>
+            <div class="layui-input-block">
+                <select id="C_F_CourseId" lay-verify="required" lay-search></select>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">教师</label>
+            <div class="layui-input-block">
+                <select id="C_F_TeacherId" lay-search></select>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">教室</label>
+            <div class="layui-input-block">
+                <select id="C_F_ClassroomId" lay-search></select>
+            </div>
+        </div>
+        <div class="layui-form-item layui-hide">
+            <button class="layui-btn" lay-submit id="cellSubmit" lay-filter="cellSave">保存</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    layui.use(['jquery', 'form', 'table', 'layer', 'commonTable', 'common'], function () {
+        var $ = layui.jquery, form = layui.form, table = layui.table, layer = layui.layer,
+            commonTable = layui.commonTable, common = layui.common;
+        var classList = [], courseList = [], teacherList = [], classroomList = [], semesterList = [];
+        var planLayerIdx = null, cellLayerIdx = null, editPlanId = '';
+        var curCell = null; // {day, sec, data}
+        var WEEK = ['', '周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+        var DAYS = 5, SECTIONS = 8;
+        var ttCells = [];
+
+        function fillSelect(sel, list, placeholder) {
+            var html = '<option value="">' + placeholder + '</option>';
+            $.each(list, function (i, item) { html += '<option value="' + item.id + '">' + item.name + '</option>'; });
+            $(sel).html(html);
+        }
+        function loadBase() {
+            common.ajax({ url: '/InstructionalManagement/Timetable/GetClassListJson', async: false, success: function (d) { classList = $.map(d, function (a) { return { id: a.F_Id, name: a.F_FullName }; }); } });
+            common.ajax({ url: '/InstructionalManagement/Timetable/GetCourseListJson', async: false, success: function (d) { courseList = $.map(d, function (a) { return { id: a.F_Id, name: a.F_ItemName }; }); } });
+            common.ajax({ url: '/InstructionalManagement/Timetable/GetTeacherListJson', async: false, success: function (d) { teacherList = $.map(d, function (a) { return { id: a.F_Id, name: a.F_RealName }; }); } });
+            common.ajax({ url: '/InstructionalManagement/Timetable/GetClassroomListJson', async: false, success: function (d) { classroomList = $.map(d, function (a) { return { id: a.F_Id, name: a.F_Name }; }); } });
+            common.ajax({ url: '/InstructionalManagement/Timetable/GetScheduleParamJson', async: false, success: function (d) { DAYS = d.F_DaysPerWeek || 5; SECTIONS = d.F_SectionsPerDay || 8; } });
+            common.ajax({ url: '/InstructionalManagement/Timetable/GetSemesterListJson', async: false, success: function (d) { semesterList = d || []; } });
+            fillSelect('#ddl_planclass', classList, '全部班级');
+            fillSelect('#ddl_ttclass', classList, '请选择班级');
+            fillSelect('#P_F_ClassId', classList, '请选择班级');
+            fillSelect('#P_F_CourseId', courseList, '请选择科目');
+            fillSelect('#P_F_TeacherId', teacherList, '请选择教师');
+            fillSelect('#C_F_CourseId', courseList, '请选择科目');
+            fillSelect('#C_F_TeacherId', teacherList, '请选择教师');
+            fillSelect('#C_F_ClassroomId', classroomList, '请选择教室');
+            form.render('select');
+        }
+        loadBase();
+        wcLoading.close();
+
+        //============ 授课计划表 ============
+        commonTable.rendertable({
+            elem: '#planTable', id: 'planTable',
+            url: '/InstructionalManagement/Timetable/GetPlanGridJson',
+            where: { semester: '', classId: '' },
+            toolbar: '#planToolbar', defaultToolbar: [], search: false,
+            page: false, limit: 9999, height: 240,
+            cols: [[
+                { field: 'F_Semester', title: '学期', width: 130 },
+                { field: 'F_ClassName', title: '班级', width: 130 },
+                { field: 'F_CourseName', title: '科目', width: 120 },
+                { field: 'F_TeacherName', title: '教师', width: 100 },
+                { field: 'F_WeeklyHours', title: '每周课时', width: 90, align: 'center' },
+                { title: '操作', width: 140, toolbar: '#planBar', align: 'center' }
+            ]]
+        });
+        function reloadPlan() {
+            table.reload('planTable', { where: { semester: $('#txt_semester').val(), classId: $('#ddl_planclass').val() } }, 'data');
+        }
+        function reloadSemesters() {
+            common.ajax({
+                url: '/InstructionalManagement/Timetable/GetSemesterListJson',
+                success: function (d) { semesterList = d || []; }
+            });
+        }
+        form.on('submit(plan-search-btn)', function () { reloadPlan(); return false; });
+
+        table.on('toolbar(planTableFilter)', function (obj) {
+            if (obj.event === 'addPlan') {
+                editPlanId = '';
+                $('#P_F_Semester').val($('#txt_semester').val());
+                $('#P_F_ClassId,#P_F_CourseId,#P_F_TeacherId').val('');
+                $('#P_F_WeeklyHours').val(2);
+                openPlanLayer('新增授课计划');
+            }
+            else if (obj.event === 'autoGen') { openAutoGen(); }
+            return false;
+        });
+        table.on('tool(planTableFilter)', function (obj) {
+            var d = obj.data;
+            if (obj.event === 'editPlan') {
+                editPlanId = d.F_Id;
+                $('#P_F_Semester').val(d.F_Semester);
+                $('#P_F_ClassId').val(d.F_ClassId);
+                $('#P_F_CourseId').val(d.F_CourseId);
+                $('#P_F_TeacherId').val(d.F_TeacherId || '');
+                $('#P_F_WeeklyHours').val(d.F_WeeklyHours || 2);
+                openPlanLayer('修改授课计划');
+            }
+            else if (obj.event === 'delPlan') {
+                common.deleteForm({
+                    url: '/InstructionalManagement/Timetable/DeletePlanForm',
+                    param: { keyValue: d.F_Id },
+                    success: function () { reloadSemesters(); reloadPlan(); }
+                });
+            }
+            return false;
+        });
+        function openPlanLayer(title) {
+            planLayerIdx = layer.open({
+                type: 1, title: title, area: ['440px', '420px'], shade: 0.3,
+                content: $('#planFormDiv'),
+                success: function () { $('#planFormDiv').removeClass('layui-hide'); form.render(); },
+                btn: ['保存', '关闭'],
+                yes: function () { $('#planSubmit').trigger('click'); },
+                end: function () { $('#planFormDiv').addClass('layui-hide'); }
+            });
+        }
+        form.on('submit(planSave)', function (data) {
+            common.submitForm({
+                url: '/InstructionalManagement/Timetable/SubmitPlanForm?keyValue=' + editPlanId,
+                param: data.field, close: false,
+                success: function () { layer.close(planLayerIdx); reloadSemesters(); reloadPlan(); }
+            });
+            return false;
+        });
+
+        //============ 自动排课 ============
+        function openAutoGen() {
+            if (semesterList.length === 0) { common.modalMsg('授课计划中还没有学期，请先新增授课计划', 'warning'); return; }
+            var curSem = $('#txt_semester').val() || '';
+            var semOptions = '<option value="">请选择学期</option>';
+            $.each(semesterList, function (i, s) {
+                semOptions += '<option value="' + s + '"' + (s === curSem ? ' selected' : '') + '>' + s + '</option>';
+            });
+            var html = '<div class="layui-form" style="padding:15px;">' +
+                '<div class="layui-form-item"><label class="layui-form-label required">学期</label>' +
+                '<div class="layui-input-block"><select id="G_semester" lay-verify="required" lay-search>' + semOptions + '</select></div></div>' +
+                '<div class="layui-form-item"><label class="layui-form-label required">班级</label>' +
+                '<div class="layui-input-block" id="G_classes" style="max-height:260px;overflow-y:auto;border:1px solid #eee;padding:8px;">';
+            $.each(classList, function (i, c) {
+                html += '<input type="checkbox" name="G_cls" value="' + c.id + '" title="' + c.name + '" lay-skin="primary">';
+            });
+            html += '</div></div><div class="layui-font-12 layui-color-gray">将按授课计划重新生成所选班级的课表（周一至周五，每天8节），原有课表会被清空。</div></div>';
+            layer.open({
+                type: 1, title: '自动排课', area: ['440px', '460px'], shade: 0.3,
+                content: html,
+                success: function () { form.render(); },
+                btn: ['开始排课', '关闭'],
+                yes: function (idx) {
+                    var semester = $('#G_semester').val();
+                    if (!semester) { common.modalMsg('请选择学期', 'warning'); return; }
+                    var ids = [];
+                    $('input[name="G_cls"]:checked').each(function () { ids.push($(this).val()); });
+                    if (ids.length === 0) { common.modalMsg('请选择班级', 'warning'); return; }
+                    common.submitForm({
+                        url: '/InstructionalManagement/Timetable/AutoGenerate',
+                        param: { semester: semester, classIds: ids.join(',') },
+                        close: false,
+                        success: function () { layer.closeAll(); reloadTimetable(); }
+                    });
+                }
+            });
+        }
+
+        //============ 课表矩阵 ============
+        form.on('select(ddl_ttclass)', function () { reloadTimetable(); });
+        $('#btnReloadTt').click(function () { reloadTimetable(); });
+        $('#btnClearTt').click(function () {
+            var semester = $('#txt_semester').val(), classId = $('#ddl_ttclass').val();
+            if (!semester || !classId) { common.modalMsg('请先填写学期并选择班级', 'warning'); return; }
+            layer.confirm('确定清空该班级本学期课表吗？', function (idx) {
+                layer.close(idx);
+                common.submitForm({
+                    url: '/InstructionalManagement/Timetable/ClearTimetable',
+                    param: { semester: semester, classId: classId },
+                    close: false,
+                    success: function () { reloadTimetable(); }
+                });
+            });
+        });
+
+        function reloadTimetable() {
+            var semester = $('#txt_semester').val(), classId = $('#ddl_ttclass').val();
+            if (!semester || !classId) { $('#ttMatrix').html('<div class="layui-color-gray" style="padding:20px;">请填写学期并选择班级</div>'); return; }
+            common.ajax({
+                url: '/InstructionalManagement/Timetable/GetTimetableJson',
+                data: { semester: semester, classId: classId },
+                success: function (res) {
+                    ttCells = res.data || [];
+                    renderMatrix(true);
+                }
+            });
+        }
+        function renderMatrix(editable) {
+            var html = '<table class="tt-matrix"><tr><th style="width:46px;">节次</th>';
+            for (var d = 1; d <= DAYS; d++) { html += '<th>' + WEEK[d] + '</th>'; }
+            html += '</tr>';
+            for (var s = 1; s <= SECTIONS; s++) {
+                html += '<tr><td class="tt-sec">第' + s + '节</td>';
+                for (var wd = 1; wd <= DAYS; wd++) {
+                    var cell = null;
+                    for (var i = 0; i < ttCells.length; i++) {
+                        if (ttCells[i].F_WeekDay === wd && ttCells[i].F_Section === s) { cell = ttCells[i]; break; }
+                    }
+                    html += '<td class="tt-cell" data-day="' + wd + '" data-sec="' + s + '">';
+                    if (cell) {
+                        html += '<div class="tt-course">' + (cell.F_CourseName || '') + '</div>' +
+                            '<div class="tt-sub">' + (cell.F_TeacherName || '') + (cell.F_Classroom ? ' · ' + cell.F_Classroom : '') + '</div>';
+                    }
+                    html += '</td>';
+                }
+                html += '</tr>';
+            }
+            html += '</table>';
+            $('#ttMatrix').html(html);
+            if (editable) {
+                $('#ttMatrix .tt-cell').on('click', function () {
+                    var day = parseInt($(this).data('day')), sec = parseInt($(this).data('sec'));
+                    var cell = null;
+                    for (var i = 0; i < ttCells.length; i++) {
+                        if (ttCells[i].F_WeekDay === day && ttCells[i].F_Section === sec) { cell = ttCells[i]; break; }
+                    }
+                    openCellLayer(day, sec, cell);
+                });
+            }
+        }
+
+        function openCellLayer(day, sec, cell) {
+            curCell = { day: day, sec: sec, id: cell ? cell.F_Id : '' };
+            $('#cellPos').text(WEEK[day] + ' 第' + sec + '节');
+            $('#C_F_CourseId').val(cell ? (cell.F_CourseId || '') : '');
+            $('#C_F_TeacherId').val(cell ? (cell.F_TeacherId || '') : '');
+            $('#C_F_ClassroomId').val(cell ? (cell.F_ClassroomId || '') : '');
+            var btns = cell ? ['保存', '清除', '关闭'] : ['保存', '关闭'];
+            cellLayerIdx = layer.open({
+                type: 1, title: '编辑课表格子', area: ['440px', '380px'], shade: 0.3,
+                content: $('#cellFormDiv'),
+                success: function () { $('#cellFormDiv').removeClass('layui-hide'); form.render(); },
+                btn: btns,
+                yes: function () { $('#cellSubmit').trigger('click'); },
+                btn2: cell ? function () { clearCell(); return false; } : null,
+                btn3: cell ? null : null,
+                end: function () { $('#cellFormDiv').addClass('layui-hide'); }
+            });
+        }
+        function clearCell() {
+            if (!curCell || !curCell.id) { layer.close(cellLayerIdx); return; }
+            common.deleteForm({
+                url: '/InstructionalManagement/Timetable/ClearCell',
+                param: { keyValue: curCell.id },
+                success: function () { layer.close(cellLayerIdx); reloadTimetable(); }
+            });
+        }
+        form.on('submit(cellSave)', function () {
+            var semester = $('#txt_semester').val(), classId = $('#ddl_ttclass').val();
+            common.submitForm({
+                url: '/InstructionalManagement/Timetable/SaveCell',
+                param: {
+                    F_Semester: semester,
+                    F_ClassId: classId,
+                    F_WeekDay: curCell.day,
+                    F_Section: curCell.sec,
+                    F_CourseId: $('#C_F_CourseId').val(),
+                    F_TeacherId: $('#C_F_TeacherId').val(),
+                    F_ClassroomId: $('#C_F_ClassroomId').val()
+                },
+                close: false,
+                success: function () { layer.close(cellLayerIdx); reloadTimetable(); }
+            });
+            return false;
+        });
+
+        renderMatrix(true);
+    });
+</script>

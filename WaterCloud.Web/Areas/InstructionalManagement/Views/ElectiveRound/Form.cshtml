@@ -1,0 +1,94 @@
+@{
+    ViewBag.Title = "选课批次";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'common', 'laydate'], function () {
+        var form = layui.form,
+            $ = layui.jquery,
+            laydate = layui.laydate,
+            common = layui.common;
+        var keyValue = $.request("keyValue");
+
+        laydate.render({ elem: '#F_StartTime', type: 'datetime' });
+        laydate.render({ elem: '#F_EndTime', type: 'datetime' });
+
+        function fmt(d) {
+            if (!d) { return ''; }
+            return String(d).replace(/\//g, '-').substring(0, 16);
+        }
+
+        $(function () {
+            if (!!keyValue) {
+                common.ajax({
+                    url: '/InstructionalManagement/ElectiveRound/GetFormJson',
+                    data: { keyValue: keyValue },
+                    async: false,
+                    success: function (data) {
+                        $('#F_Semester').val(data.F_Semester);
+                        $('#F_Name').val(data.F_Name);
+                        $('#F_StartTime').val(fmt(data.F_StartTime));
+                        $('#F_EndTime').val(fmt(data.F_EndTime));
+                        $('#F_Remark').val(data.F_Remark);
+                    }
+                });
+            }
+            form.render();
+        });
+        wcLoading.close();
+
+        //监听提交
+        form.on('submit(saveBtn)', function (data) {
+            common.submitForm({
+                url: '/InstructionalManagement/ElectiveRound/SubmitForm?keyValue=' + (keyValue || ''),
+                param: data.field,
+                success: function () {
+                    common.parentreload('data-search-btn');
+                }
+            });
+            return false;
+        });
+    });
+</script>
+
+<body>
+    <div class="layuimini-container">
+        <div class="layuimini-main">
+            <div class="layui-form layuimini-form" lay-filter="adminform">
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">学期</label>
+                    <div class="layui-input-block">
+                        <input type="text" id="F_Semester" name="F_Semester" autocomplete="off" maxlength="50" lay-verify="required" placeholder="如 2025-2026-1" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">批次名称</label>
+                    <div class="layui-input-block">
+                        <input type="text" id="F_Name" name="F_Name" autocomplete="off" maxlength="100" lay-verify="required" placeholder="如 第一轮选课" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">开始时间</label>
+                    <div class="layui-input-block">
+                        <input type="text" id="F_StartTime" name="F_StartTime" autocomplete="off" lay-verify="required" placeholder="yyyy-MM-dd HH:mm" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">结束时间</label>
+                    <div class="layui-input-block">
+                        <input type="text" id="F_EndTime" name="F_EndTime" autocomplete="off" lay-verify="required" placeholder="yyyy-MM-dd HH:mm" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">备注</label>
+                    <div class="layui-input-block">
+                        <textarea id="F_Remark" name="F_Remark" maxlength="500" class="layui-textarea" placeholder="选填"></textarea>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-hide">
+                    <button class="layui-btn site-demo-active" lay-submit id="submit" lay-filter="saveBtn">确认保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>

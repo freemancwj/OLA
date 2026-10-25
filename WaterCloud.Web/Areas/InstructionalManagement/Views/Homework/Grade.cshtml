@@ -1,0 +1,125 @@
+@{
+    ViewBag.Title = "批改作业";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<style>
+    .gr-box { border: 1px solid #eee; border-radius: 4px; padding: 10px; max-height: 240px; overflow-y: auto; }
+    .gr-box img { max-width: 100%; }
+    .gr-label { color: #888; font-size: 12px; margin-bottom: 4px; }
+</style>
+<script>
+    layui.use(['jquery', 'form', 'common'], function () {
+        var form = layui.form,
+            $ = layui.jquery,
+            common = layui.common;
+        var keyValue = $.request("keyValue");
+        var fullScore = 100;
+
+        $(function () {
+            common.ajax({
+                url: '/InstructionalManagement/Homework/GetSubmitJson',
+                data: { keyValue: keyValue },
+                async: false,
+                success: function (data) {
+                    fullScore = data.F_HomeworkFullScore == null ? 100 : data.F_HomeworkFullScore;
+                    $('#v_Student').text((data.F_RealName || '') + '（' + (data.F_Account || '') + '）');
+                    $('#v_ClassName').text(data.F_ClassName || '');
+                    $('#v_SubmitTime').text(data.F_SubmitTime ? String(data.F_SubmitTime).replace(/\//g, '-').replace('T', ' ').substring(0, 16) : '');
+                    $('#v_HomeworkContent').html(data.F_HomeworkContent || '<span style="color:#999">（无文字要求）</span>');
+                    if (!!data.F_HomeworkFileUrl) {
+                        $('#v_HomeworkFile').html('作业附件：<a href="' + data.F_HomeworkFileUrl + '" target="_blank" style="color:#1E9FFF">' + (data.F_HomeworkFileName || '下载') + '</a>');
+                    }
+                    $('#v_Answer').html(data.F_Content || '<span style="color:#999">（学生未在线作答）</span>');
+                    if (!!data.F_FileUrl) {
+                        $('#v_File').html('学生附件：<a href="' + data.F_FileUrl + '" target="_blank" style="color:#1E9FFF">' + (data.F_FileName || '下载') + '</a>');
+                        if (/\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(data.F_FileUrl)) {
+                            $('#v_Img').html('<img src="' + data.F_FileUrl + '" style="max-width:100%;max-height:260px;margin-top:6px;border:1px solid #eee;" />');
+                        }
+                    }
+                    $('#F_FullTip').text('（满分 ' + fullScore + ' 分）');
+                    if (data.F_Status === 1) {
+                        $('#F_Score').val(data.F_Score);
+                        $('#F_Comment').val(data.F_Comment || '');
+                        $('#v_Graded').html('<span class="layui-badge layui-bg-green">已批改</span>');
+                    } else {
+                        $('#v_Graded').html('<span class="layui-badge layui-bg-orange">待批改</span>');
+                    }
+                }
+            });
+            form.render();
+        });
+        wcLoading.close();
+
+        form.on('submit(saveBtn)', function (data) {
+            var score = parseFloat(data.field.score);
+            if (isNaN(score) || score < 0 || score > fullScore) {
+                common.modalMsg('分数必须在0到' + fullScore + '之间', 'warning');
+                return false;
+            }
+            common.submitForm({
+                url: '/InstructionalManagement/Homework/GradeForm',
+                param: { keyValue: keyValue, score: score, comment: data.field.comment },
+                success: function () {
+                    var parentWin = parent.parent;
+                    if (parentWin && typeof parentWin.reloadReview === 'function') {
+                        parentWin.reloadReview();
+                    }
+                    common.parentreload('data-search-btn');
+                }
+            });
+            return false;
+        });
+    });
+</script>
+
+<body>
+    <div class="layuimini-container">
+        <div class="layuimini-main">
+            <div class="layui-form layuimini-form" lay-filter="adminform">
+                <div class="layui-form-item">
+                    <label class="layui-form-label">学生</label>
+                    <div class="layui-input-block">
+                        <div class="layui-form-mid"><span id="v_Student"></span> <span style="color:#888;margin-left:10px;" id="v_ClassName"></span> <span id="v_Graded" style="margin-left:10px;"></span></div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">提交时间</label>
+                    <div class="layui-input-block">
+                        <div class="layui-form-mid" id="v_SubmitTime"></div>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-form-text">
+                    <label class="layui-form-label">作业要求</label>
+                    <div class="layui-input-block">
+                        <div class="gr-box" id="v_HomeworkContent"></div>
+                        <div style="margin-top:6px;" id="v_HomeworkFile"></div>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-form-text">
+                    <label class="layui-form-label">学生作答</label>
+                    <div class="layui-input-block">
+                        <div class="gr-box" id="v_Answer"></div>
+                        <div style="margin-top:6px;" id="v_File"></div>
+                        <div id="v_Img"></div>
+                    </div>
+                </div>
+                <hr />
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">分数 <span id="F_FullTip" style="color:#888;font-size:12px;"></span></label>
+                    <div class="layui-input-inline">
+                        <input type="number" id="F_Score" name="score" autocomplete="off" lay-verify="required" placeholder="请输入分数" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item layui-form-text">
+                    <label class="layui-form-label">评语</label>
+                    <div class="layui-input-block">
+                        <textarea id="F_Comment" name="comment" maxlength="500" placeholder="请输入评语（可选）" class="layui-textarea"></textarea>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-hide">
+                    <button class="layui-btn site-demo-active" lay-submit id="submit" lay-filter="saveBtn">确认批改</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>

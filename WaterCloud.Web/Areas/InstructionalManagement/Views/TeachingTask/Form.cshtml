@@ -1,0 +1,120 @@
+@{
+    ViewBag.Title = "教学任务";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'common', 'optimizeSelectOption'], function () {
+        var form = layui.form,
+            $ = layui.jquery,
+            common = layui.common;
+        var keyValue = $.request("keyValue");
+
+        function initControl() {
+            $("#F_TeacherId").bindSelect({
+                url: "/InstructionalManagement/TeachingTask/GetTeacherListJson",
+                id: "F_Id",
+                text: "F_RealName",
+                search: true
+            });
+            $("#F_CourseId").bindSelect({
+                url: "/InstructionalManagement/TeachingTask/GetCourseListJson",
+                id: "F_Id",
+                text: "F_Name",
+                search: true
+            });
+            $("#F_ClassId").bindSelect({
+                url: "/InstructionalManagement/TeachingTask/GetClassListJson",
+                id: "F_Id",
+                text: "F_FullName",
+                search: true
+            });
+        }
+
+        $(function () {
+            initControl();
+            if (!!keyValue) {
+                common.ajax({
+                    url: '/InstructionalManagement/TeachingTask/GetFormJson',
+                    data: { keyValue: keyValue },
+                    async: false,
+                    success: function (data) {
+                        $('#F_Semester').val(data.F_Semester);
+                        $('#F_TeacherId').val(data.F_TeacherId);
+                        $('#F_CourseId').val(data.F_CourseId);
+                        $('#F_ClassId').val(data.F_ClassId);
+                        $('#F_WeekPeriod').val(data.F_WeekPeriod);
+                        $('#F_Remark').val(data.F_Remark);
+                    }
+                });
+            }
+            form.render();
+        });
+        wcLoading.close();
+
+        //监听提交
+        form.on('submit(saveBtn)', function (data) {
+            common.submitForm({
+                url: '/InstructionalManagement/TeachingTask/SubmitForm?keyValue=' + (keyValue || ''),
+                param: data.field,
+                success: function () {
+                    common.parentreload('data-search-btn');
+                }
+            });
+            return false;
+        });
+    });
+</script>
+
+<body>
+    <div class="layuimini-container">
+        <div class="layuimini-main">
+            <div class="layui-form layuimini-form" lay-filter="adminform">
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">学期</label>
+                    <div class="layui-input-block">
+                        <input type="text" id="F_Semester" name="F_Semester" autocomplete="off" maxlength="50" lay-verify="required" placeholder="如 2025-2026-1" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">教师</label>
+                    <div class="layui-input-block">
+                        <select id="F_TeacherId" name="F_TeacherId" lay-verify="required" lay-search>
+                            <option value="">请选择教师</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">课程</label>
+                    <div class="layui-input-block">
+                        <select id="F_CourseId" name="F_CourseId" lay-verify="required" lay-search>
+                            <option value="">请选择课程</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">班级</label>
+                    <div class="layui-input-block">
+                        <select id="F_ClassId" name="F_ClassId" lay-verify="required" lay-search>
+                            <option value="">请选择班级</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">周学时</label>
+                    <div class="layui-input-block">
+                        <input type="number" id="F_WeekPeriod" name="F_WeekPeriod" min="1" max="40" lay-verify="required|number" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">备注</label>
+                    <div class="layui-input-block">
+                        <textarea id="F_Remark" name="F_Remark" maxlength="500" class="layui-textarea" placeholder="选填"></textarea>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-hide">
+                    <button class="layui-btn site-demo-active" lay-submit id="submit" lay-filter="saveBtn">确认保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>

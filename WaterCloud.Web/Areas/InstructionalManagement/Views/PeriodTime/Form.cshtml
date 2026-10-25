@@ -1,0 +1,78 @@
+@{
+    ViewBag.Title = "节次时间";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'common'], function () {
+        var form = layui.form,
+            $ = layui.jquery,
+            common = layui.common;
+        var keyValue = $.request("keyValue");
+
+        $(function () {
+            if (!!keyValue) {
+                common.ajax({
+                    url: '/InstructionalManagement/PeriodTime/GetFormJson',
+                    data: { keyValue: keyValue },
+                    async: false,
+                    success: function (data) {
+                        $('#F_Section').val(data.F_Section);
+                        $('#F_StartTime').val(data.F_StartTime);
+                        $('#F_EndTime').val(data.F_EndTime);
+                        $('#F_SortCode').val(data.F_SortCode);
+                    }
+                });
+            }
+            form.render();
+        });
+        wcLoading.close();
+
+        //监听提交
+        form.on('submit(saveBtn)', function (data) {
+            common.submitForm({
+                url: '/InstructionalManagement/PeriodTime/SubmitForm?keyValue=' + (keyValue || ''),
+                param: data.field,
+                success: function () {
+                    common.parentreload('data-search-btn');
+                }
+            });
+            return false;
+        });
+    });
+</script>
+
+<body>
+    <div class="layuimini-container">
+        <div class="layuimini-main">
+            <div class="layui-form layuimini-form" lay-filter="adminform">
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">第几节</label>
+                    <div class="layui-input-block">
+                        <input type="number" id="F_Section" name="F_Section" min="1" max="20" lay-verify="required|number" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">开始时间</label>
+                    <div class="layui-input-block">
+                        <input type="text" id="F_StartTime" name="F_StartTime" maxlength="10" lay-verify="required" placeholder="如 08:00" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">结束时间</label>
+                    <div class="layui-input-block">
+                        <input type="text" id="F_EndTime" name="F_EndTime" maxlength="10" lay-verify="required" placeholder="如 08:45" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">排序</label>
+                    <div class="layui-input-block">
+                        <input type="number" id="F_SortCode" name="F_SortCode" min="0" lay-verify="number" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item layui-hide">
+                    <button class="layui-btn site-demo-active" lay-submit id="submit" lay-filter="saveBtn">确认保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>

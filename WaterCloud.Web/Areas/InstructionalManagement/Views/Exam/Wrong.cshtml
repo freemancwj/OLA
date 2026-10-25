@@ -1,0 +1,239 @@
+@{
+    ViewBag.Title = "错题记录";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<style>
+    .wrong-detail { padding: 14px 18px; font-size: 13px; color: #333; line-height: 1.8; max-height: 480px; overflow-y: auto; box-sizing: border-box; }
+    .wrong-detail .wd-line { margin-bottom: 6px; }
+    .wrong-detail .wd-line b { color: #666; }
+    .wrong-detail .wd-content { margin: 8px 0 10px; padding: 10px 12px; background: #fafafa; border-radius: 4px; white-space: pre-wrap; word-break: break-word; }
+    .wrong-detail .wd-opt { padding: 4px 0; white-space: pre-wrap; word-break: break-word; }
+    .wrong-detail .wd-opt b { color: #555; }
+    .wrong-detail .wd-analysis { margin-top: 10px; padding: 10px 12px; background: #f5faff; border-left: 3px solid #1e9fff; white-space: pre-wrap; word-break: break-word; }
+    .wrong-detail .wd-answer { color: #1e9fff; font-weight: bold; white-space: pre-wrap; word-break: break-word; }
+    .wrong-detail .wd-right { color: #3a9c5b; font-weight: bold; white-space: pre-wrap; word-break: break-word; }
+</style>
+<div class="layuimini-container">
+    <div class="layuimini-main">
+        <fieldset class="table-search-fieldset" id="searchField">
+            <div>
+                <form class="layui-form layui-form-pane">
+                    <div class="layui-form-item" style="margin-bottom:0;">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">关键字:</label>
+                            <div class="layui-input-inline">
+                                <input type="text" id="txt_keyword" name="txt_keyword" autocomplete="off" class="layui-input" placeholder="题干/考试名称">
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">科目:</label>
+                            <div class="layui-input-inline">
+                                <select id="ddl_course" name="ddl_course" lay-search>
+                                    <option value="">全部科目</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <button type="submit" class="layui-btn layui-btn-primary" lay-submit lay-filter="data-search-btn">
+                                <i class="layui-icon">&#xe615;</i> 搜 索
+                            </button>
+                            <button type="button" class="layui-btn layui-btn-primary" id="btn-reset">
+                                <i class="layui-icon">&#xe666;</i> 重 置
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </fieldset>
+        <script type="text/html" id="toolbarDemo">
+            <div class="layui-btn-container" id="toolbar"></div>
+        </script>
+        <table class="layui-hide" id="currentTableId" lay-filter="currentTableFilter"></table>
+        <script type="text/html" id="currentTableBar">
+            <a id="NF-detail" authorize class="layui-btn layui-btn-xs layui-btn-normal" lay-event="detail">详情</a>
+        </script>
+        <script type="text/html" id="qtypeTpl">
+            {{# if(d.F_QuestionType == 2){ }}
+            <span class="layui-badge layui-bg-blue">多选题</span>
+            {{# } else if(d.F_QuestionType == 3){ }}
+            <span class="layui-badge layui-bg-green">判断题</span>
+            {{# } else if(d.F_QuestionType == 4){ }}
+            <span class="layui-badge layui-bg-orange">简答题</span>
+            {{# } else { }}
+            <span class="layui-badge layui-bg-cyan">单选题</span>
+            {{# } }}
+        </script>
+    </div>
+</div>
+<script>
+    layui.use(['jquery', 'form', 'layer', 'table', 'commonTable', 'common'], function () {
+        var $ = layui.jquery,
+            form = layui.form,
+            layer = layui.layer,
+            table = layui.table,
+            commonTable = layui.commonTable,
+            common = layui.common;
+
+        function esc(text) {
+            if (text === null || text === undefined) return '';
+            return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        function truncate(text, len) {
+            text = String(text || '');
+            return text.length > len ? text.substring(0, len) + '...' : text;
+        }
+
+        function typeName(type) {
+            type = parseInt(type, 10);
+            if (type === 2) return '多选题';
+            if (type === 3) return '判断题';
+            if (type === 4) return '简答题';
+            return '单选题';
+        }
+
+        //答案字母转选项文字，short 为列表省略显示
+        function answerText(answer, d, short) {
+            if (short === undefined) short = true;
+            if (answer === null || answer === undefined || answer === '') {
+                return '<span class="layui-color-gray">未作答</span>';
+            }
+            var type = parseInt(d.F_QuestionType, 10);
+            if (type === 4) {
+                return esc(short ? truncate(answer, 40) : answer);
+            }
+            var letters = String(answer).toUpperCase().split('');
+            var parts = [];
+            $.each(letters, function (i, letter) {
+                var text = d['F_Option' + letter];
+                if (type === 3) {
+                    if (letter === 'A') text = '正确';
+                    else if (letter === 'B') text = '错误';
+                }
+                if (text && short) text = truncate(text, 16);
+                parts.push(letter + (text ? '. ' + text : ''));
+            });
+            return esc(parts.join('  '));
+        }
+
+        function getSearchParams() {
+            return {
+                keyword: $.trim($('#txt_keyword').val()),
+                courseId: $('#ddl_course').val()
+            };
+        }
+
+        //加载科目下拉
+        function loadCourses() {
+            common.ajax({
+                url: '/InstructionalManagement/Exam/GetCourseListJson',
+                async: false,
+                success: function (list) {
+                    var html = '<option value="">全部科目</option>';
+                    $.each(list || [], function (i, item) {
+                        html += '<option value="' + esc(item.F_Id) + '">' + esc(item.F_ItemName) + '</option>';
+                    });
+                    $('#ddl_course').html(html);
+                }
+            });
+            form.render('select');
+        }
+
+        //操作列需要授权时按权限过滤，未配置按钮权限时保留原按钮
+        var barHtml = $('#currentTableBar').html();
+        var barAuthorized = common.authorizeButtonNew(barHtml);
+        if (barAuthorized && barAuthorized.indexOf('lay-event=') > -1) {
+            $('#currentTableBar').html(barAuthorized);
+        }
+
+        loadCourses();
+
+        commonTable.rendertable({
+            elem: '#currentTableId',
+            id: 'currentTableId',
+            url: '/InstructionalManagement/Exam/GetWrongListJson',
+            where: getSearchParams(),
+            request: { pageName: 'page', limitName: 'limit' },
+            parseData: function (res) {
+                return { code: res.code, msg: res.msg, count: res.count, data: res.data };
+            },
+            cols: [[
+                { field: 'F_CourseName', title: '科目', width: 130 },
+                { field: 'F_QuestionType', title: '题型', width: 100, templet: '#qtypeTpl', align: 'center' },
+                {
+                    field: 'F_Content', title: '题干', minWidth: 260, templet: function (d) {
+                        return '<span title="' + esc(d.F_Content) + '">' + esc(truncate(d.F_Content, 60)) + '</span>';
+                    }
+                },
+                { field: 'F_StudentAnswer', title: '我的答案', width: 150, templet: function (d) { return answerText(d.F_StudentAnswer, d); } },
+                { field: 'F_Answer', title: '正确答案', width: 150, templet: function (d) { return answerText(d.F_Answer, d); } },
+                { field: 'F_ExamTitle', title: '来源考试', minWidth: 160 },
+                { field: 'F_CreateTime', title: '时间', width: 160 },
+                { title: '操作', width: 90, toolbar: '#currentTableBar', align: 'center', fixed: 'right' }
+            ]]
+        });
+
+        function reloadTable() {
+            commonTable.reloadtable({ elem: 'currentTableId', curr: 1, where: getSearchParams() });
+        }
+
+        form.on('submit(data-search-btn)', function () {
+            reloadTable();
+            return false;
+        });
+
+        $('#btn-reset').click(function () {
+            $('#txt_keyword').val('');
+            $('#ddl_course').val('');
+            form.render('select');
+            common.reload('data-search-btn');
+        });
+
+        //错题详情弹层
+        function showDetail(d) {
+            var html = '<div class="wrong-detail">' +
+                '<div class="wd-line"><b>科目：</b>' + esc(d.F_CourseName || '-') + '</div>' +
+                '<div class="wd-line"><b>来源考试：</b>' + esc(d.F_ExamTitle || '-') + '</div>' +
+                '<div class="wd-line"><b>题型：</b>' + esc(typeName(d.F_QuestionType)) + '</div>' +
+                '<div class="wd-content">' + esc(d.F_Content || '') + '</div>' +
+                buildOptions(d) +
+                '<div class="wd-line"><b>我的答案：</b><span class="wd-answer">' + answerText(d.F_StudentAnswer, d, false) + '</span></div>' +
+                '<div class="wd-line"><b>正确答案：</b><span class="wd-right">' + answerText(d.F_Answer, d, false) + '</span></div>' +
+                '<div class="wd-analysis"><b>解析：</b>' + (d.F_Analysis ? esc(d.F_Analysis) : '暂无解析') + '</div>' +
+                '</div>';
+            layer.open({
+                type: 1,
+                title: '错题详情',
+                area: ['680px', '560px'],
+                shadeClose: true,
+                content: html
+            });
+        }
+
+        function buildOptions(d) {
+            var type = parseInt(d.F_QuestionType, 10);
+            if (type === 4) return '';
+            var letters = ['A', 'B', 'C', 'D'];
+            var html = '';
+            $.each(letters, function (i, letter) {
+                var text = d['F_Option' + letter];
+                if (type === 3) {
+                    if (letter === 'A' && (text === null || text === undefined || text === '')) text = '正确';
+                    if (letter === 'B' && (text === null || text === undefined || text === '')) text = '错误';
+                }
+                if (text === null || text === undefined || text === '') return;
+                html += '<div class="wd-opt"><b>' + letter + '.</b> ' + esc(text) + '</div>';
+            });
+            return html;
+        }
+
+        table.on('tool(currentTableFilter)', function (obj) {
+            if (obj.event === 'detail') {
+                showDetail(obj.data);
+            }
+            return false;
+        });
+
+        wcLoading.close();
+    });
+</script>

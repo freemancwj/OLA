@@ -1,0 +1,212 @@
+@{
+    ViewBag.Title = "课程学习";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<style>
+    .study-wrap { display: flex; height: 100%; box-sizing: border-box; }
+    .study-left { flex: 1; padding: 12px; min-width: 0; }
+    .study-right { width: 320px; border-left: 1px solid #eee; overflow-y: auto; background: #fafafa; }
+    #player { width: 100%; height: calc(100vh - 290px); min-height: 480px; background: #000; object-fit: contain; }
+    .study-head { margin-bottom: 10px; }
+    .study-title { font-size: 17px; font-weight: bold; color: #333; }
+    .study-sub { font-size: 12px; color: #888; margin-top: 4px; }
+    .chapter-item { border-bottom: 1px solid #f0f0f0; }
+    .chapter-name { padding: 10px 12px; font-weight: bold; font-size: 13px; color: #444; background: #f5f5f5; }
+    .lesson-item { padding: 8px 12px 8px 24px; cursor: pointer; font-size: 13px; color: #555; display: flex; justify-content: space-between; align-items: center; }
+    .lesson-item:hover { background: #ecf5ff; }
+    .lesson-item.active { background: #d9ecff; color: #1e9fff; }
+    .lesson-dur { font-size: 12px; color: #aaa; margin-left: 8px; flex-shrink: 0; }
+    .lesson-done { color: #5fb878; }
+    .ware-bar { padding: 10px 12px; }
+    .ware-item { display: inline-block; margin: 4px 8px 4px 0; }
+</style>
+<div class="study-wrap">
+    <div class="study-left">
+        <div class="study-head">
+            <div class="study-title" id="courseName">课程学习</div>
+            <div class="study-sub">
+                <span id="courseMeta"></span>
+                <span style="margin-left:12px;">整体进度：<b id="courseProgress">0%</b></span>
+            </div>
+        </div>
+        <video id="player" controls preload="metadata" poster=""></video>
+        <div class="study-sub" id="curLessonName" style="margin-top:8px;"></div>
+        <div class="ware-bar">
+            <b>配套资料：</b><span id="wareList"><span class="study-sub">暂无资料</span></span>
+        </div>
+    </div>
+    <div class="study-right" id="chapterList"></div>
+</div>
+<script>
+    layui.use(['jquery', 'common'], function () {
+        var $ = layui.jquery,
+            common = layui.common;
+        var courseId = $.request("courseId");
+        var player = document.getElementById('player');
+        var curLessonId = '', curDuration = 0;
+        var lastSaveTime = 0;
+        var resumed = false;
+
+        if (!courseId) {
+            common.modalMsg("缺少课程参数", "warning");
+        }
+
+        function fmtDuration(sec) {
+            sec = parseInt(sec || 0);
+            if (sec <= 0) return '';
+            var m = Math.floor(sec / 60), s = sec % 60;
+            return (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
+        }
+
+        function loadStudyInfo() {
+            common.ajax({
+                url: '/InstructionalManagement/CourseStudy/GetStudyInfoJson',
+                data: { courseId: courseId },
+                success: function (res) {
+                    if (res.state !== 'success') {
+                        common.modalMsg(res.message || '加载失败', 'warning');
+                        return;
+                    }
+                    var info = res.data;
+                    $('#courseName').text(info.Course.F_Name);
+                    $('#courseMeta').text((info.Course.F_Intro || '').substring(0, 60));
+                    $('#courseProgress').text(info.ProgressPercent + '%');
+                    renderChapters(info.Chapters);
+                    renderWares(info.Wares);
+                    //自动定位到第一个未完成课时
+                    autoPickLesson(info.Chapters);
+                }
+            });
+        }
+
+        function renderChapters(chapters) {
+            var $wrap = $('#chapterList').empty();
+            $.each(chapters, function (i, ch) {
+                var $ch = $('<div class="chapter-item"></div>');
+                $ch.append('<div class="chapter-name">' + (i + 1) + '. ' + ch.F_Name + '</div>');
+                $.each(ch.Lessons, function (j, ls) {
+                    var cls = ls.ProgressPercent >= 100 ? 'lesson-done' : '';
+                    var progressText = ls.ProgressPercent >= 100 ? '已完成' : (ls.ProgressPercent > 0 ? ls.ProgressPercent + '%' : '');
+                    var $ls = $('<div class="lesson-item ' + cls + '" data-id="' + ls.F_Id + '">' +
+                        '<span class="lesson-name">' + ls.F_Name + '</span>' +
+                        '<span class="lesson-dur">' + progressText + ' ' + fmtDuration(ls.F_VideoDuration) + '</span>' +
+                        '</div>');
+                    $ls.data('lesson', ls);
+                    $ls.on('click', function () {
+                        playLesson(ls);
+                    });
+                    $ch.append($ls);
+                });
+                $wrap.append($ch);
+            });
+            if (chapters.length === 0) {
+                $wrap.append('<div class="study-sub" style="padding:20px;">暂无章节</div>');
+            }
+        }
+
+        function renderWares(wares) {
+            var $wrap = $('#wareList').empty();
+            if (!wares || wares.length === 0) {
+                $wrap.append('<span class="study-sub">暂无资料</span>');
+                return;
+            }
+            $.each(wares, function (i, w) {
+                $wrap.append('<a class="ware-item layui-btn layui-btn-xs layui-btn-primary" target="_blank" href="/InstructionalManagement/CourseWare/Download?keyValue=' + w.F_Id + '"><i class="layui-icon">&#xe601;</i> ' + w.F_Name + (w.F_FileExt || '') + '</a>');
+            });
+        }
+
+        function autoPickLesson(chapters) {
+            for (var i = 0; i < chapters.length; i++) {
+                for (var j = 0; j < chapters[i].Lessons.length; j++) {
+                    var ls = chapters[i].Lessons[j];
+                    if (ls.ProgressPercent < 100) {
+                        playLesson(ls);
+                        return;
+                    }
+                }
+            }
+            if (chapters.length > 0 && chapters[0].Lessons.length > 0) {
+                playLesson(chapters[0].Lessons[0]);
+            }
+        }
+
+        function playLesson(ls) {
+            if (!ls.F_VideoUrl) {
+                common.modalMsg("该课时暂无视频", "warning");
+                return;
+            }
+            saveProgressNow(); //切换前保存上一课时进度
+            curLessonId = ls.F_Id;
+            curDuration = ls.F_VideoDuration || 0;
+            resumed = false;
+            $('.lesson-item').removeClass('active');
+            $('.lesson-item[data-id="' + ls.F_Id + '"]').addClass('active');
+            $('#curLessonName').text('正在学习：' + ls.F_Name);
+            player.src = ls.F_VideoUrl;
+            player.load();
+            //恢复上次进度
+            common.ajax({
+                url: '/InstructionalManagement/CourseStudy/GetProgress',
+                data: { lessonId: ls.F_Id },
+                success: function (p) {
+                    if (p && p.F_Position > 0) {
+                        var trySeek = function () {
+                            if (player.duration && p.F_Position < player.duration - 2) {
+                                player.currentTime = p.F_Position;
+                            }
+                            resumed = true;
+                        };
+                        if (player.readyState >= 1) { trySeek(); }
+                        else { $(player).one('loadedmetadata', trySeek); }
+                    } else {
+                        resumed = true;
+                    }
+                }
+            });
+            player.play();
+        }
+
+        //进度保存：播放中每10秒保存一次
+        $(player).on('timeupdate', function () {
+            if (!curLessonId) return;
+            var now = Date.now();
+            if (now - lastSaveTime >= 10000) {
+                lastSaveTime = now;
+                saveProgressNow();
+            }
+        });
+        $(player).on('pause ended', function () {
+            saveProgressNow();
+        });
+
+        function saveProgressNow() {
+            if (!curLessonId || !player.duration || isNaN(player.duration)) return;
+            var position = Math.floor(player.currentTime || 0);
+            var duration = Math.floor(player.duration || 0);
+            if (position <= 0 || duration <= 0) return;
+            $.ajax({
+                url: '/InstructionalManagement/CourseStudy/SaveProgress',
+                type: 'POST',
+                data: { lessonId: curLessonId, position: position, duration: duration }
+            });
+        }
+
+        //页面关闭/隐藏时兜底保存（keepalive）
+        window.addEventListener('pagehide', function () {
+            if (!curLessonId || !player.duration || isNaN(player.duration)) return;
+            var position = Math.floor(player.currentTime || 0);
+            var duration = Math.floor(player.duration || 0);
+            if (position <= 0 || duration <= 0) return;
+            var body = 'lessonId=' + encodeURIComponent(curLessonId) + '&position=' + position + '&duration=' + duration;
+            fetch('/InstructionalManagement/CourseStudy/SaveProgress', {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: body,
+                keepalive: true
+            });
+        });
+
+        loadStudyInfo();
+        wcLoading.close();
+    });
+</script>

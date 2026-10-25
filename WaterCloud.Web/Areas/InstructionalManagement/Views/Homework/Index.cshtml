@@ -1,0 +1,232 @@
+@{
+    ViewBag.Title = "作业管理";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'table', 'common', 'commonTable', 'optimizeSelectOption'], function () {
+        var $ = layui.jquery,
+            form = layui.form,
+            table = layui.table,
+            common = layui.common,
+            commonTable = layui.commonTable;
+
+        wcLoading.close();
+
+        $("#F_ClassId").bindSelect({
+            url: "/InstructionalManagement/Homework/GetClassListJson",
+            id: "F_Id",
+            text: "F_FullName",
+            search: true
+        });
+        $("#F_CourseId").bindSelect({
+            url: "/InstructionalManagement/Homework/GetCourseListJson",
+            id: "F_Id",
+            text: "F_Name",
+            search: true
+        });
+
+        commonTable.rendertable({
+            elem: '#currentTableId',
+            id: 'currentTableId',
+            url: '/InstructionalManagement/Homework/GetGridJson',
+            cols: [[
+                { type: 'checkbox', fixed: 'left' },
+                { field: 'F_Title', title: '作业标题', width: 220, sort: true },
+                { field: 'F_CourseName', title: '课程', width: 130 },
+                { field: 'F_ClassName', title: '班级', width: 130 },
+                {
+                    field: 'F_Deadline', title: '截止时间', width: 150, sort: true,
+                    templet: function (d) {
+                        return d.F_Deadline ? String(d.F_Deadline).replace(/\//g, '-').replace('T', ' ').substring(0, 16) : '不限';
+                    }
+                },
+                { field: 'F_FullScore', title: '满分', width: 70, align: 'center' },
+                {
+                    title: '提交情况', width: 110, align: 'center',
+                    templet: function (d) {
+                        return '<span style="color:#1E9FFF">' + (d.F_SubmitCount || 0) + '</span> / ' + (d.F_TotalCount || 0);
+                    }
+                },
+                {
+                    field: 'F_PendingCount', title: '待批改', width: 80, align: 'center',
+                    templet: function (d) {
+                        var n = d.F_PendingCount || 0;
+                        return n > 0 ? '<span class="layui-badge layui-bg-orange">' + n + '</span>' : '0';
+                    }
+                },
+                { field: 'F_Status', title: '状态', width: 90, align: 'center', templet: '#statusTpl' },
+                {
+                    field: 'F_CreatorTime', title: '创建时间', width: 150, sort: true,
+                    templet: function (d) {
+                        return d.F_CreatorTime ? String(d.F_CreatorTime).replace(/\//g, '-').replace('T', ' ').substring(0, 16) : '';
+                    }
+                },
+                { title: '操作', width: 190, toolbar: '#currentTableBar', align: 'center', fixed: 'right' }
+            ]]
+        });
+
+        form.on('submit(data-search-btn)', function (data) {
+            commonTable.reloadtable({
+                elem: 'currentTableId',
+                curr: 1,
+                where: {
+                    keyword: $('#txt_keyword').val(),
+                    courseId: $('#F_CourseId').val(),
+                    classId: $('#F_ClassId').val(),
+                    status: $('#F_Status').val()
+                }
+            });
+            return false;
+        });
+
+        var oneList = ["NF-edit", "NF-review"];
+        var moreList = ["NF-delete", "NF-publish", "NF-unpublish"];
+        commonTable.tableRowClick("checkbox", "currentTableFilter", "currentTableId", oneList, moreList);
+
+        table.on('toolbar(currentTableFilter)', function (obj) {
+            var checkStatus = table.checkStatus('currentTableId');
+            if (obj.event === 'add') {
+                common.modalOpen({
+                    title: '发布作业',
+                    url: '/InstructionalManagement/Homework/Form',
+                    width: '900px',
+                    height: '92%'
+                });
+            }
+            else if (obj.event === 'publish' || obj.event === 'unpublish') {
+                if (checkStatus.data.length == 0) {
+                    common.modalMsg('请选择需要操作的作业', 'warning');
+                    return false;
+                }
+                var ids = [];
+                for (var i = 0; i < checkStatus.data.length; i++) {
+                    ids.push(checkStatus.data[i].F_Id);
+                }
+                common.submitForm({
+                    url: '/InstructionalManagement/Homework/SetStatus',
+                    param: { keyValue: ids.join(','), status: obj.event === 'publish' ? 1 : 0 },
+                    close: false,
+                    success: function () {
+                        commonTable.reloadtable({ elem: 'currentTableId' });
+                    }
+                });
+            }
+            else if (obj.event === 'delete') {
+                if (checkStatus.data.length == 0) {
+                    common.modalMsg('请选择需要删除的数据', 'warning');
+                    return false;
+                }
+                var ids = [];
+                for (var i = 0; i < checkStatus.data.length; i++) {
+                    ids.push(checkStatus.data[i].F_Id);
+                }
+                common.deleteForm({
+                    url: '/InstructionalManagement/Homework/DeleteForm',
+                    param: { keyValue: ids.join(',') },
+                    success: function () {
+                        commonTable.reloadtable({ elem: 'currentTableId' });
+                    }
+                });
+            }
+        });
+
+        table.on('tool(currentTableFilter)', function (obj) {
+            var data = obj.data;
+            if (obj.event === 'edit') {
+                common.modalOpen({
+                    title: '编辑作业',
+                    url: '/InstructionalManagement/Homework/Form?keyValue=' + data.F_Id,
+                    width: '900px',
+                    height: '92%'
+                });
+            }
+            else if (obj.event === 'review') {
+                common.modalOpen({
+                    title: '提交与批改 - ' + data.F_Title,
+                    url: '/InstructionalManagement/Homework/Review?homeworkId=' + data.F_Id,
+                    width: '1000px',
+                    height: '92%'
+                });
+            }
+            else if (obj.event === 'delete') {
+                common.deleteForm({
+                    url: '/InstructionalManagement/Homework/DeleteForm',
+                    param: { keyValue: data.F_Id },
+                    success: function () {
+                        commonTable.reloadtable({ elem: 'currentTableId' });
+                    }
+                });
+            }
+        });
+    });
+</script>
+
+<div class="layuimini-container">
+    <div class="layuimini-main">
+        <fieldset class="table-search-fieldset">
+            <legend>搜索信息</legend>
+            <div style="margin: 10px 10px 10px 10px">
+                <form class="layui-form layui-form-pane">
+                    <div class="layui-form-item">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">关键字:</label>
+                            <div class="layui-input-inline">
+                                <input type="text" id="txt_keyword" name="txt_keyword" autocomplete="off" class="layui-input" placeholder="作业标题/课程/班级">
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">课程:</label>
+                            <div class="layui-input-inline">
+                                <select id="F_CourseId" name="F_CourseId" lay-search>
+                                    <option value="">请选择课程</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">班级:</label>
+                            <div class="layui-input-inline">
+                                <select id="F_ClassId" name="F_ClassId" lay-search>
+                                    <option value="">请选择班级</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">状态:</label>
+                            <div class="layui-input-inline">
+                                <select id="F_Status" name="F_Status">
+                                    <option value="">全部</option>
+                                    <option value="0">草稿</option>
+                                    <option value="1">已发布</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <button type="submit" class="layui-btn layui-btn-primary" lay-submit lay-filter="data-search-btn"><i class="layui-icon">&#xe615;</i> 搜 索</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </fieldset>
+        <script type="text/html" id="toolbarDemo">
+            <div class="layui-btn-container">
+                <button class="layui-btn layui-btn-sm layui-btn-normal" lay-event="add" id="NF-add" name="NF-add" authorize><i class="layui-icon">&#xe654;</i>发布作业</button>
+                <button class="layui-btn layui-btn-sm" lay-event="publish" id="NF-publish" name="NF-publish" authorize><i class="layui-icon">&#xe605;</i>发布</button>
+                <button class="layui-btn layui-btn-sm layui-btn-primary" lay-event="unpublish" id="NF-unpublish" name="NF-unpublish" authorize><i class="layui-icon">&#x1006;</i>取消发布</button>
+                <button class="layui-btn layui-btn-sm layui-btn-danger" lay-event="delete" id="NF-delete" name="NF-delete" authorize><i class="layui-icon">&#xe640;</i>删除</button>
+            </div>
+        </script>
+        <script type="text/html" id="currentTableBar">
+            <a class="layui-btn layui-btn-xs" lay-event="edit" id="NF-edit" authorize><i class="layui-icon">&#xe642;</i>编辑</a>
+            <a class="layui-btn layui-btn-xs layui-btn-warm" lay-event="review" id="NF-review" authorize><i class="layui-icon">&#xe60a;</i>提交/批改</a>
+            <a class="layui-btn layui-btn-xs layui-btn-danger" lay-event="delete" id="NF-delete" authorize><i class="layui-icon">&#xe640;</i>删除</a>
+        </script>
+        <script type="text/html" id="statusTpl">
+            {{# if(d.F_Status === 1){ }}
+            <span class="layui-badge layui-bg-green">已发布</span>
+            {{# } else { }}
+            <span class="layui-badge layui-bg-gray">草稿</span>
+            {{# } }}
+        </script>
+        <table class="layui-hide" id="currentTableId" lay-filter="currentTableFilter"></table>
+    </div>
+</div>

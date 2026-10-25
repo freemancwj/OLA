@@ -1,0 +1,180 @@
+@{
+    ViewBag.Title = "补考安排";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'laydate', 'common', 'optimizeSelectOption'], function () {
+        var form = layui.form,
+            $ = layui.jquery,
+            common = layui.common,
+            laydate = layui.laydate;
+        var keyValue = $.request("keyValue");
+
+        laydate.render({
+            elem: '#F_ExamDate',
+            type: 'date',
+            format: 'yyyy-MM-dd',
+            trigger: 'click'
+        });
+
+        function initControl() {
+            $("#F_ClassroomId").bindSelect({
+                url: "/InstructionalManagement/MakeupExam/GetClassroomListJson",
+                id: "F_Id",
+                text: "ClassroomName",
+                search: true
+            });
+            $("#F_PeriodId").bindSelect({
+                url: "/InstructionalManagement/MakeupExam/GetPeriodListJson",
+                id: "F_Id",
+                text: "PeriodName",
+                search: true
+            });
+            $("#F_MainInvigilatorId").bindSelect({
+                url: "/InstructionalManagement/MakeupExam/GetTeacherListJson",
+                id: "F_Id",
+                text: "TeacherName",
+                search: true
+            });
+            $("#F_SubInvigilatorId").bindSelect({
+                url: "/InstructionalManagement/MakeupExam/GetTeacherListJson",
+                id: "F_Id",
+                text: "TeacherName",
+                search: true
+            });
+        }
+
+        $(function () {
+            initControl();
+            if (!!keyValue) {
+                common.ajax({
+                    url: '/InstructionalManagement/MakeupExam/GetFormJson',
+                    data: { keyValue: keyValue },
+                    async: false,
+                    success: function (data) {
+                        //学生/课程只读展示
+                        $('#txt_student').val((data.F_StudentName || '') + (data.F_Account ? '(' + data.F_Account + ')' : ''));
+                        $('#txt_course').val(data.F_CourseName || '');
+                        $('#txt_oldScore').val(data.F_OldScore == null ? '' : data.F_OldScore);
+                        $('#F_StudentId').val(data.F_StudentId);
+                        $('#F_CourseId').val(data.F_CourseId);
+                        $('#F_ClassId').val(data.F_ClassId);
+                        //日期截取前10位回填
+                        $('#F_ExamDate').val(data.F_ExamDate ? String(data.F_ExamDate).replace(/\//g, '-').substring(0, 10) : '');
+                        $('#F_PeriodId').val(data.F_PeriodId);
+                        $('#F_ClassroomId').val(data.F_ClassroomId);
+                        $('#F_MainInvigilatorId').val(data.F_MainInvigilatorId);
+                        $('#F_SubInvigilatorId').val(data.F_SubInvigilatorId);
+                        $('#F_NewScore').val(data.F_NewScore == null ? '' : data.F_NewScore);
+                        $('#F_Remark').val(data.F_Remark);
+                        form.render();
+                    }
+                });
+            }
+            form.render();
+        });
+        wcLoading.close();
+
+        //监听提交
+        form.on('submit(saveBtn)', function (data) {
+            if (data.field.F_NewScore !== '') {
+                var score = parseFloat(data.field.F_NewScore);
+                if (isNaN(score) || score < 0 || score > 100) {
+                    common.modalMsg("补考成绩必须在0到100之间", "warning");
+                    return false;
+                }
+            }
+            common.submitForm({
+                url: '/InstructionalManagement/MakeupExam/SubmitForm?keyValue=' + (keyValue || ''),
+                param: data.field,
+                success: function () {
+                    common.parentreload('data-search-btn');
+                }
+            });
+            return false;
+        });
+    });
+</script>
+
+<body>
+    <div class="layuimini-container">
+        <div class="layuimini-main">
+            <div class="layui-form layuimini-form" lay-filter="adminform">
+                <input type="hidden" id="F_StudentId" name="F_StudentId">
+                <input type="hidden" id="F_CourseId" name="F_CourseId">
+                <input type="hidden" id="F_ClassId" name="F_ClassId">
+                <div class="layui-form-item">
+                    <label class="layui-form-label">学生</label>
+                    <div class="layui-input-block">
+                        <input type="text" id="txt_student" readonly class="layui-input layui-disabled">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">课程</label>
+                    <div class="layui-input-block">
+                        <input type="text" id="txt_course" readonly class="layui-input layui-disabled">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">原成绩</label>
+                    <div class="layui-input-block">
+                        <input type="text" id="txt_oldScore" readonly class="layui-input layui-disabled">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">补考日期</label>
+                    <div class="layui-input-block">
+                        <input type="text" id="F_ExamDate" name="F_ExamDate" autocomplete="off" placeholder="请选择补考日期" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">时间段</label>
+                    <div class="layui-input-block">
+                        <select id="F_PeriodId" name="F_PeriodId" lay-search>
+                            <option value="">请选择时间段</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">考场教室</label>
+                    <div class="layui-input-block">
+                        <select id="F_ClassroomId" name="F_ClassroomId" lay-search>
+                            <option value="">请选择教室</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">主监考</label>
+                    <div class="layui-input-block">
+                        <select id="F_MainInvigilatorId" name="F_MainInvigilatorId" lay-search>
+                            <option value="">请选择主监考</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">副监考</label>
+                    <div class="layui-input-block">
+                        <select id="F_SubInvigilatorId" name="F_SubInvigilatorId" lay-search>
+                            <option value="">请选择副监考</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">补考成绩</label>
+                    <div class="layui-input-block">
+                        <input type="number" id="F_NewScore" name="F_NewScore" autocomplete="off" min="0" max="100" step="0.5" placeholder="0 - 100，录分后状态变为已录分" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item layui-form-text">
+                    <label class="layui-form-label">备注</label>
+                    <div class="layui-input-block">
+                        <textarea id="F_Remark" name="F_Remark" placeholder="请输入备注" class="layui-textarea"></textarea>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-hide">
+                    <button class="layui-btn site-demo-active" lay-submit id="submit" lay-filter="saveBtn">确认保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>

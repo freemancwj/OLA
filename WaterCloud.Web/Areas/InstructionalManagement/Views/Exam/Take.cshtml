@@ -1,0 +1,297 @@
+@{
+    ViewBag.Title = "在线答题";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<style>
+    body { background: #f2f2f2; }
+    .exam-header { position: fixed; top: 0; left: 0; right: 0; height: 56px; background: #fff; border-bottom: 1px solid #e6e6e6; z-index: 20; display: flex; align-items: center; justify-content: space-between; padding: 0 18px; box-sizing: border-box; }
+    .exam-title { font-size: 16px; font-weight: bold; color: #333; }
+    .exam-head-right span { margin-left: 18px; font-size: 13px; color: #666; }
+    .exam-head-right b { color: #333; }
+    .exam-countdown { color: #1e9fff; font-size: 16px; }
+    .exam-countdown.danger { color: #ff5722; }
+    .exam-body { padding: 72px 16px 78px; max-width: 960px; margin: 0 auto; box-sizing: border-box; }
+    .exam-loading { padding: 40px; text-align: center; color: #999; }
+    .exam-q { background: #fff; border-radius: 6px; padding: 14px 18px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+    .exam-q-head { display: flex; align-items: center; margin-bottom: 8px; }
+    .exam-q-head .q-no { font-weight: bold; color: #333; margin-right: 10px; }
+    .exam-q-head .q-score { margin-left: auto; font-size: 12px; color: #999; }
+    .exam-q-content { font-size: 14px; color: #333; line-height: 1.7; margin-bottom: 10px; white-space: pre-wrap; word-break: break-word; }
+    .q-opt { display: flex; align-items: flex-start; padding: 8px 10px; border: 1px solid #e6e6e6; border-radius: 4px; margin-bottom: 8px; cursor: pointer; font-size: 13px; color: #444; line-height: 1.6; }
+    .q-opt:hover { border-color: #1e9fff; background: #f5faff; }
+    .q-opt input { margin: 3px 8px 0 0; flex-shrink: 0; }
+    .q-opt .opt-label { font-weight: bold; color: #555; margin-right: 6px; flex-shrink: 0; }
+    .q-opt .opt-text { word-break: break-word; }
+    .q-textarea { width: 100%; min-height: 90px; padding: 8px 10px; border: 1px solid #e6e6e6; border-radius: 4px; box-sizing: border-box; font-size: 13px; line-height: 1.6; resize: vertical; outline: none; }
+    .q-textarea:focus { border-color: #1e9fff; }
+    .q-empty { color: #999; font-size: 13px; }
+    .exam-footer { position: fixed; bottom: 0; left: 0; right: 0; height: 60px; background: #fff; border-top: 1px solid #e6e6e6; display: flex; align-items: center; justify-content: space-between; padding: 0 18px; z-index: 20; box-sizing: border-box; }
+    .exam-footer .exam-progress-text { font-size: 13px; color: #666; }
+</style>
+<div class="exam-header">
+    <div class="exam-title" id="examTitle">在线答题</div>
+    <div class="exam-head-right">
+        <span>题目数：<b id="totalQuestions">0</b></span>
+        <span>总分：<b id="totalScore">0</b></span>
+        <span>剩余时间：<b id="countdown" class="exam-countdown">--:--</b></span>
+    </div>
+</div>
+<div class="exam-body">
+    <div id="questionList"><div class="exam-loading">正在加载试卷...</div></div>
+</div>
+<div class="exam-footer">
+    <span class="exam-progress-text">已答 <b id="answeredCount">0</b> / <b id="totalAnswered">0</b></span>
+    <button type="button" class="layui-btn layui-btn-normal layui-btn-sm" id="btnSubmit">交 卷</button>
+</div>
+<script>
+    layui.use(['jquery', 'common'], function () {
+        var $ = layui.jquery,
+            common = layui.common;
+
+        var examId = $.request('examId');
+        var examData = null;
+        var examLoaded = false;
+        var submitted = false;   //已交卷
+        var submitting = false;  //正在交卷
+        var timer = null;
+        var endTime = 0;
+
+        if (!examId) {
+            common.modalMsg('缺少考试参数', 'warning');
+            wcLoading.close();
+            return;
+        }
+
+        function esc(text) {
+            if (text === null || text === undefined) return '';
+            return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        function typeName(type) {
+            type = parseInt(type, 10);
+            if (type === 2) return '多选题';
+            if (type === 3) return '判断题';
+            if (type === 4) return '简答题';
+            if (type === 1) return '单选题';
+            return '题目';
+        }
+
+        function fmtTime(sec) {
+            sec = Math.max(0, parseInt(sec, 10) || 0);
+            var m = Math.floor(sec / 60), s = sec % 60;
+            return (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
+        }
+
+        //渲染题目
+        function renderQuestions(questions) {
+            var $wrap = $('#questionList').empty();
+            if (!questions || questions.length === 0) {
+                $wrap.append('<div class="exam-loading">本场考试暂无题目</div>');
+                return;
+            }
+            questions.sort(function (a, b) { return (a.F_SortCode || 0) - (b.F_SortCode || 0); });
+            $.each(questions, function (i, q) {
+                var type = parseInt(q.F_Type, 10);
+                var html = '<div class="exam-q" data-qid="' + esc(q.F_Id) + '" data-qtype="' + type + '">' +
+                    '<div class="exam-q-head">' +
+                        '<span class="q-no">第' + (i + 1) + '题</span>' +
+                        '<span class="layui-badge layui-bg-blue">' + typeName(type) + '</span>' +
+                        '<span class="q-score">' + (q.F_FullScore || 0) + ' 分</span>' +
+                    '</div>' +
+                    '<div class="exam-q-content">' + esc(q.F_Content) + '</div>' +
+                    buildOptions(q, type) +
+                    '</div>';
+                $wrap.append(html);
+            });
+        }
+
+        //构建作答选项
+        function buildOptions(q, type) {
+            var letters = ['A', 'B', 'C', 'D'];
+            var html = '';
+            if (type === 4) {
+                return '<textarea class="q-textarea" placeholder="请输入你的答案"></textarea>';
+            }
+            if (type === 3) {
+                html += optionHtml('radio', q.F_Id, 'A', '正确');
+                html += optionHtml('radio', q.F_Id, 'B', '错误');
+                return html;
+            }
+            var inputType = (type === 2) ? 'checkbox' : 'radio';
+            $.each(letters, function (i, letter) {
+                var text = q['F_Option' + letter];
+                if (text === null || text === undefined || text === '') return;
+                html += optionHtml(inputType, q.F_Id, letter, text);
+            });
+            if (!html) {
+                html = '<div class="q-empty">暂无选项</div>';
+            }
+            return html;
+        }
+
+        function optionHtml(inputType, qid, letter, text) {
+            return '<label class="q-opt">' +
+                '<input type="' + inputType + '" name="q_' + esc(qid) + '" value="' + letter + '">' +
+                '<span class="opt-label">' + letter + '.</span>' +
+                '<span class="opt-text">' + esc(text) + '</span>' +
+                '</label>';
+        }
+
+        //判断单题是否已作答
+        function questionAnswered($q) {
+            var type = parseInt($q.data('qtype'), 10);
+            if (type === 4) {
+                return $.trim($q.find('textarea').val()) !== '';
+            }
+            if (type === 2) {
+                return $q.find('input[type=checkbox]:checked').length > 0;
+            }
+            return $q.find('input[type=radio]:checked').length > 0;
+        }
+
+        function updateAnswered() {
+            var answered = 0;
+            $('.exam-q').each(function () {
+                if (questionAnswered($(this))) answered++;
+            });
+            $('#answeredCount').text(answered);
+        }
+
+        //收集答案
+        function collectAnswers() {
+            var answers = [];
+            $('.exam-q').each(function () {
+                var $q = $(this);
+                var type = parseInt($q.data('qtype'), 10);
+                var value = '';
+                if (type === 4) {
+                    value = $.trim($q.find('textarea').val());
+                }
+                else if (type === 2) {
+                    var letters = [];
+                    $q.find('input[type=checkbox]:checked').each(function () {
+                        letters.push($(this).val());
+                    });
+                    letters.sort();
+                    value = letters.join('').toUpperCase();
+                }
+                else {
+                    value = $q.find('input[type=radio]:checked').val() || '';
+                }
+                answers.push({ F_QuestionId: String($q.data('qid')), F_Answer: value });
+            });
+            return answers;
+        }
+
+        //倒计时
+        function startCountdown(seconds) {
+            endTime = Date.now() + Math.max(0, parseInt(seconds, 10) || 0) * 1000;
+            if (timer) clearInterval(timer);
+            timer = setInterval(tick, 1000);
+            tick();
+        }
+
+        function tick() {
+            var left = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
+            $('#countdown').text(fmtTime(left)).toggleClass('danger', left <= 60);
+            if (left <= 0) {
+                if (timer) { clearInterval(timer); timer = null; }
+                submitExam(true);
+            }
+        }
+
+        //交卷，auto 为倒计时自动交卷
+        function submitExam(auto) {
+            if (!examData || submitted || submitting) return;
+            var answers = collectAnswers();
+            var unanswered = 0;
+            $.each(answers, function (i, item) {
+                if (!item.F_Answer) unanswered++;
+            });
+            if (!auto && unanswered > 0) {
+                common.modalConfirm('还有 ' + unanswered + ' 道题未作答，确定要交卷吗？', function (result) {
+                    if (result) doSubmit(answers);
+                });
+                return;
+            }
+            doSubmit(answers);
+        }
+
+        function doSubmit(answers) {
+            if (submitted || submitting) return;
+            submitting = true;
+            $('#btnSubmit').addClass('layui-btn-disabled').attr('disabled', 'disabled');
+            common.ajax({
+                url: '/InstructionalManagement/Exam/SubmitExam',
+                type: 'POST',
+                data: {
+                    recordId: examData.F_RecordId,
+                    answersJson: JSON.stringify(answers)
+                },
+                success: function (res) {
+                    if (res && (res.state === 'success' || res.state == 0)) {
+                        submitted = true;
+                        if (timer) { clearInterval(timer); timer = null; }
+                        common.modalMsg(res.message || '交卷成功', 'success');
+                        setTimeout(function () { location.href = '/InstructionalManagement/Exam/My'; }, 800);
+                    }
+                    else {
+                        submitting = false;
+                        $('#btnSubmit').removeClass('layui-btn-disabled').removeAttr('disabled');
+                        common.modalAlert((res && res.message) || '交卷失败，请重试', 'error');
+                    }
+                },
+                error: function () {
+                    submitting = false;
+                    $('#btnSubmit').removeClass('layui-btn-disabled').removeAttr('disabled');
+                    common.modalMsg('网络异常，交卷失败', 'error');
+                }
+            });
+        }
+
+        //加载试卷
+        common.ajax({
+            url: '/InstructionalManagement/Exam/StartExamJson',
+            data: { examId: examId },
+            success: function (res) {
+                if (!res || Number(res.state) < 0 || (!!res.msg && res.msg !== '') || !res.data) {
+                    common.modalMsg((res && (res.msg || res.message)) || '试卷加载失败', 'warning');
+                    setTimeout(function () { location.href = '/InstructionalManagement/Exam/My'; }, 1000);
+                    return;
+                }
+                examData = res.data;
+                $('#examTitle').text(examData.F_Title || '在线答题');
+                $('#totalScore').text(examData.F_TotalScore == null ? 0 : examData.F_TotalScore);
+                var questions = examData.Questions || [];
+                $('#totalQuestions').text(questions.length);
+                $('#totalAnswered').text(questions.length);
+                renderQuestions(questions);
+                updateAnswered();
+                examLoaded = true;
+                var seconds = examData.F_RemainingSeconds == null
+                    ? (parseInt(examData.F_Duration, 10) || 0) * 60
+                    : examData.F_RemainingSeconds;
+                startCountdown(seconds);
+            },
+            error: function () {
+                common.modalMsg('试卷加载失败', 'error');
+                setTimeout(function () { location.href = '/InstructionalManagement/Exam/My'; }, 1000);
+            }
+        });
+
+        //作答状态实时统计
+        $('#questionList').on('change', 'input', function () { updateAnswered(); });
+        $('#questionList').on('input', 'textarea', function () { updateAnswered(); });
+
+        $('#btnSubmit').click(function () { submitExam(false); });
+
+        //离开页面提醒
+        window.onbeforeunload = function () {
+            if (examLoaded && !submitted) {
+                return '考试尚未提交，确定要离开吗？';
+            }
+        };
+
+        wcLoading.close();
+    });
+</script>

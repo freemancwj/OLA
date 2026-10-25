@@ -1,0 +1,198 @@
+@{
+    ViewBag.Title = "课程";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'upload', 'common', 'optimizeSelectOption'], function () {
+        var form = layui.form,
+            $ = layui.jquery,
+            upload = layui.upload,
+            common = layui.common;
+        var keyValue = $.request("keyValue");
+
+        common.authorizeFields('adminform');
+
+        function fillSelect(selector, list, idField, nameField, placeholder) {
+            var html = '<option value="">' + placeholder + '</option>';
+            $.each(list, function (i, item) {
+                html += '<option value="' + item[idField] + '">' + item[nameField] + '</option>';
+            });
+            $(selector).html(html);
+        }
+
+        $(function () {
+            initControl();
+            if (!!keyValue) {
+                common.ajax({
+                    url: '/InstructionalManagement/Course/GetFormJson',
+                    data: { keyValue: keyValue },
+                    async: false,
+                    success: function (data) {
+                        $('#F_CategoryId').val(data.F_CategoryId || '');
+                        $('#F_TeacherId').val(data.F_TeacherId || '');
+                        $('#F_MajorId').val(data.F_MajorId || '');
+                        $('#F_Nature').val(data.F_Nature || '');
+                        $('#F_Credit').val(data.F_Credit);
+                        $('#F_Period').val(data.F_Period);
+                        $('#F_ExamScore').val(data.F_ExamScore);
+                        $('#F_Name').val(data.F_Name);
+                        $('#F_Cover').val(data.F_Cover || '');
+                        $('#F_SortCode').val(data.F_SortCode);
+                        $('#F_Intro').val(data.F_Intro || '');
+                        if (data.F_Cover) {
+                            $('#coverPreview').attr('src', data.F_Cover).removeClass('layui-hide');
+                        }
+                        form.render();
+                    }
+                });
+            }
+            form.render();
+        });
+        wcLoading.close();
+
+        function initControl() {
+            $("#F_CategoryId").bindSelect({
+                url: "/InstructionalManagement/CourseCategory/GetTreeSelectJson",
+                id: "F_Id",
+                text: "F_Name",
+                search: true
+            });
+            common.ajax({
+                url: '/InstructionalManagement/Course/GetTeacherListJson', async: false,
+                success: function (data) {
+                    fillSelect('#F_TeacherId', data, 'F_Id', 'F_RealName', '请选择授课教师');
+                }
+            });
+            $("#F_MajorId").bindSelect({
+                url: "/InstructionalManagement/Major/GetMajorListJson",
+                id: "F_Id",
+                text: "F_FullName",
+                search: true
+            });
+            //封面上传
+            upload.render({
+                elem: '#btnUploadCover',
+                url: '/InstructionalManagement/Course/UploadFile',
+                accept: 'images',
+                size: 10240,
+                done: function (res) {
+                    if (res.code > 0) {
+                        common.modalMsg(res.msg, "warning");
+                        return false;
+                    }
+                    var src = res.data[0].src;
+                    $('#F_Cover').val(src);
+                    $('#coverPreview').attr('src', src).removeClass('layui-hide');
+                    common.modalMsg("封面上传成功", "success");
+                },
+                error: function () {
+                    common.modalMsg("封面上传失败", "warning");
+                }
+            });
+        }
+
+        //监听提交
+        form.on('submit(saveBtn)', function (data) {
+            var postData = data.field;
+            common.submitForm({
+                url: '/InstructionalManagement/Course/SubmitForm?keyValue=' + (keyValue || ''),
+                param: postData,
+                success: function () {
+                    common.parentreload('data-search-btn');
+                }
+            });
+            return false;
+        });
+    });
+</script>
+
+<body>
+    <div class="layuimini-container">
+        <div class="layuimini-main">
+            <div class="layui-form layuimini-form" lay-filter="adminform">
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">课程分类</label>
+                    <div class="layui-input-block">
+                        <select id="F_CategoryId" name="F_CategoryId" lay-verify="required" lay-search>
+                            <option value="">请选择课程分类</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">课程名称</label>
+                    <div class="layui-input-block">
+                        <input type="text" id="F_Name" name="F_Name" autocomplete="off" maxlength="200" lay-verify="required" placeholder="请输入课程名称" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">课程封面</label>
+                    <div class="layui-input-block">
+                        <input type="hidden" id="F_Cover" name="F_Cover">
+                        <button type="button" class="layui-btn layui-btn-sm layui-btn-primary" id="btnUploadCover"><i class="layui-icon">&#xe67c;</i> 上传封面</button>
+                        <img id="coverPreview" class="layui-hide" style="height:60px;margin-left:10px;vertical-align:middle;" />
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">授课教师</label>
+                    <div class="layui-input-block">
+                        <select id="F_TeacherId" name="F_TeacherId" lay-search>
+                            <option value="">请选择授课教师</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">所属专业</label>
+                    <div class="layui-input-block">
+                        <select id="F_MajorId" name="F_MajorId" lay-search>
+                            <option value="">请选择所属专业</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">课程性质</label>
+                    <div class="layui-input-block">
+                        <select id="F_Nature" name="F_Nature">
+                            <option value="">请选择</option>
+                            <option value="必修">必修</option>
+                            <option value="选修">选修</option>
+                            <option value="公选">公选</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">学分</label>
+                    <div class="layui-input-block">
+                        <input type="number" id="F_Credit" name="F_Credit" step="0.5" min="0" autocomplete="off" placeholder="请输入学分" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">学时</label>
+                    <div class="layui-input-block">
+                        <input type="number" id="F_Period" name="F_Period" step="1" min="0" autocomplete="off" placeholder="请输入学时" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">考试分数</label>
+                    <div class="layui-input-block">
+                        <input type="number" id="F_ExamScore" name="F_ExamScore" step="0.5" min="0" autocomplete="off" placeholder="请输入考试满分" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">排序</label>
+                    <div class="layui-input-block">
+                        <input type="number" pattern="[0-9]*" id="F_SortCode" name="F_SortCode" lay-verify="required|number" oninput="if(value.length>8)value=value.slice(0,8)" value="99" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item layui-form-text">
+                    <label class="layui-form-label">课程简介</label>
+                    <div class="layui-input-block">
+                        <textarea id="F_Intro" name="F_Intro" placeholder="请输入课程简介" class="layui-textarea"></textarea>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-hide">
+                    <button class="layui-btn site-demo-active" lay-submit id="submit" lay-filter="saveBtn">确认保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>

@@ -1,0 +1,151 @@
+@{
+    ViewBag.Title = "可选课程";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'common', 'optimizeSelectOption'], function () {
+        var form = layui.form,
+            $ = layui.jquery,
+            common = layui.common;
+        var keyValue = $.request("keyValue");
+
+        function initControl() {
+            $("#F_RoundId").bindSelect({
+                url: "/InstructionalManagement/ElectiveCourse/GetRoundListJson",
+                id: "F_Id",
+                text: "F_Name",
+                search: true
+            });
+            $("#F_CourseId").bindSelect({
+                url: "/InstructionalManagement/ElectiveCourse/GetCourseListJson",
+                id: "F_Id",
+                text: "F_Name",
+                search: true
+            });
+            $("#F_TeacherId").bindSelect({
+                url: "/InstructionalManagement/ElectiveCourse/GetTeacherListJson",
+                id: "F_Id",
+                text: "F_RealName",
+                search: true
+            });
+            $("#F_ClassroomId").bindSelect({
+                url: "/InstructionalManagement/ElectiveCourse/GetClassroomListJson",
+                id: "F_Id",
+                text: "F_Name",
+                search: true
+            });
+        }
+
+        $(function () {
+            initControl();
+            if (!!keyValue) {
+                common.ajax({
+                    url: '/InstructionalManagement/ElectiveCourse/GetFormJson',
+                    data: { keyValue: keyValue },
+                    async: false,
+                    success: function (data) {
+                        $('#F_RoundId').val(data.F_RoundId);
+                        $('#F_CourseId').val(data.F_CourseId);
+                        $('#F_TeacherId').val(data.F_TeacherId);
+                        $('#F_Capacity').val(data.F_Capacity);
+                        $('#F_WeekDay').val(data.F_WeekDay ? String(data.F_WeekDay) : '');
+                        $('#F_Section').val(data.F_Section);
+                        $('#F_ClassroomId').val(data.F_ClassroomId);
+                        $('#F_Remark').val(data.F_Remark);
+                    }
+                });
+            }
+            form.render();
+        });
+        wcLoading.close();
+
+        //监听提交
+        form.on('submit(saveBtn)', function (data) {
+            common.submitForm({
+                url: '/InstructionalManagement/ElectiveCourse/SubmitForm?keyValue=' + (keyValue || ''),
+                param: data.field,
+                success: function () {
+                    common.parentreload('data-search-btn');
+                }
+            });
+            return false;
+        });
+    });
+</script>
+
+<body>
+    <div class="layuimini-container">
+        <div class="layuimini-main">
+            <div class="layui-form layuimini-form" lay-filter="adminform">
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">选课批次</label>
+                    <div class="layui-input-block">
+                        <select id="F_RoundId" name="F_RoundId" lay-verify="required" lay-search>
+                            <option value="">请选择批次</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">课程</label>
+                    <div class="layui-input-block">
+                        <select id="F_CourseId" name="F_CourseId" lay-verify="required" lay-search>
+                            <option value="">请选择课程</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">授课教师</label>
+                    <div class="layui-input-block">
+                        <select id="F_TeacherId" name="F_TeacherId" lay-verify="required" lay-search>
+                            <option value="">请选择教师</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">容量</label>
+                    <div class="layui-input-block">
+                        <input type="number" id="F_Capacity" name="F_Capacity" min="1" max="500" lay-verify="required|number" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">上课星期</label>
+                    <div class="layui-input-block">
+                        <select id="F_WeekDay" name="F_WeekDay">
+                            <option value="">待定</option>
+                            <option value="1">周一</option>
+                            <option value="2">周二</option>
+                            <option value="3">周三</option>
+                            <option value="4">周四</option>
+                            <option value="5">周五</option>
+                            <option value="6">周六</option>
+                            <option value="7">周日</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">上课节次</label>
+                    <div class="layui-input-block">
+                        <input type="number" id="F_Section" name="F_Section" min="1" max="20" lay-verify="number" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">教室</label>
+                    <div class="layui-input-block">
+                        <select id="F_ClassroomId" name="F_ClassroomId" lay-search>
+                            <option value="">待定</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">备注</label>
+                    <div class="layui-input-block">
+                        <textarea id="F_Remark" name="F_Remark" maxlength="500" class="layui-textarea" placeholder="选填"></textarea>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-hide">
+                    <button class="layui-btn site-demo-active" lay-submit id="submit" lay-filter="saveBtn">确认保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>

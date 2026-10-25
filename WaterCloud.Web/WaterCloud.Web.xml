@@ -67,6 +67,376 @@
             描 述：通知管理控制器类
             </summary>
         </member>
+        <member name="T:WaterCloud.Web.Areas.InstructionalManagement.Controllers.BuildingController">
+            <summary>
+            教学楼管理
+            </summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.InstructionalManagement.Controllers.ClassroomController">
+            <summary>
+            教室管理
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.ClassroomController.GetBuildingListJson">
+            <summary>
+            教学楼下拉
+            </summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.InstructionalManagement.Controllers.ClearExamController">
+            <summary>
+            清考管理
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.ClearExamController.Generate">
+            <summary>
+            生成清考名单
+            </summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.InstructionalManagement.Controllers.CourseCategoryController">
+            <summary>
+            课程分类管理
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.CourseCategoryController.GetTreeSelectJson">
+            <summary>
+            分类下拉（供课程表单选择分类）
+            </summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.InstructionalManagement.Controllers.CourseController">
+            <summary>
+            课程管理
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.CourseController.UploadFile">
+            <summary>
+            课程文件上传（视频/课件/文档/图片），最大500MB
+            </summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.InstructionalManagement.Controllers.CourseLessonController">
+            <summary>
+            章节与课时管理
+            </summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.InstructionalManagement.Controllers.CourseStudyController">
+            <summary>
+            在线学习（学生端）
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.CourseStudyController.GetCardsJson(System.String,System.String)">
+            <summary>
+            已上架课程卡片
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.CourseStudyController.GetStudyInfoJson(System.String)">
+            <summary>
+            课程学习详情（章节+课时+资料+进度）
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.CourseStudyController.SaveProgress(System.String,System.Int32,System.Int32)">
+            <summary>
+            保存学习进度
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.CourseStudyController.GetProgress(System.String)">
+            <summary>
+            获取某课时进度
+            </summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.InstructionalManagement.Controllers.CourseWareController">
+            <summary>
+            课程资料管理
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.CourseWareController.Download(System.String)">
+            <summary>
+            资料下载（附件方式）
+            </summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.InstructionalManagement.Controllers.ElectiveCourseController">
+            <summary>
+            选课设置（批次下开放的可选课程班次）
+            </summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.InstructionalManagement.Controllers.ElectiveRecordController">
+            <summary>
+            选课名单（管理端）
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.ElectiveRecordController.GetCourseListJson(System.String)">
+            <summary>
+            批次下可选课程下拉
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.ElectiveRecordController.DeleteForm(System.String)">
+            <summary>
+            移除学生选课
+            </summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.InstructionalManagement.Controllers.ElectiveRoundController">
+            <summary>
+            选课批次管理
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.ElectiveRoundController.GetRoundListJson">
+            <summary>
+            批次下拉
+            </summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.InstructionalManagement.Controllers.ElectiveStatController">
+            <summary>
+            选课统计
+            </summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.InstructionalManagement.Controllers.ExamArrangeController">
+            <summary>
+            考务安排
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.ExamArrangeController.Invigilator">
+            <summary>
+            监考管理
+            </summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.InstructionalManagement.Controllers.ExamController">
+            <summary>
+            在线考试管理
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.ExamController.My">
+            <summary>
+            学生端：我的考试（视图由学生端负责）
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.ExamController.Take">
+            <summary>
+            学生端：在线答题（视图由学生端负责）
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.ExamController.Result">
+            <summary>
+            学生端：成绩详情（视图由学生端负责）
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.ExamController.Wrong">
+            <summary>
+            学生端：错题记录（视图由学生端负责）
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.ExamController.SubmitExam(System.String,System.String)">
+            <summary>
+            学生交卷（学生答题页使用 common.ajax 直接 POST，未携带防伪令牌请求头）
+            </summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.InstructionalManagement.Controllers.ExamPeriodController">
+            <summary>
+            考试时间段管理
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.ExamPeriodController.GetPeriodListJson">
+            <summary>
+            时间段下拉（文本拼接 名称(开始-结束)）
+            </summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.InstructionalManagement.Controllers.ExamStatController">
+            <summary>
+            补考清考统计
+            </summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.InstructionalManagement.Controllers.HomeworkController">
+            <summary>
+            作业管理（教师发布、学生提交、教师批改）
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.HomeworkController.My">
+            <summary>
+            我的作业（学生端）
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.HomeworkController.Form">
+            <summary>
+            发布/编辑作业
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.HomeworkController.Review">
+            <summary>
+            提交情况（已提交/未提交名单）
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.HomeworkController.Grade">
+            <summary>
+            在线批改
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.HomeworkController.Submit">
+            <summary>
+            提交作业（学生端）
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.HomeworkController.GetHomeworkDetailJson(System.String)">
+            <summary>
+            作业详情 + 本人提交信息（学生端）
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.HomeworkController.GetSubmitListJson(WaterCloud.Code.SoulPage{WaterCloud.Domain.InstructionalManagement.HomeworkSubmitExtend},System.String,System.String)">
+            <summary>
+            提交名单（status: 空=已提交，0=未提交，2=待批改，3=已批改）
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.HomeworkController.GetSubmitJson(System.String)">
+            <summary>
+            批改页数据（作业 + 学生作答）
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.HomeworkController.SetStatus(System.String,System.Int32)">
+            <summary>
+            发布/取消发布（status=1发布，0取消）
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.HomeworkController.SaveAnswer(System.String,System.String,System.String,System.String,System.Int64)">
+            <summary>
+            学生提交作业（在线作答 + 附件）
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.HomeworkController.GradeForm(System.String,System.Decimal,System.String)">
+            <summary>
+            教师批改作业
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.HomeworkController.UploadFile">
+            <summary>
+            作业附件上传（支持图片、文档，最大50MB）
+            </summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.InstructionalManagement.Controllers.MajorController">
+            <summary>
+            专业管理
+            </summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.InstructionalManagement.Controllers.MakeupExamController">
+            <summary>
+            补考管理
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.MakeupExamController.Generate">
+            <summary>
+            生成补考名单
+            </summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.InstructionalManagement.Controllers.MyElectiveController">
+            <summary>
+            学生选课（学生端）
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.MyElectiveController.GetOpenRoundJson">
+            <summary>
+            当前开放批次信息
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.MyElectiveController.GetAvailableJson(System.String)">
+            <summary>
+            可选课程列表
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.MyElectiveController.GetMineJson(System.String)">
+            <summary>
+            我的选课
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.MyElectiveController.Select(System.String)">
+            <summary>
+            选课
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.MyElectiveController.Drop(System.String)">
+            <summary>
+            退课
+            </summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.InstructionalManagement.Controllers.NoScheduleController">
+            <summary>
+            不排课时间管理（全校/教室/教师）
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.NoScheduleController.GetClassroomListJson">
+            <summary>
+            教室下拉
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.NoScheduleController.GetTeacherListJson(System.String)">
+            <summary>
+            教师下拉
+            </summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.InstructionalManagement.Controllers.PeriodTimeController">
+            <summary>
+            节次起止时间管理
+            </summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.InstructionalManagement.Controllers.ProgramController">
+            <summary>
+            培养方案管理（专业+学期+课程+学分）
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.ProgramController.GetMajorListJson">
+            <summary>
+            专业下拉
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.ProgramController.GetCourseListJson">
+            <summary>
+            课程下拉
+            </summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.InstructionalManagement.Controllers.QuestionController">
+            <summary>
+            题库管理
+            </summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.InstructionalManagement.Controllers.ScheduleChangeController">
+            <summary>
+            调课申请与审批
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.ScheduleChangeController.AuditForm">
+            <summary>
+            审批页
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.ScheduleChangeController.GetMyTimetableJson(System.String)">
+            <summary>
+            可申请调课的课表格子（管理员全部，教师仅本人授课）
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.ScheduleChangeController.GetClassroomListJson">
+            <summary>
+            教室下拉
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.ScheduleChangeController.Audit(System.String,System.Int32,System.String)">
+            <summary>
+            审批（status 1通过 2拒绝）
+            </summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.InstructionalManagement.Controllers.ScheduleParamController">
+            <summary>
+            排课参数设置（单条配置）
+            </summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.InstructionalManagement.Controllers.ScoreChangeController">
+            <summary>
+            成绩修改申请
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.ScoreChangeController.GetScoreListJson(System.String)">
+            <summary>
+            可申请修改的成绩记录下拉
+            </summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.InstructionalManagement.Controllers.ScoreExemptionController">
+            <summary>
+            免考/缓考/缺考登记
+            </summary>
+        </member>
         <member name="T:WaterCloud.Web.Areas.InstructionalManagement.Controllers.ScoresController">
             <summary>
             成绩管理
@@ -75,6 +445,66 @@
         <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.ScoresController.GetRoleJson">
             <summary>
             当前用户成绩管理角色，用于页面按钮控制
+            </summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.InstructionalManagement.Controllers.ScoreStatController">
+            <summary>
+            成绩统计
+            </summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.InstructionalManagement.Controllers.ScoreTypeController">
+            <summary>
+            成绩类型管理
+            </summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.InstructionalManagement.Controllers.TeacherClassController">
+            <summary>
+            教师任课班级管理
+            </summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.InstructionalManagement.Controllers.TeachingTaskController">
+            <summary>
+            教学任务管理（学期+教师+课程+班级+周学时）
+            </summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.InstructionalManagement.Controllers.TimetableController">
+            <summary>
+            课表管理（授课计划、自动排课、课表查询）
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.TimetableController.Manage">
+            <summary>
+            课表管理页（授课计划维护 + 自动排课 + 手工调整）
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.TimetableController.GetClassroomListJson">
+            <summary>
+            教室下拉
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.TimetableController.GetScheduleParamJson">
+            <summary>
+            排课参数（每周天数/每天节数）
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.TimetableController.GetSemesterListJson">
+            <summary>
+            授课计划中的学期下拉
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.TimetableController.GetTimetableJson(System.String,System.String,System.String,System.String)">
+            <summary>
+            课表矩阵数据（班级/教师/学生三选一）
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.InstructionalManagement.Controllers.TimetableController.SaveCell(WaterCloud.Domain.InstructionalManagement.TimetableEntity)">
+            <summary>
+            保存格子（手工排课/调整）
+            </summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.InstructionalManagement.Controllers.WorkloadStatController">
+            <summary>
+            教师工作量统计
             </summary>
         </member>
         <member name="T:WaterCloud.Web.Areas.OrderManagement.Controllers.OrderController">
@@ -131,6 +561,11 @@
             创 建：超级管理员
             日 期：2020-06-01 09:44
             描 述：数据权限控制器类
+            </summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.SystemOrganize.Controllers.StudentController">
+            <summary>
+            学生管理（基本信息存 sys_user，附加信息存 school_student）
             </summary>
         </member>
         <member name="T:WaterCloud.Web.Areas.SystemOrganize.Controllers.SystemSetController">

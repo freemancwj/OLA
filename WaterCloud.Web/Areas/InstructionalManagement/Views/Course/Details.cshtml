@@ -1,0 +1,73 @@
+@{
+    ViewBag.Title = "课程详情";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'common'], function () {
+        var form = layui.form,
+            $ = layui.jquery,
+            common = layui.common;
+        var keyValue = $.request("keyValue");
+        $(function () {
+            if (!!keyValue) {
+                common.ajax({
+                    url: '/InstructionalManagement/Course/GetFormJson',
+                    data: { keyValue: keyValue },
+                    async: false,
+                    success: function (data) {
+                        $('#F_Name').text(data.F_Name || '');
+                        $('#F_Status').html((data.F_Status === 1) ? '<span class="layui-badge layui-bg-green">已上架</span>' : '<span class="layui-badge layui-bg-gray">已下架</span>');
+                        $('#F_SortCode').text(data.F_SortCode === null || data.F_SortCode === undefined ? '' : data.F_SortCode);
+                        $('#F_Intro').text(data.F_Intro || '');
+                        if (data.F_Cover) {
+                            $('#F_Cover').attr('src', data.F_Cover);
+                        } else {
+                            $('#coverWrap').hide();
+                        }
+                        form.render();
+                    }
+                });
+            }
+            form.render();
+        });
+        wcLoading.close();
+    });
+</script>
+<body>
+    <div class="layuimini-container">
+        <div class="layuimini-main">
+            <div class="layui-form layuimini-form">
+                <div class="layui-form-item" id="coverWrap">
+                    <label class="layui-form-label">课程封面</label>
+                    <div class="layui-input-block">
+                        <img id="F_Cover" style="max-height:120px;margin-top:6px;" />
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">课程名称</label>
+                    <div class="layui-input-block">
+                        <div class="layui-form-mid" id="F_Name"></div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">状态</label>
+                    <div class="layui-input-block">
+                        <div class="layui-form-mid" id="F_Status"></div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">排序</label>
+                    <div class="layui-input-block">
+                        <div class="layui-form-mid" id="F_SortCode"></div>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-form-text">
+                    <label class="layui-form-label">课程简介</label>
+                    <div class="layui-input-block">
+                        <div class="layui-form-mid" id="F_Intro" style="white-space:pre-wrap;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>

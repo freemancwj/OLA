@@ -1,0 +1,103 @@
+@{
+    ViewBag.Title = "审批登记";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'common'], function () {
+        var form = layui.form,
+            $ = layui.jquery,
+            common = layui.common;
+        var keyValue = $.request("keyValue");
+
+        $(function () {
+            if (!!keyValue) {
+                common.ajax({
+                    url: '/InstructionalManagement/ScoreExemption/GetFormJson',
+                    data: { keyValue: keyValue },
+                    async: false,
+                    success: function (data) {
+                        //只读展示登记信息
+                        $('#v_Student').text((data.F_StudentName || '') + '(' + (data.F_Account || '') + ')');
+                        $('#v_ClassName').text(data.F_ClassName || '');
+                        $('#v_CourseName').text(data.F_CourseName || '');
+                        $('#v_Type').text(data.F_Type || '');
+                        $('#v_Reason').text(data.F_Reason || '');
+                    }
+                });
+            }
+            form.render();
+        });
+        wcLoading.close();
+
+        //监听提交
+        form.on('submit(saveBtn)', function (data) {
+            common.submitForm({
+                url: '/InstructionalManagement/ScoreExemption/Audit?keyValue=' + (keyValue || ''),
+                param: data.field,
+                success: function () {
+                    common.parentreload('data-search-btn');
+                }
+            });
+            return false;
+        });
+    });
+</script>
+
+<body>
+    <div class="layuimini-container">
+        <div class="layuimini-main">
+            <div class="layui-form layuimini-form" lay-filter="adminform">
+                <div class="layui-form-item">
+                    <label class="layui-form-label">学生</label>
+                    <div class="layui-input-block">
+                        <div class="layui-form-mid" id="v_Student"></div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">班级</label>
+                    <div class="layui-input-block">
+                        <div class="layui-form-mid" id="v_ClassName"></div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">课程</label>
+                    <div class="layui-input-block">
+                        <div class="layui-form-mid" id="v_CourseName"></div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">类型</label>
+                    <div class="layui-input-block">
+                        <div class="layui-form-mid" id="v_Type"></div>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-form-text">
+                    <label class="layui-form-label">原因</label>
+                    <div class="layui-input-block">
+                        <div class="layui-form-mid" id="v_Reason"></div>
+                    </div>
+                </div>
+                <hr />
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">审批结果</label>
+                    <div class="layui-input-block">
+                        <select id="F_Status" name="status" lay-verify="required">
+                            <option value="">请选择</option>
+                            <option value="1">通过</option>
+                            <option value="2">拒绝</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-form-text">
+                    <label class="layui-form-label">审批意见</label>
+                    <div class="layui-input-block">
+                        <textarea id="F_AuditRemark" name="remark" maxlength="500" placeholder="请输入审批意见" class="layui-textarea"></textarea>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-hide">
+                    <button class="layui-btn site-demo-active" lay-submit id="submit" lay-filter="saveBtn">确认保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>

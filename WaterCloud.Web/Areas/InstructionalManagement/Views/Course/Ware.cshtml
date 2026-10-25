@@ -1,0 +1,127 @@
+@{
+    ViewBag.Title = "资料管理";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<div class="layuimini-container">
+    <div class="layuimini-main">
+        <script type="text/html" id="toolbarDemo">
+            <div class="layui-btn-container">
+                <button class="layui-btn layui-btn-sm" lay-event="upload"><i class="layui-icon">&#xe67c;</i>上传资料</button>
+            </div>
+        </script>
+        <table class="layui-hide" id="currentTableId" lay-filter="currentTableFilter"></table>
+        <script type="text/html" id="currentTableBar">
+            <a class="layui-btn layui-btn-xs layui-btn-normal" lay-event="download">下载</a>
+            <a class="layui-btn layui-btn-xs layui-btn-danger" lay-event="delete">删除</a>
+        </script>
+    </div>
+</div>
+<script>
+    layui.use(['jquery', 'form', 'table', 'upload', 'layer', 'commonTable', 'common'], function () {
+        var $ = layui.jquery,
+            form = layui.form,
+            table = layui.table,
+            upload = layui.upload,
+            layer = layui.layer,
+            commonTable = layui.commonTable,
+            common = layui.common;
+        var courseId = $.request("courseId");
+        if (!courseId) {
+            common.modalMsg("缺少课程参数", "warning");
+        }
+        wcLoading.close();
+
+        function fmtSize(size) {
+            size = parseInt(size || 0);
+            if (size <= 0) return '-';
+            if (size < 1024 * 1024) return (size / 1024).toFixed(1) + ' KB';
+            return (size / 1024 / 1024).toFixed(1) + ' MB';
+        }
+
+        commonTable.rendertable({
+            elem: '#currentTableId',
+            id: 'currentTableId',
+            url: '/InstructionalManagement/CourseWare/GetGridJson?courseId=' + courseId,
+            toolbar: '#toolbarDemo',
+            defaultToolbar: [],
+            search: false,
+            page: false,
+            limit: 9999,
+            cols: [[
+                { field: 'F_Name', title: '资料名称', minWidth: 200 },
+                { field: 'F_FileExt', title: '类型', width: 80, align: 'center' },
+                { field: 'F_FileSize', title: '大小', width: 100, align: 'center', templet: function (d) { return fmtSize(d.F_FileSize); } },
+                { field: 'F_DownCount', title: '下载次数', width: 90, align: 'center' },
+                { field: 'F_CreatorTime', title: '上传时间', width: 170 },
+                { title: '操作', width: 140, toolbar: '#currentTableBar', align: 'center' }
+            ]]
+        });
+
+        function reloadTable() {
+            table.reload('currentTableId', { where: { time: new Date().Format("yyyy-MM-dd hh:mm:ss") } }, 'data');
+        }
+
+        table.on('toolbar(currentTableFilter)', function (obj) {
+            if (obj.event === 'upload') {
+                $('#btnUploadWare').trigger('click');
+            }
+            return false;
+        });
+
+        table.on('tool(currentTableFilter)', function (obj) {
+            var data = obj.data;
+            if (obj.event === 'download') {
+                window.open('/InstructionalManagement/CourseWare/Download?keyValue=' + data.F_Id);
+                window.setTimeout(reloadTable, 1500);
+            }
+            else if (obj.event === 'delete') {
+                common.deleteForm({
+                    url: "/InstructionalManagement/CourseWare/DeleteForm",
+                    param: { keyValue: data.F_Id },
+                    success: function () { reloadTable(); }
+                });
+            }
+            return false;
+        });
+
+        //隐藏的上传按钮（课件/文档/图片/压缩包，不支持视频）
+        $('<button type="button" id="btnUploadWare" class="layui-hide"></button>').appendTo('body');
+        upload.render({
+            elem: '#btnUploadWare',
+            url: '/InstructionalManagement/Course/UploadFile',
+            accept: 'file',
+            exts: 'pdf|doc|docx|ppt|pptx|xls|xlsx|jpg|jpeg|png|gif|zip|rar',
+            size: 512000,
+            before: function () {
+                layer.load(0, { shade: [0.5, '#000'], content: '资料上传中，请稍候...' });
+            },
+            done: function (res) {
+                layer.closeAll('loading');
+                if (res.code > 0) {
+                    common.modalMsg(res.msg, "warning");
+                    return false;
+                }
+                var file = res.data[0];
+                var title = file.title || '';
+                var ext = title.lastIndexOf('.') >= 0 ? title.substring(title.lastIndexOf('.')) : '';
+                var name = title.lastIndexOf('.') >= 0 ? title.substring(0, title.lastIndexOf('.')) : title;
+                common.submitForm({
+                    url: '/InstructionalManagement/CourseWare/SubmitForm',
+                    param: {
+                        F_CourseId: courseId,
+                        F_Name: name,
+                        F_FileUrl: file.src,
+                        F_FileSize: file.size,
+                        F_FileExt: ext
+                    },
+                    close: false,
+                    success: function () { reloadTable(); }
+                });
+            },
+            error: function () {
+                layer.closeAll('loading');
+                common.modalMsg("资料上传失败", "warning");
+            }
+        });
+    });
+</script>

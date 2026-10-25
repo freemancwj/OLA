@@ -1,0 +1,103 @@
+@{
+    ViewBag.Title = "免缓缺登记";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'common', 'optimizeSelectOption'], function () {
+        var form = layui.form,
+            $ = layui.jquery,
+            common = layui.common;
+        var keyValue = $.request("keyValue");
+
+        function initControl() {
+            $("#F_StudentId").bindSelect({
+                url: "/InstructionalManagement/ScoreExemption/GetStudentListJson",
+                id: "F_Id",
+                text: "Text",
+                search: true
+            });
+            $("#F_CourseId").bindSelect({
+                url: "/InstructionalManagement/ScoreExemption/GetCourseListJson",
+                id: "F_Id",
+                text: "F_Name",
+                search: true
+            });
+        }
+
+        $(function () {
+            initControl();
+            if (!!keyValue) {
+                common.ajax({
+                    url: '/InstructionalManagement/ScoreExemption/GetFormJson',
+                    data: { keyValue: keyValue },
+                    async: false,
+                    success: function (data) {
+                        $('#F_StudentId').val(data.F_StudentId);
+                        $('#F_CourseId').val(data.F_CourseId);
+                        $('#F_Type').val(data.F_Type || '');
+                        $('#F_Reason').val(data.F_Reason || '');
+                    }
+                });
+            }
+            form.render();
+        });
+        wcLoading.close();
+
+        //监听提交
+        form.on('submit(saveBtn)', function (data) {
+            common.submitForm({
+                url: '/InstructionalManagement/ScoreExemption/SubmitForm?keyValue=' + (keyValue || ''),
+                param: data.field,
+                success: function () {
+                    common.parentreload('data-search-btn');
+                }
+            });
+            return false;
+        });
+    });
+</script>
+
+<body>
+    <div class="layuimini-container">
+        <div class="layuimini-main">
+            <div class="layui-form layuimini-form" lay-filter="adminform">
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">学生</label>
+                    <div class="layui-input-block">
+                        <select id="F_StudentId" name="F_StudentId" lay-verify="required" lay-search>
+                            <option value="">请选择学生</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">课程</label>
+                    <div class="layui-input-block">
+                        <select id="F_CourseId" name="F_CourseId" lay-verify="required" lay-search>
+                            <option value="">请选择课程</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">类型</label>
+                    <div class="layui-input-block">
+                        <select id="F_Type" name="F_Type" lay-verify="required">
+                            <option value="">请选择类型</option>
+                            <option value="免考">免考</option>
+                            <option value="缓考">缓考</option>
+                            <option value="缺考">缺考</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-form-text">
+                    <label class="layui-form-label required">原因</label>
+                    <div class="layui-input-block">
+                        <textarea id="F_Reason" name="F_Reason" lay-verify="required" maxlength="500" placeholder="请输入原因" class="layui-textarea"></textarea>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-hide">
+                    <button class="layui-btn site-demo-active" lay-submit id="submit" lay-filter="saveBtn">确认保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>

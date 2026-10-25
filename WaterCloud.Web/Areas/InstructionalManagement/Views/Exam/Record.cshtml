@@ -1,0 +1,210 @@
+@{
+    ViewBag.Title = "考试成绩";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<div class="layuimini-container">
+    <div class="layuimini-main">
+        <div class="layui-btn-group">
+            <button id="btn-expand" type="button" class="layui-btn layui-btn-primary layui-btn-sm">
+                <i class="layui-icon layui-icon-spread-left"></i> 展开搜索
+            </button>
+            <button id="btn-refresh" type="button" class="layui-btn layui-btn-primary layui-btn-sm">
+                <i class="layui-icon layui-icon-refresh"></i> 刷新
+            </button>
+        </div>
+        <div id="examTitleBar" class="layui-bg-gray" style="display:none;padding:8px 12px;margin-bottom:8px;border-radius:2px;"></div>
+        <fieldset class="table-search-fieldset layui-hide" id="searchField">
+            <div>
+                <form class="layui-form layui-form-pane">
+                    <div class="layui-form-item">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">关键字:</label>
+                            <div class="layui-input-inline">
+                                <input type="text" id="txt_keyword" name="txt_keyword" autocomplete="off" class="layui-input" placeholder="学生姓名/账号/考试标题">
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">状态:</label>
+                            <div class="layui-input-inline">
+                                <select id="ddl_status" name="ddl_status">
+                                    <option value="">全部状态</option>
+                                    <option value="0">待批改</option>
+                                    <option value="1">已完成</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <button type="submit" class="layui-btn layui-btn-primary" lay-submit lay-filter="data-search-btn">
+                                <i class="layui-icon">&#xe615;</i> 搜 索
+                            </button>
+                            <button type="button" class="layui-btn layui-btn-primary" id="btn-reset">
+                                <i class="layui-icon">&#xe666;</i> 重 置
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </fieldset>
+        <script type="text/html" id="toolbarDemo">
+            <div class="layui-btn-container" id="toolbar">
+                <button id="NF-grade" name="NF-grade" authorize class="layui-btn layui-btn-sm layui-btn-warm layui-hide" lay-event="grade"><i class="layui-icon">&#xe642;</i>批改</button>
+            </div>
+        </script>
+        <table class="layui-hide" id="currentTableId" lay-filter="currentTableFilter"></table>
+        <script type="text/html" id="currentTableBar">
+            <a id="NF-grade" authorize class="layui-btn layui-btn-xs layui-btn-warm" lay-event="grade">批改</a>
+            <a class="layui-btn layui-btn-xs layui-btn-primary" lay-event="view">查看</a>
+        </script>
+        <script type="text/html" id="statusTpl">
+            {{# if(d.F_Status === 1){ }}
+            <span class="layui-badge layui-bg-green">已完成</span>
+            {{# } else { }}
+            <span class="layui-badge layui-bg-orange">待批改</span>
+            {{# } }}
+        </script>
+        <script type="text/html" id="passTpl">
+            {{# if(d.F_IsPassed === 1){ }}
+            <span class="layui-badge layui-bg-green">及格</span>
+            {{# } else if(d.F_IsPassed === 0){ }}
+            <span class="layui-badge layui-bg-red">不及格</span>
+            {{# } else { }}
+            <span class="layui-color-gray">-</span>
+            {{# } }}
+        </script>
+        <script type="text/html" id="submitTimeTpl">
+            {{ d.F_SubmitTime ? String(d.F_SubmitTime).replace('T',' ') : '-' }}
+        </script>
+    </div>
+</div>
+<script>
+    layui.use(['jquery', 'form', 'table', 'commonTable', 'common', 'optimizeSelectOption'], function () {
+        var $ = layui.jquery,
+            form = layui.form,
+            table = layui.table,
+            commonTable = layui.commonTable,
+            common = layui.common;
+        var examId = $.request('examId') || '';
+
+        function getSearchParams() {
+            return {
+                examId: examId,
+                keyword: $('#txt_keyword').val(),
+                status: $('#ddl_status').val()
+            };
+        }
+
+        function reloadTable() {
+            commonTable.reloadtable({ elem: 'currentTableId', curr: 1, where: getSearchParams() });
+        }
+
+        function loadExamTitle() {
+            if (!examId) { return; }
+            common.ajax({
+                url: '/InstructionalManagement/Exam/GetFormJson',
+                data: { keyValue: examId },
+                async: false,
+                success: function (data) {
+                    var html = '考试：<b>' + (data.F_Title || '') + '</b>'
+                        + '　总分：<b>' + (data.F_TotalScore || 0) + '</b>'
+                        + '　及格分：<b>' + (data.F_PassScore || 0) + '</b>'
+                        + '　时长：<b>' + (data.F_Duration || 0) + '</b> 分钟';
+                    $('#examTitleBar').html(html).show();
+                }
+            });
+        }
+
+        loadExamTitle();
+        currentTableBar.innerHTML = common.authorizeButtonNew(currentTableBar.innerHTML);
+        toolbarDemo.innerHTML = common.authorizeButtonNew(toolbarDemo.innerHTML);
+
+        commonTable.rendertable({
+            elem: '#currentTableId',
+            id: 'currentTableId',
+            url: '/InstructionalManagement/Exam/GetRecordListJson',
+            where: getSearchParams(),
+            cols: [[
+                { type: "checkbox", width: 50, fixed: 'left' },
+                { field: 'F_RealName', title: '学生姓名', width: 100, sort: true },
+                { field: 'F_Account', title: '账号', width: 120, sort: true },
+                { field: 'F_ClassName', title: '班级', width: 120, sort: true },
+                { field: 'F_SubmitTime', title: '提交时间', width: 170, templet: '#submitTimeTpl', sort: true },
+                { field: 'F_ObjectiveScore', title: '客观分', width: 90, align: 'center', sort: true },
+                { field: 'F_SubjectiveScore', title: '主观分', width: 90, align: 'center', sort: true },
+                { field: 'F_TotalScore', title: '总分', width: 90, align: 'center', sort: true },
+                { field: 'F_Status', title: '状态', width: 90, templet: '#statusTpl', align: 'center', sort: true },
+                { field: 'F_IsPassed', title: '是否及格', width: 100, templet: '#passTpl', align: 'center', sort: true },
+                { field: 'F_GraderName', title: '批改人', width: 100 },
+                { title: '操作', width: 140, toolbar: '#currentTableBar', align: "center", fixed: 'right' }
+            ]]
+        });
+
+        $('#btn-expand').click(function () {
+            var $searchField = $('#searchField');
+            if ($searchField.hasClass('layui-hide')) {
+                $searchField.removeClass('layui-hide');
+                $(this).html('<i class="layui-icon layui-icon-shrink-right"></i> 收起搜索');
+            } else {
+                $searchField.addClass('layui-hide');
+                $(this).html('<i class="layui-icon layui-icon-spread-left"></i> 展开搜索');
+            }
+            table.resize();
+        });
+        $('#btn-refresh').click(function () { reloadTable(); });
+        $('#btn-reset').click(function () {
+            $('#txt_keyword').val('');
+            $('#ddl_status').val('');
+            form.render();
+        });
+        form.on('submit(data-search-btn)', function () {
+            reloadTable();
+            return false;
+        });
+        form.render();
+        wcLoading.close();
+
+        commonTable.tableRowClick("checkbox", "currentTableFilter", "currentTableId", ["NF-grade"], []);
+
+        function openGrade(data, readonly) {
+            var title = (readonly ? '查看答卷 - ' : '批改试卷 - ') + (data.F_RealName || '');
+            var url = '/InstructionalManagement/Exam/Grade?recordId=' + data.F_Id + (readonly ? '&readonly=1' : '');
+            if (readonly) {
+                common.modalOpen({
+                    title: title,
+                    url: url,
+                    width: '1000px',
+                    height: '720px',
+                    btn: ['关闭'],
+                    yes: function (index) { top.layer.close(index); }
+                });
+            }
+            else {
+                common.modalOpen({ title: title, url: url, width: '1000px', height: '720px' });
+            }
+        }
+
+        table.on('toolbar(currentTableFilter)', function (obj) {
+            var data = table.checkStatus('currentTableId').data;
+            if (obj.event === 'grade') {
+                if (data.length == 0) { common.modalMsg("未选中数据", "warning"); return false; }
+                if (data.length > 1) { common.modalMsg("只能选择一条数据", "warning"); return false; }
+                openGrade(data[0], false);
+            }
+            else if (obj.event === 'TABLE_SEARCH') {
+                var _that = $("#searchField");
+                if (_that.hasClass("layui-hide")) { _that.removeClass('layui-hide'); } else { _that.addClass('layui-hide'); }
+                table.resize();
+            }
+            return false;
+        });
+
+        table.on('tool(currentTableFilter)', function (obj) {
+            if (obj.event === 'grade') {
+                openGrade(obj.data, false);
+            }
+            else if (obj.event === 'view') {
+                openGrade(obj.data, true);
+            }
+            return false;
+        });
+    });
+</script>

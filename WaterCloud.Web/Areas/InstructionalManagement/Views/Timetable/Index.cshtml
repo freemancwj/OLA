@@ -1,0 +1,127 @@
+@{
+    ViewBag.Title = "课表查询";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<style>
+    .tt-matrix { width: 100%; border-collapse: collapse; background: #fff; table-layout: fixed; }
+    .tt-matrix th, .tt-matrix td { border: 1px solid #e6e6e6; text-align: center; padding: 4px; font-size: 12px; }
+    .tt-matrix th { background: #f2f2f2; }
+    .tt-cell { min-height: 52px; }
+    .tt-course { font-weight: bold; color: #1e9fff; }
+    .tt-sub { color: #999; }
+    .tt-sec { background: #fafafa; width: 46px; color: #666; }
+</style>
+<div class="layuimini-container">
+    <div class="layuimini-main">
+        <fieldset class="table-search-fieldset" id="searchField">
+            <div>
+                <form class="layui-form layui-form-pane">
+                    <div class="layui-form-item" style="margin-bottom:0;">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">学期:</label>
+                            <div class="layui-input-inline" style="width:150px;">
+                                <input type="text" id="txt_semester" autocomplete="off" class="layui-input" placeholder="如 2025-2026-1">
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">查询方式:</label>
+                            <div class="layui-input-inline" style="width:110px;">
+                                <select id="ddl_type" lay-filter="ddl_type">
+                                    <option value="class">按班级</option>
+                                    <option value="teacher">按教师</option>
+                                    <option value="student">按学生</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label" id="lbl_target">班级:</label>
+                            <div class="layui-input-inline" style="width:180px;">
+                                <select id="ddl_target" lay-search></select>
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <button type="submit" class="layui-btn layui-btn-primary" lay-submit lay-filter="data-search-btn">
+                                <i class="layui-icon">&#xe615;</i> 查询课表
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </fieldset>
+        <div id="ttMatrix" style="margin-top:10px;"></div>
+    </div>
+</div>
+<script>
+    layui.use(['jquery', 'form', 'common'], function () {
+        var $ = layui.jquery, form = layui.form, common = layui.common;
+        var WEEK = ['', '周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+        var DAYS = 5, SECTIONS = 8;
+        var classList = [], teacherList = [], studentList = [];
+
+        function fillSelect(list, placeholder) {
+            var html = '<option value="">' + placeholder + '</option>';
+            $.each(list, function (i, item) { html += '<option value="' + item.id + '">' + item.name + '</option>'; });
+            $('#ddl_target').html(html);
+            form.render('select');
+        }
+        function loadBase() {
+            common.ajax({ url: '/InstructionalManagement/Timetable/GetClassListJson', async: false, success: function (d) { classList = $.map(d, function (a) { return { id: a.F_Id, name: a.F_FullName }; }); } });
+            common.ajax({ url: '/InstructionalManagement/Timetable/GetTeacherListJson', async: false, success: function (d) { teacherList = $.map(d, function (a) { return { id: a.F_Id, name: a.F_RealName }; }); } });
+            common.ajax({ url: '/InstructionalManagement/Timetable/GetStudentListJson', async: false, success: function (d) { studentList = $.map(d, function (a) { return { id: a.F_Id, name: a.F_RealName + '（' + a.F_Account + '）' }; }); } });
+            switchType();
+        }
+        function switchType() {
+            var t = $('#ddl_type').val();
+            if (t === 'class') { $('#lbl_target').text('班级:'); fillSelect(classList, '请选择班级'); }
+            else if (t === 'teacher') { $('#lbl_target').text('教师:'); fillSelect(teacherList, '请选择教师'); }
+            else { $('#lbl_target').text('学生:'); fillSelect(studentList, '请选择学生'); }
+        }
+        form.on('select(ddl_type)', function () { switchType(); });
+        loadBase();
+        wcLoading.close();
+
+        form.on('submit(data-search-btn)', function () {
+            var semester = $('#txt_semester').val();
+            var target = $('#ddl_target').val();
+            var t = $('#ddl_type').val();
+            if (!semester) { common.modalMsg('请填写学期', 'warning'); return false; }
+            if (!target) { common.modalMsg('请选择查询对象', 'warning'); return false; }
+            var param = { semester: semester, classId: '', teacherId: '', studentId: '' };
+            if (t === 'class') param.classId = target;
+            else if (t === 'teacher') param.teacherId = target;
+            else param.studentId = target;
+            common.ajax({
+                url: '/InstructionalManagement/Timetable/GetTimetableJson',
+                data: param,
+                success: function (res) { renderMatrix(res.data || [], t); }
+            });
+            return false;
+        });
+
+        function renderMatrix(cells, type) {
+            var html = '<table class="tt-matrix"><tr><th style="width:46px;">节次</th>';
+            for (var d = 1; d <= DAYS; d++) { html += '<th>' + WEEK[d] + '</th>'; }
+            html += '</tr>';
+            for (var s = 1; s <= SECTIONS; s++) {
+                html += '<tr><td class="tt-sec">第' + s + '节</td>';
+                for (var wd = 1; wd <= DAYS; wd++) {
+                    var cell = null;
+                    for (var i = 0; i < cells.length; i++) {
+                        if (cells[i].F_WeekDay === wd && cells[i].F_Section === s) { cell = cells[i]; break; }
+                    }
+                    html += '<td class="tt-cell">';
+                    if (cell) {
+                        var sub = type === 'teacher' ? (cell.F_ClassName || '') : (cell.F_TeacherName || '');
+                        html += '<div class="tt-course">' + (cell.F_CourseName || '') + '</div>' +
+                            '<div class="tt-sub">' + sub + (cell.F_Classroom ? ' · ' + cell.F_Classroom : '') + '</div>';
+                    }
+                    html += '</td>';
+                }
+                html += '</tr>';
+            }
+            html += '</table>';
+            $('#ttMatrix').html(html);
+        }
+        $('#ttMatrix').html('<div class="layui-color-gray" style="padding:20px;">请选择条件后点击"查询课表"</div>');
+    });
+</script>

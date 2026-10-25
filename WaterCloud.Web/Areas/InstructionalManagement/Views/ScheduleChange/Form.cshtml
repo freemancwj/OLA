@@ -1,0 +1,124 @@
+@{
+    ViewBag.Title = "申请调课";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'common', 'optimizeSelectOption'], function () {
+        var form = layui.form,
+            $ = layui.jquery,
+            common = layui.common;
+        var WEEK = ['', '周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+
+        function initControl() {
+            $("#F_NewClassroomId").bindSelect({
+                url: "/InstructionalManagement/ScheduleChange/GetClassroomListJson",
+                id: "F_Id",
+                text: "F_Name",
+                search: true
+            });
+        }
+
+        //加载可调整的课表格子
+        function loadCells() {
+            var semester = $('#F_Semester').val();
+            var sel = $('#F_TimetableId');
+            sel.html('<option value="">请先填写学期</option>');
+            if (!semester) { form.render('select'); return; }
+            common.ajax({
+                url: '/InstructionalManagement/ScheduleChange/GetMyTimetableJson',
+                data: { semester: semester },
+                async: false,
+                success: function (list) {
+                    var html = '<option value="">请选择课程</option>';
+                    $.each(list, function (i, c) {
+                        var text = c.F_ClassName + ' ' + c.F_CourseName + ' ' + c.F_TeacherName +
+                            '（' + WEEK[c.F_WeekDay] + ' 第' + c.F_Section + '节' + (c.F_Classroom ? ' ' + c.F_Classroom : '') + '）';
+                        html += '<option value="' + c.F_Id + '">' + text + '</option>';
+                    });
+                    sel.html(html);
+                    form.render('select');
+                }
+            });
+        }
+
+        $(function () {
+            initControl();
+            $('#F_Semester').on('blur', loadCells);
+            form.render();
+        });
+        wcLoading.close();
+
+        //监听提交
+        form.on('submit(saveBtn)', function (data) {
+            common.submitForm({
+                url: '/InstructionalManagement/ScheduleChange/SubmitForm',
+                param: data.field,
+                success: function () {
+                    common.parentreload('data-search-btn');
+                }
+            });
+            return false;
+        });
+    });
+</script>
+
+<body>
+    <div class="layuimini-container">
+        <div class="layuimini-main">
+            <div class="layui-form layuimini-form" lay-filter="adminform">
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">学期</label>
+                    <div class="layui-input-block">
+                        <input type="text" id="F_Semester" name="F_Semester" autocomplete="off" maxlength="50" lay-verify="required" placeholder="如 2025-2026-1，输入后加载课程" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">调整课程</label>
+                    <div class="layui-input-block">
+                        <select id="F_TimetableId" name="F_TimetableId" lay-verify="required" lay-search>
+                            <option value="">请先填写学期</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">新星期</label>
+                    <div class="layui-input-block">
+                        <select id="F_NewWeekDay" name="F_NewWeekDay" lay-verify="required">
+                            <option value="">请选择</option>
+                            <option value="1">周一</option>
+                            <option value="2">周二</option>
+                            <option value="3">周三</option>
+                            <option value="4">周四</option>
+                            <option value="5">周五</option>
+                            <option value="6">周六</option>
+                            <option value="7">周日</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">新节次</label>
+                    <div class="layui-input-block">
+                        <input type="number" id="F_NewSection" name="F_NewSection" min="1" max="20" lay-verify="required|number" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">新教室</label>
+                    <div class="layui-input-block">
+                        <select id="F_NewClassroomId" name="F_NewClassroomId" lay-search>
+                            <option value="">不调整教室</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-form-text">
+                    <label class="layui-form-label required">调课原因</label>
+                    <div class="layui-input-block">
+                        <textarea id="F_Reason" name="F_Reason" maxlength="500" lay-verify="required" placeholder="请填写调课原因" class="layui-textarea"></textarea>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-hide">
+                    <button class="layui-btn site-demo-active" lay-submit id="submit" lay-filter="saveBtn">确认保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>

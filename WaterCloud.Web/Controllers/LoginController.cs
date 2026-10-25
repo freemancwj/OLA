@@ -268,11 +268,11 @@ namespace WaterCloud.Web.Controllers
 				operatorModel.DdUserId = userEntity.F_DingTalkUserId;
 				operatorModel.WxOpenId = userEntity.F_WxOpenId;
 				//各租户的管理员也是当前数据库的全部权限
-				operatorModel.IsSuperAdmin = userEntity.F_IsAdmin.Value;
-				operatorModel.IsAdmin = userEntity.F_IsAdmin.Value;
-				operatorModel.IsBoss = userEntity.F_IsBoss.Value;
-				operatorModel.IsLeaderInDepts = userEntity.F_IsLeaderInDepts.Value;
-				operatorModel.IsSenior = userEntity.F_IsSenior.Value;
+				operatorModel.IsSuperAdmin = userEntity.F_IsAdmin ?? false;
+				operatorModel.IsAdmin = userEntity.F_IsAdmin ?? false;
+				operatorModel.IsBoss = userEntity.F_IsBoss ?? false;
+				operatorModel.IsLeaderInDepts = userEntity.F_IsLeaderInDepts ?? false;
+				operatorModel.IsSenior = userEntity.F_IsSenior ?? false;
 				SystemSetEntity setEntity = await _setService.GetForm(userEntity.F_CompanyId);
 				operatorModel.DbNumber = setEntity.F_DbNumber;
 				if (operatorModel.IsAdmin && operatorModel.DbNumber == GlobalContext.SystemConfig.MainDbNumber)
@@ -300,6 +300,8 @@ namespace WaterCloud.Web.Controllers
 			}
 			catch (Exception ex)
 			{
+				//记录完整异常堆栈，便于定位登录失败原因
+				LogHelper.WriteWithTime(ex);
 				logEntity.F_Account = username;
 				logEntity.F_NickName = username;
 				logEntity.F_Result = false;
