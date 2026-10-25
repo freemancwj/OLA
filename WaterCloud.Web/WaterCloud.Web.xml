@@ -48,6 +48,11 @@
             </summary>
             <returns></returns>
         </member>
+        <member name="M:WaterCloud.Web.Areas.FlowManage.Controllers.FlowinstanceController.Details">
+            <summary>
+            进度查看界面
+            </summary>
+        </member>
         <member name="M:WaterCloud.Web.Areas.FlowManage.Controllers.FlowinstanceController.QueryHistories(System.String)">
             <summary>
             获取一个流程实例的操作历史记录
@@ -55,9 +60,7 @@
         </member>
         <member name="T:WaterCloud.Web.Areas.FlowManage.Controllers.LeaveApplicationController">
             <summary>
-            创 建：超级管理员
-            日 期：2023-xx-xx xx:xx
-            描 述：员工请假管理控制器类
+            描 述：请假管理控制器（教师/学生请假，走工作流审批）
             </summary>
         </member>
         <member name="T:WaterCloud.Web.Areas.InfoManage.Controllers.MessageController">

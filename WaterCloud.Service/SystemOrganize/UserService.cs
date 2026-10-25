@@ -366,7 +366,7 @@ namespace WaterCloud.Service.SystemOrganize
 					{
 						throw new Exception("账户未初始化设置密码,请联系管理员");
 					}
-					string dbPassword = Md5.md5(DESEncrypt.Encrypt(password.ToLower(), userLogOnEntity.F_UserSecretkey).ToLower(), 32).ToLower();
+					string dbPassword = Md5.md5(DESEncrypt.Encrypt(Md5.md5(password, 32).ToLower(), userLogOnEntity.F_UserSecretkey).ToLower(), 32).ToLower();
 					if (dbPassword == userLogOnEntity.F_UserPassword)
 					{
 						if (userEntity.F_IsAdmin != true)

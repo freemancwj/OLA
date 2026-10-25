@@ -1,4 +1,4 @@
-﻿using SqlSugar;
+using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -213,6 +213,7 @@ namespace WaterCloud.Service.FlowManage
 				await messageApp.ReadMsgForm(lastmsg.F_Id);
 			}
 			await messageApp.SubmitForm(msg);
+			await SyncLeaveStatus(flowInstance);
 			repository.Db.Ado.CommitTran();
 
 			wfruntime.NotifyThirdParty(_httpClientFactory.CreateClient(), tag);
@@ -332,6 +333,7 @@ namespace WaterCloud.Service.FlowManage
 			wfruntime.RemoveNode(wfruntime.nextNodeId);
 			flowInstance.F_SchemeContent = wfruntime.ToSchemeObj().ToJson();
 			await repository.Db.Updateable(flowInstance).IgnoreColumns(ignoreAllNullColumns: true).ExecuteCommandAsync();
+			await SyncLeaveStatus(flowInstance);
 			await repository.Db.Insertable(flowInstanceOperationHistory).ExecuteCommandAsync();
 			MessageEntity msg = new MessageEntity();
 			msg.F_CreatorUserName = currentuser.UserName;
@@ -379,6 +381,44 @@ namespace WaterCloud.Service.FlowManage
 			wfruntime.NotifyThirdParty(_httpClientFactory.CreateClient(), tag);
 			return true;
 		}
+
+		#region 请假流程状态回写
+
+		/// <summary>
+		/// 同步审批结果到请假单（学生请假/教师请假）
+		/// </summary>
+		private async Task SyncLeaveStatus(FlowinstanceEntity flowInstance)
+		{
+			if (flowInstance.F_SchemeType != "StudentLeave" && flowInstance.F_SchemeType != "TeacherLeave")
+			{
+				return;
+			}
+			var leave = await repository.Db.Queryable<LeaveApplicationEntity>().Where(a => a.F_FlowInstanceId == flowInstance.F_Id).FirstAsync();
+			if (leave == null)
+			{
+				return;
+			}
+			int status = leave.F_Status;
+			switch (flowInstance.F_IsFinish)
+			{
+				case 0: status = 0; break;
+				case 1: status = 1; break;
+				case 2: status = 4; break;
+				case 3: status = 2; break;
+				case 4: status = 3; break;
+			}
+			string approver = "";
+			if (status == 0 && !string.IsNullOrEmpty(flowInstance.F_MakerList) && flowInstance.F_MakerList != "1")
+			{
+				var ids = flowInstance.F_MakerList.Split(',').ToList();
+				approver = string.Join(",", await repository.Db.Queryable<UserEntity>().Where(a => ids.Contains(a.F_Id)).Select(a => a.F_RealName).ToListAsync());
+			}
+			leave.F_Status = status;
+			leave.F_CurrentApprover = approver;
+			await repository.Db.Updateable(leave).UpdateColumns(a => new { a.F_Status, a.F_CurrentApprover }).ExecuteCommandAsync();
+		}
+
+		#endregion 请假流程状态回写
 
 		//会签时，获取一条会签分支上面是否有用户可审核的节点
 		private string GetOneForkLineCanCheckNodeId(FlowNode fromForkStartNode, FlowRuntime wfruntime, Tag tag)
@@ -1059,6 +1099,7 @@ namespace WaterCloud.Service.FlowManage
 						  + wfruntime.currentNode.name
 						  + "】【" + DateTime.Now.ToString("yyyy-MM-dd HH:mm") + "】撤回,备注：流程撤回"
 			}).ExecuteCommandAsync();
+			await SyncLeaveStatus(flowInstance);
 			repository.Db.Ado.CommitTran();
 			wfruntime.NotifyThirdParty(_httpClientFactory.CreateClient(), tag);
 		}

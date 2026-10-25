@@ -1,9 +1,3 @@
-/*******************************************************************************
- * Copyright © 2020 WaterCloud.Framework 版权所有
- * Author: WaterCloud
- * Description: WaterCloud快速开发平台
- * Website：
-*********************************************************************************/
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading.Tasks;
@@ -14,29 +8,25 @@ using WaterCloud.Service.SystemOrganize;
 namespace WaterCloud.Web.Areas.FlowManage.Controllers
 {
     /// <summary>
-    /// 创 建：超级管理员
-    /// 日 期：2023-xx-xx xx:xx
-    /// 描 述：员工请假管理控制器类
+    /// 描 述：请假管理控制器（教师/学生请假，走工作流审批）
     /// </summary>
     [Area("FlowManage")]
     public class LeaveApplicationController : BaseController
     {
         public LeaveApplicationService _service { get; set; }
 
-     
-
         #region 获取数据
 
         [HttpGet]
         [HandlerAjaxOnly]
-        public async Task<ActionResult> GetGridJson(SoulPage<LeaveApplicationEntity> pagination, string keyword)
+        public async Task<ActionResult> GetGridJson(SoulPage<LeaveApplicationEntity> pagination, string keyword, string leaveType, string status)
         {
             if (string.IsNullOrEmpty(pagination.field))
             {
                 pagination.field = "F_Id";
                 pagination.order = "desc";
             }
-            var data = await _service.GetList(pagination, keyword);
+            var data = await _service.GetList(pagination, keyword, leaveType, status);
             return Content(pagination.setData(data).ToJson());
         }
 
@@ -60,6 +50,21 @@ namespace WaterCloud.Web.Areas.FlowManage.Controllers
             {
                 await _service.SubmitForm(entity, keyValue);
                 return await Success("操作成功。", "", keyValue);
+            }
+            catch (Exception ex)
+            {
+                return await Error(ex.Message, "", keyValue);
+            }
+        }
+
+        [HttpPost]
+        [HandlerAjaxOnly]
+        public async Task<ActionResult> CancleForm(string keyValue)
+        {
+            try
+            {
+                await _service.CancleForm(keyValue);
+                return await Success("撤回成功。", "", keyValue);
             }
             catch (Exception ex)
             {

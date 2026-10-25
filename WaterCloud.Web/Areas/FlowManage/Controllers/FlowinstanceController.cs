@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading.Tasks;
 using WaterCloud.Code;
@@ -38,6 +38,14 @@ namespace WaterCloud.Web.Areas.FlowManage.Controllers
 		/// </summary>
 		/// <returns></returns>
 		public ActionResult Verification()
+		{
+			return View();
+		}
+
+		/// <summary>
+		/// 进度查看界面
+		/// </summary>
+		public ActionResult Details()
 		{
 			return View();
 		}
