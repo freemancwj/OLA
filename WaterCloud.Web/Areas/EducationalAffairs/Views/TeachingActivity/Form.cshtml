@@ -1,0 +1,188 @@
+@{
+    ViewBag.Title = "活动通知";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'laydate', 'common', 'wangEditor', 'upload', 'optimizeSelectOption'], function () {
+        var form = layui.form,
+            $ = layui.jquery,
+            laydate = layui.laydate,
+            upload = layui.upload,
+            common = layui.common,
+            wangEditor = layui.wangEditor;
+        var keyValue = $.request("keyValue");
+
+        laydate.render({ elem: '#F_StartTime', type: 'datetime' });
+        laydate.render({ elem: '#F_EndTime', type: 'datetime' });
+
+        var editor = new wangEditor('#editor');
+        editor.config.uploadImgServer = '/FileManage/Uploadfile/Upload';
+        editor.config.uploadImgMaxSize = 3 * 1024 * 1024;
+        editor.config.uploadImgMaxLength = 5;
+        editor.config.uploadImgParams = { filetype: 1, fileby: '教研活动/编辑器' };
+        editor.config.showLinkImg = false;
+        editor.config.uploadImgHooks = {
+            customInsert: function (insertImg, result) {
+                if (result.code == 0 && !!result.data) {
+                    for (var i = 0; i < result.data.length; i++) {
+                        insertImg(result.data[i].src);
+                    }
+                } else {
+                    common.modalMsg(result.msg || '图片上传失败', 'warning');
+                }
+            }
+        };
+        editor.config.menus = [
+            'head', 'bold', 'fontSize', 'fontName', 'italic', 'underline', 'strikeThrough',
+            'foreColor', 'backColor', 'link', 'list', 'justify', 'quote', 'table', 'image', 'undo', 'redo'
+        ];
+        editor.create();
+
+        $(function () {
+            initControl();
+        });
+        wcLoading.close();
+
+        function initControl() {
+            if (!!keyValue) {
+                common.ajax({
+                    url: '/EducationalAffairs/TeachingActivity/GetFormJson',
+                    data: { keyValue: keyValue },
+                    async: false,
+                    success: function (data) {
+                        $('#F_Title').val(data.F_Title);
+                        $('#F_Type').val(data.F_Type == null ? 1 : data.F_Type);
+                        if (!!data.F_StartTime) {
+                            $('#F_StartTime').val(String(data.F_StartTime).replace(/\//g, '-').replace('T', ' ').substring(0, 16));
+                        }
+                        if (!!data.F_EndTime) {
+                            $('#F_EndTime').val(String(data.F_EndTime).replace(/\//g, '-').replace('T', ' ').substring(0, 16));
+                        }
+                        $('#F_Location').val(data.F_Location || '');
+                        $('#F_Speaker').val(data.F_Speaker || '');
+                        $('#F_FileUrl').val(data.F_FileUrl || '');
+                        $('#F_FileName').val(data.F_FileName || '');
+                        if (!!data.F_FileUrl) {
+                            $('#fileInfo').html('已上传：<a href="' + data.F_FileUrl + '" target="_blank" style="color:#1E9FFF">' + (data.F_FileName || '附件') + '</a> <a href="javascript:;" id="removeFile" style="color:#FF5722">删除</a>');
+                            bindRemove();
+                        }
+                        editor.txt.html(data.F_Content || '');
+                    }
+                });
+            }
+            //select填充后需重新渲染，否则layui下拉框不显示选项
+            form.render('select');
+        }
+
+        function bindRemove() {
+            $('#removeFile').on('click', function () {
+                $('#F_FileUrl').val('');
+                $('#F_FileName').val('');
+                $('#fileInfo').html('');
+            });
+        }
+
+        //附件上传
+        upload.render({
+            elem: '#btnUpload',
+            url: '/EducationalAffairs/TeachingActivity/UploadFile',
+            accept: 'file',
+            size: 51200,
+            done: function (res) {
+                if (res.code > 0) {
+                    common.modalMsg(res.msg, 'warning');
+                    return false;
+                }
+                $('#F_FileUrl').val(res.data.url);
+                $('#F_FileName').val(res.data.name);
+                $('#fileInfo').html('已上传：<a href="' + res.data.url + '" target="_blank" style="color:#1E9FFF">' + res.data.name + '</a> <a href="javascript:;" id="removeFile" style="color:#FF5722">删除</a>');
+                bindRemove();
+            }
+        });
+
+        //监听提交
+        form.on('submit(saveBtn)', function (data) {
+            $('#F_Content').val(editor.txt.html());
+            common.submitForm({
+                url: '/EducationalAffairs/TeachingActivity/SubmitForm?keyValue=' + (keyValue || ''),
+                param: data.field,
+                success: function () {
+                    common.parentreload('data-search-btn');
+                }
+            });
+            return false;
+        });
+    });
+</script>
+
+<body>
+    <div class="layuimini-container">
+        <div class="layuimini-main">
+            <div class="layui-form layuimini-form" lay-filter="adminform">
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">活动标题</label>
+                    <div class="layui-input-block">
+                        <input type="text" id="F_Title" name="F_Title" autocomplete="off" lay-verify="required" maxlength="200" placeholder="请输入活动标题" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label required">类型</label>
+                        <div class="layui-input-inline">
+                            <select id="F_Type" name="F_Type" lay-verify="required">
+                                <option value="1">教研活动</option>
+                                <option value="2">培训</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">主讲人</label>
+                        <div class="layui-input-inline">
+                            <input type="text" id="F_Speaker" name="F_Speaker" autocomplete="off" maxlength="50" placeholder="请输入主讲人" class="layui-input">
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">开始时间</label>
+                        <div class="layui-input-inline">
+                            <input type="text" id="F_StartTime" name="F_StartTime" autocomplete="off" placeholder="请选择开始时间" class="layui-input">
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">结束时间</label>
+                        <div class="layui-input-inline">
+                            <input type="text" id="F_EndTime" name="F_EndTime" autocomplete="off" placeholder="请选择结束时间" class="layui-input">
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">活动地点</label>
+                    <div class="layui-input-block">
+                        <input type="text" id="F_Location" name="F_Location" autocomplete="off" maxlength="200" placeholder="请输入活动地点" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">附件</label>
+                    <div class="layui-input-block">
+                        <button type="button" class="layui-btn layui-btn-primary" id="btnUpload"><i class="layui-icon">&#xe67c;</i>上传附件</button>
+                        <div id="fileInfo" style="display:inline-block;margin-left:10px;"></div>
+                        <div class="layui-form-mid layui-word-aux">支持图片、Word、PDF、PPT、Excel、压缩包，最大50MB</div>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-form-text">
+                    <label class="layui-form-label required">通知内容</label>
+                    <div class="layui-input-block">
+                        <div id="editor" style="height:320px;"></div>
+                        <input type="hidden" id="F_Content" name="F_Content" />
+                        <input type="hidden" id="F_FileUrl" name="F_FileUrl" />
+                        <input type="hidden" id="F_FileName" name="F_FileName" />
+                    </div>
+                </div>
+                <div class="layui-form-item layui-hide">
+                    <button class="layui-btn site-demo-active" lay-submit id="submit" lay-filter="saveBtn">确认保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>

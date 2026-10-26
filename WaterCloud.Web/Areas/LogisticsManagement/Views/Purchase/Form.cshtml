@@ -1,0 +1,131 @@
+@{
+    ViewBag.Title = "采购申请";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'laydate', 'common', 'optimizeSelectOption'], function () {
+        var form = layui.form,
+            $ = layui.jquery,
+            laydate = layui.laydate,
+            common = layui.common;
+        var keyValue = $.request("keyValue");
+
+        laydate.render({ elem: '#F_ApplyDate', type: 'date' });
+
+        $(function () {
+            if (!!keyValue) {
+                common.ajax({
+                    url: '/LogisticsManagement/Purchase/GetFormJson',
+                    data: { keyValue: keyValue },
+                    async: false,
+                    success: function (data) {
+                        $('#F_ItemName').val(data.F_ItemName);
+                        $('#F_Spec').val(data.F_Spec || '');
+                        $('#F_Quantity').val(data.F_Quantity);
+                        $('#F_Unit').val(data.F_Unit || '');
+                        $('#F_BudgetAmount').val(data.F_BudgetAmount);
+                        $('#F_Supplier').val(data.F_Supplier || '');
+                        $('#F_Status').val(data.F_Status == null ? 0 : data.F_Status);
+                        if (!!data.F_ApplyDate) {
+                            $('#F_ApplyDate').val(String(data.F_ApplyDate).replace(/\//g, '-').substring(0, 10));
+                        }
+                        $('#F_Remark').val(data.F_Remark || '');
+                    }
+                });
+            } else {
+                $('#F_ApplyDate').val(new Date().toISOString().substring(0, 10));
+            }
+            form.render('select');
+        });
+        wcLoading.close();
+
+        //监听提交
+        form.on('submit(saveBtn)', function (data) {
+            common.submitForm({
+                url: '/LogisticsManagement/Purchase/SubmitForm?keyValue=' + (keyValue || ''),
+                param: data.field,
+                success: function () {
+                    common.parentreload('data-search-btn');
+                }
+            });
+            return false;
+        });
+    });
+</script>
+
+<body>
+    <div class="layuimini-container">
+        <div class="layuimini-main">
+            <div class="layui-form layuimini-form" lay-filter="adminform">
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">物品名称</label>
+                    <div class="layui-input-block">
+                        <input type="text" id="F_ItemName" name="F_ItemName" autocomplete="off" lay-verify="required" maxlength="200" placeholder="请输入物品名称" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">规格型号</label>
+                        <div class="layui-input-inline">
+                            <input type="text" id="F_Spec" name="F_Spec" autocomplete="off" maxlength="200" placeholder="请输入规格型号" class="layui-input">
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">申请日期</label>
+                        <div class="layui-input-inline">
+                            <input type="text" id="F_ApplyDate" name="F_ApplyDate" autocomplete="off" placeholder="请选择申请日期" class="layui-input">
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label required">数量</label>
+                        <div class="layui-input-inline" style="width:120px;">
+                            <input type="number" id="F_Quantity" name="F_Quantity" autocomplete="off" lay-verify="required" step="0.01" class="layui-input">
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">单位</label>
+                        <div class="layui-input-inline" style="width:100px;">
+                            <input type="text" id="F_Unit" name="F_Unit" autocomplete="off" maxlength="20" placeholder="个/台/套" class="layui-input">
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">预算金额(元)</label>
+                        <div class="layui-input-inline">
+                            <input type="number" id="F_BudgetAmount" name="F_BudgetAmount" autocomplete="off" step="0.01" placeholder="请输入预算金额" class="layui-input">
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">供应商</label>
+                        <div class="layui-input-inline">
+                            <input type="text" id="F_Supplier" name="F_Supplier" autocomplete="off" maxlength="200" placeholder="请输入供应商" class="layui-input">
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">状态</label>
+                    <div class="layui-input-block">
+                        <select id="F_Status" name="F_Status">
+                            <option value="0">申请中</option>
+                            <option value="1">已批准</option>
+                            <option value="2">已采购</option>
+                            <option value="3">已驳回</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-form-text">
+                    <label class="layui-form-label">备注</label>
+                    <div class="layui-input-block">
+                        <textarea id="F_Remark" name="F_Remark" placeholder="请输入备注" class="layui-textarea"></textarea>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-hide">
+                    <button class="layui-btn site-demo-active" lay-submit id="submit" lay-filter="saveBtn">确认保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>

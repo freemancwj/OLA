@@ -1,0 +1,176 @@
+@{
+    ViewBag.Title = "合同信息";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'laydate', 'common', 'upload', 'optimizeSelectOption'], function () {
+        var form = layui.form,
+            $ = layui.jquery,
+            laydate = layui.laydate,
+            upload = layui.upload,
+            common = layui.common;
+        var keyValue = $.request("keyValue");
+
+        laydate.render({ elem: '#F_SignDate', type: 'date' });
+        laydate.render({ elem: '#F_ExpireDate', type: 'date' });
+
+        $(function () {
+            if (!!keyValue) {
+                common.ajax({
+                    url: '/LogisticsManagement/Contract/GetFormJson',
+                    data: { keyValue: keyValue },
+                    async: false,
+                    success: function (data) {
+                        $('#F_ContractNo').val(data.F_ContractNo);
+                        $('#F_Name').val(data.F_Name);
+                        $('#F_PartyA').val(data.F_PartyA || '');
+                        $('#F_PartyB').val(data.F_PartyB || '');
+                        $('#F_Amount').val(data.F_Amount);
+                        if (!!data.F_SignDate) {
+                            $('#F_SignDate').val(String(data.F_SignDate).replace(/\//g, '-').substring(0, 10));
+                        }
+                        if (!!data.F_ExpireDate) {
+                            $('#F_ExpireDate').val(String(data.F_ExpireDate).replace(/\//g, '-').substring(0, 10));
+                        }
+                        $('#F_Status').val(data.F_Status == null ? 0 : data.F_Status);
+                        $('#F_FileUrl').val(data.F_FileUrl || '');
+                        $('#F_FileName').val(data.F_FileName || '');
+                        if (!!data.F_FileUrl) {
+                            $('#fileInfo').html('已上传：<a href="' + data.F_FileUrl + '" target="_blank" style="color:#1E9FFF">' + (data.F_FileName || '附件') + '</a> <a href="javascript:;" id="removeFile" style="color:#FF5722">删除</a>');
+                            bindRemove();
+                        }
+                        $('#F_Remark').val(data.F_Remark || '');
+                    }
+                });
+            }
+            form.render('select');
+        });
+        wcLoading.close();
+
+        function bindRemove() {
+            $('#removeFile').on('click', function () {
+                $('#F_FileUrl').val('');
+                $('#F_FileName').val('');
+                $('#fileInfo').html('');
+            });
+        }
+
+        //附件上传
+        upload.render({
+            elem: '#btnUpload',
+            url: '/LogisticsManagement/Contract/UploadFile',
+            accept: 'file',
+            size: 51200,
+            done: function (res) {
+                if (res.code > 0) {
+                    common.modalMsg(res.msg, 'warning');
+                    return false;
+                }
+                $('#F_FileUrl').val(res.data.url);
+                $('#F_FileName').val(res.data.name);
+                $('#fileInfo').html('已上传：<a href="' + res.data.url + '" target="_blank" style="color:#1E9FFF">' + res.data.name + '</a> <a href="javascript:;" id="removeFile" style="color:#FF5722">删除</a>');
+                bindRemove();
+            }
+        });
+
+        //监听提交
+        form.on('submit(saveBtn)', function (data) {
+            common.submitForm({
+                url: '/LogisticsManagement/Contract/SubmitForm?keyValue=' + (keyValue || ''),
+                param: data.field,
+                success: function () {
+                    common.parentreload('data-search-btn');
+                }
+            });
+            return false;
+        });
+    });
+</script>
+
+<body>
+    <div class="layuimini-container">
+        <div class="layuimini-main">
+            <div class="layui-form layuimini-form" lay-filter="adminform">
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label required">合同编号</label>
+                        <div class="layui-input-inline">
+                            <input type="text" id="F_ContractNo" name="F_ContractNo" autocomplete="off" lay-verify="required" maxlength="50" placeholder="请输入合同编号" class="layui-input">
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label required">合同名称</label>
+                        <div class="layui-input-inline">
+                            <input type="text" id="F_Name" name="F_Name" autocomplete="off" lay-verify="required" maxlength="200" placeholder="请输入合同名称" class="layui-input">
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">甲方</label>
+                        <div class="layui-input-inline">
+                            <input type="text" id="F_PartyA" name="F_PartyA" autocomplete="off" maxlength="200" placeholder="请输入甲方" class="layui-input">
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">乙方</label>
+                        <div class="layui-input-inline">
+                            <input type="text" id="F_PartyB" name="F_PartyB" autocomplete="off" maxlength="200" placeholder="请输入乙方" class="layui-input">
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">合同金额(元)</label>
+                        <div class="layui-input-inline">
+                            <input type="number" id="F_Amount" name="F_Amount" autocomplete="off" step="0.01" placeholder="请输入合同金额" class="layui-input">
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">状态</label>
+                        <div class="layui-input-inline">
+                            <select id="F_Status" name="F_Status">
+                                <option value="0">履行中</option>
+                                <option value="1">已到期</option>
+                                <option value="2">已终止</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">签订日期</label>
+                        <div class="layui-input-inline">
+                            <input type="text" id="F_SignDate" name="F_SignDate" autocomplete="off" placeholder="请选择签订日期" class="layui-input">
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">到期日期</label>
+                        <div class="layui-input-inline">
+                            <input type="text" id="F_ExpireDate" name="F_ExpireDate" autocomplete="off" placeholder="请选择到期日期" class="layui-input">
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">合同附件</label>
+                    <div class="layui-input-block">
+                        <button type="button" class="layui-btn layui-btn-primary" id="btnUpload"><i class="layui-icon">&#xe67c;</i>上传附件</button>
+                        <div id="fileInfo" style="display:inline-block;margin-left:10px;"></div>
+                        <div class="layui-form-mid layui-word-aux">支持图片、Word、PDF、Excel、压缩包，最大50MB</div>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-form-text">
+                    <label class="layui-form-label">备注</label>
+                    <div class="layui-input-block">
+                        <textarea id="F_Remark" name="F_Remark" placeholder="请输入备注" class="layui-textarea"></textarea>
+                        <input type="hidden" id="F_FileUrl" name="F_FileUrl" />
+                        <input type="hidden" id="F_FileName" name="F_FileName" />
+                    </div>
+                </div>
+                <div class="layui-form-item layui-hide">
+                    <button class="layui-btn site-demo-active" lay-submit id="submit" lay-filter="saveBtn">确认保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
