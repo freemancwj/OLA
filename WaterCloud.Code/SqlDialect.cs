@@ -25,6 +25,11 @@ namespace WaterCloud.Code
 		private static readonly string BoolPattern = string.Join("|", BoolColumns);
 
 		/// <summary>
+		/// MySQL 字符串拼接链中的操作数（字符串字面量、COALESCE 调用、列名）
+		/// </summary>
+		private const string ConcatOperand = @"(?:COALESCE\s*\([^()]*\)|'[^']*'|[\w\.]+)";
+
+		/// <summary>
 		/// 当前数据库类型（小写）
 		/// </summary>
 		public static string CurrentDbType
@@ -47,9 +52,14 @@ namespace WaterCloud.Code
 		public static bool IsSqlite => CurrentDbType.Contains("sqlite");
 
 		/// <summary>
+		/// 当前是否是 MySQL 数据库
+		/// </summary>
+		public static bool IsMySql => CurrentDbType.Contains("mysql");
+
+		/// <summary>
 		/// 是否需要方言转换（非 SqlServer 的数据库都需要）
 		/// </summary>
-		public static bool NeedTrans => IsPostgreSql || IsSqlite;
+		public static bool NeedTrans => IsPostgreSql || IsSqlite || IsMySql;
 
 		/// <summary>
 		/// 布尔常量（用于拼接原生 SQL 的默认值）
@@ -102,6 +112,10 @@ namespace WaterCloud.Code
 			{
 				result = Regex.Replace(result, @"\bNEWID\s*\(\s*\)", "lower(hex(randomblob(16)))", RegexOptions.IgnoreCase);
 			}
+			else if (IsMySql)
+			{
+				result = Regex.Replace(result, @"\bNEWID\s*\(\s*\)", "UUID()", RegexOptions.IgnoreCase);
+			}
 			else
 			{
 				result = Regex.Replace(result, @"\bNEWID\s*\(\s*\)", "gen_random_uuid()", RegexOptions.IgnoreCase);
@@ -122,15 +136,25 @@ namespace WaterCloud.Code
 			{
 				result = Regex.Replace(result, @"CONVERT\s*\(\s*varchar\s*\(\s*\d+\s*\)\s*,\s*([\w\.]+)\s*,\s*23\s*\)", "date($1)", RegexOptions.IgnoreCase);
 			}
-			// 字符串拼接：+ 换成 ||
+			// 字符串拼接：+ 换成 ||（MySQL 后续再把 || 链转 CONCAT）
 			result = Regex.Replace(result, @"'\s*\+\s*", "' || ");
 			result = Regex.Replace(result, @"\s*\+\s*'", " || '");
 			// ISNULL 换成 COALESCE（两者语义相同，但统一处理方便后续布尔列转换）
 			result = Regex.Replace(result, @"\bISNULL\s*\(", "COALESCE(", RegexOptions.IgnoreCase);
-			// SQL Server SET QUOTED_IDENTIFIER / NOCOUNT / ANSI_NULLS 等控制语句 — SQLite/PostgreSQL 不支持
+			// SQL Server SET QUOTED_IDENTIFIER / NOCOUNT / ANSI_NULLS 等控制语句 — SQLite/PostgreSQL/MySQL 不支持
 			result = Regex.Replace(result, @"SET\s+QUOTED_IDENTIFIER\s+(ON|OFF)\s*;?", string.Empty, RegexOptions.IgnoreCase);
 			result = Regex.Replace(result, @"SET\s+NOCOUNT\s+(ON|OFF)\s*;?", string.Empty, RegexOptions.IgnoreCase);
 			result = Regex.Replace(result, @"SET\s+ANSI_NULLS\s+(ON|OFF)\s*;?", string.Empty, RegexOptions.IgnoreCase);
+			if (IsMySql)
+			{
+				// MySQL 中 || 是逻辑或，字符串拼接需用 CONCAT：把连续的 操作数 || 操作数 链包成 CONCAT(...)
+				result = Regex.Replace(result, ConcatOperand + @"(?:\s*\|\|\s*" + ConcatOperand + @")+",
+					match =>
+					{
+						var parts = Regex.Split(match.Value, @"\s*\|\|\s*");
+						return "CONCAT(" + string.Join(", ", parts) + ")";
+					}, RegexOptions.IgnoreCase);
+			}
 			if (IsPostgreSql)
 			{
 				// 布尔列默认值：COALESCE(布尔列,0/1) → PostgreSQL 需要 TRUE/FALSE
@@ -220,6 +244,109 @@ namespace WaterCloud.Code
 					return "varchar(" + length + ")";
 				}
 				return "text";
+			}
+			return sqlServerType;
+		}
+
+		/// <summary>
+		/// 把实体的 CLR 类型（结合 SqlServer 列类型中声明的长度/精度）转换为 MySQL 列类型。
+		/// 布尔统一用 tinyint(1)，避免 MySql.Data 读取 bit 列的兼容问题；布尔列与 0/1 比较在 MySQL 中天然成立。
+		/// </summary>
+		public static string ToMySqlType(Type clrType, string sqlServerType)
+		{
+			var type = Nullable.GetUnderlyingType(clrType) ?? clrType;
+			if (type == typeof(bool))
+			{
+				return "tinyint(1)";
+			}
+			if (type == typeof(byte))
+			{
+				return "tinyint unsigned";
+			}
+			if (type == typeof(sbyte))
+			{
+				return "tinyint";
+			}
+			if (type == typeof(short))
+			{
+				return "smallint";
+			}
+			if (type == typeof(ushort))
+			{
+				return "smallint unsigned";
+			}
+			if (type == typeof(int))
+			{
+				return "int";
+			}
+			if (type == typeof(uint))
+			{
+				return "int unsigned";
+			}
+			if (type == typeof(long))
+			{
+				return "bigint";
+			}
+			if (type == typeof(ulong))
+			{
+				return "bigint unsigned";
+			}
+			if (type == typeof(decimal))
+			{
+				var declared = (sqlServerType ?? string.Empty).Trim().ToLower();
+				if (declared.StartsWith("decimal(") || declared.StartsWith("numeric("))
+				{
+					return declared.StartsWith("numeric(") ? "decimal(" + declared.Substring("numeric(".Length) : declared;
+				}
+				return "decimal(18,4)";
+			}
+			if (type == typeof(double))
+			{
+				return "double";
+			}
+			if (type == typeof(float))
+			{
+				return "float";
+			}
+			if (type == typeof(DateTime))
+			{
+				return "datetime";
+			}
+			if (type == typeof(DateTimeOffset))
+			{
+				return "datetime";
+			}
+			if (type == typeof(Guid))
+			{
+				return "char(36)";
+			}
+			if (type == typeof(byte[]))
+			{
+				return "longblob";
+			}
+			if (type == typeof(string))
+			{
+				var declared = (sqlServerType ?? string.Empty).Trim().ToLower();
+				var index = declared.IndexOf('(');
+				if (index > 0 && declared.EndsWith(")"))
+				{
+					var length = declared.Substring(index + 1, declared.Length - index - 2).Trim();
+					if (length == "max")
+					{
+						return "longtext";
+					}
+					// utf8mb4 下单字符占 4 字节，varchar 上限 65535 字节
+					if (int.TryParse(length, out var n) && n * 4L <= 65535)
+					{
+						return "varchar(" + length + ")";
+					}
+					return "longtext";
+				}
+				if (declared == "longtext" || declared == "text" || declared == "ntext")
+				{
+					return "longtext";
+				}
+				return "longtext";
 			}
 			return sqlServerType;
 		}

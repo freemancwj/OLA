@@ -1,4 +1,4 @@
-﻿using SqlSugar;
+using SqlSugar;
 using System;
 using System.ComponentModel.DataAnnotations;
 
@@ -67,7 +67,7 @@ namespace WaterCloud.Domain.SystemManage
 		/// 表单参数Json
 		/// </summary>
 		/// <returns></returns>
-		[SugarColumn(IsNullable = true, ColumnName = "F_Content", ColumnDataType = "nvarchar(50)", ColumnDescription = "表单参数Json")]
+		[SugarColumn(IsNullable = true, ColumnName = "F_Content", ColumnDataType = "nvarchar(max)", ColumnDescription = "表单参数Json")]
 		public string F_Content { get; set; }
 
 		/// <summary>

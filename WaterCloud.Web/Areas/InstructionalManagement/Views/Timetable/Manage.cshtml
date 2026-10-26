@@ -21,7 +21,7 @@
             <div class="layui-inline">
                 <label class="layui-form-label">学期:</label>
                 <div class="layui-input-inline" style="width:160px;">
-                    <input type="text" id="txt_semester" autocomplete="off" class="layui-input" placeholder="如 2025-2026-1">
+                    <select id="txt_semester" lay-search><option value="">全部学期</option></select>
                 </div>
             </div>
             <div class="layui-inline">
@@ -71,7 +71,7 @@
         <div class="layui-form-item">
             <label class="layui-form-label required">学期</label>
             <div class="layui-input-block">
-                <input type="text" id="P_F_Semester" name="F_Semester" autocomplete="off" maxlength="50" lay-verify="required" placeholder="如 2025-2026-1" class="layui-input">
+                <select id="P_F_Semester" name="F_Semester" lay-verify="required" lay-search></select>
             </div>
         </div>
         <div class="layui-form-item">
@@ -168,6 +168,7 @@
             fillSelect('#C_F_CourseId', courseList, '请选择科目');
             fillSelect('#C_F_TeacherId', teacherList, '请选择教师');
             fillSelect('#C_F_ClassroomId', classroomList, '请选择教室');
+            fillSemesterSelect();
             form.render('select');
         }
         loadBase();
@@ -192,10 +193,29 @@
         function reloadPlan() {
             table.reload('planTable', { where: { semester: $('#txt_semester').val(), classId: $('#ddl_planclass').val() } }, 'data');
         }
+        //学期下拉：来源于已有授课计划中的学期，没有数据时显示暂无
+        function fillSemesterSelect() {
+            var curHead = $('#txt_semester').val() || '';
+            var curForm = $('#P_F_Semester').val() || '';
+            if (semesterList && semesterList.length > 0) {
+                var opts = '';
+                $.each(semesterList, function (i, s) {
+                    opts += '<option value="' + s + '">' + s + '</option>';
+                });
+                $('#txt_semester').html('<option value="">全部学期</option>' + opts);
+                $('#P_F_Semester').html('<option value="">请选择学期</option>' + opts);
+                $('#txt_semester').val(curHead);
+                $('#P_F_Semester').val(curForm);
+            } else {
+                $('#txt_semester').html('<option value="">暂无</option>').val('');
+                $('#P_F_Semester').html('<option value="">暂无</option>').val('');
+            }
+            form.render('select');
+        }
         function reloadSemesters() {
             common.ajax({
                 url: '/InstructionalManagement/Timetable/GetSemesterListJson',
-                success: function (d) { semesterList = d || []; }
+                success: function (d) { semesterList = d || []; fillSemesterSelect(); }
             });
         }
         form.on('submit(plan-search-btn)', function () { reloadPlan(); return false; });

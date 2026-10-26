@@ -1,4 +1,4 @@
-﻿/*******************************************************************************
+/*******************************************************************************
  * Copyright © 2020 WaterCloud.Framework 版权所有
  * Author: WaterCloud
  * Description: WaterCloud快速开发平台
@@ -82,7 +82,7 @@ namespace WaterCloud.Domain.SystemSecurity
 		/// <summary>
 		/// 修改时间
 		/// </summary>
-		[SugarColumn(IsNullable = false, ColumnDescription = "修改时间")]
+		[SugarColumn(IsNullable = true, ColumnDescription = "修改时间")]
 		public DateTime? F_LastModifyTime { get; set; }
 
 		/// <summary>

@@ -341,6 +341,11 @@ ASALocalRun/
 healthchecksdb
 /WaterCloud.Web/DataProtection
 
+# 本地 SQLite 运行数据文件与发布部署产物
+/WaterCloud.Web/watercloudnetdb_sqlite.db
+/WaterCloud.Web/watercloudnetdb.db
+/deploy/
+
 # 运行期上传目录
 /WaterCloud.Web/wwwroot/file/local/
 /WaterCloud.Web/wwwroot/file/course/

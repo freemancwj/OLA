@@ -12,6 +12,9 @@
 
         wcLoading.close();
 
+        currentTableBar.innerHTML = common.authorizeButtonNew(currentTableBar.innerHTML);
+        toolbarDemo.innerHTML = common.authorizeButtonNew(toolbarDemo.innerHTML);
+
         commonTable.rendertable({
             elem: '#currentTableId',
             id: 'currentTableId',
@@ -36,9 +39,6 @@
                 { title: '操作', width: 120, toolbar: '#currentTableBar', fixed: 'right' }
             ]]
         });
-
-        currentTableBar.innerHTML = common.authorizeButtonNew(currentTableBar.innerHTML);
-        toolbarDemo.innerHTML = common.authorizeButtonNew(toolbarDemo.innerHTML);
 
         //监听搜索
         form.on('submit(data-search-btn)', function (data) {

@@ -313,6 +313,20 @@ layui.define(["jquery", "layer", 'table', 'soulTable', 'common', 'tabletree'], f
         },
         //table行点击事件及按钮显示控制
         tableRowClick: function (type, tableFilter, tableId, oneList, moreList, clickfunction) {
+            //兼容对象式调用：tableRowClick({ tableId: 'currentTableId', edit: fn, del: fn })
+            //对象式写法没有 type/tableFilter，直接拼接会生成 [object Object] 的非法选择器，导致整页点击事件报错
+            if (type !== null && typeof type === 'object') {
+                var opt = type;
+                var optTableId = opt.tableId || 'currentTableId';
+                var optFilter = opt.tableFilter || $('#' + optTableId).attr('lay-filter') || optTableId;
+                table.on('tool(' + optFilter + ')', function (obj) {
+                    var handler = obj.event === 'delete' ? (opt.del || opt['delete']) : opt[obj.event];
+                    if (typeof handler === 'function') {
+                        handler(obj.data, obj);
+                    }
+                });
+                return;
+            }
             var oneList = !!oneList ? oneList : [];
             var moreList = !!moreList ? moreList : [];
             //type是checkbox或者radio

@@ -45,6 +45,17 @@ namespace WaterCloud.DataBase
 							//SQLite：按 CLR 类型把实体的 SqlServer 列类型转换为 SQLite 类型声明
 							column.DataType = SqlDialect.ToSqliteType(property.PropertyType, column.DataType);
 						}
+						if (dbType == DbType.MySql)
+						{
+							//MySQL：按 CLR 类型把实体的 SqlServer 列类型转换为 MySQL 类型
+							column.DataType = SqlDialect.ToMySqlType(property.PropertyType, column.DataType);
+							//MySQL 不允许 TEXT/BLOB 主键：未显式声明列类型的字符串主键兜底为 varchar(50)
+							var isPk = column.IsPrimarykey || attributes.Any(a => a is SugarColumn && ((SugarColumn)a).IsPrimaryKey);
+							if (isPk && column.DataType == "longtext")
+							{
+								column.DataType = "varchar(50)";
+							}
+						}
 					}
 				}
 			};
@@ -79,6 +90,13 @@ namespace WaterCloud.DataBase
 				|| name.Equals("Microsoft.Data.Sqlite", StringComparison.OrdinalIgnoreCase))
 			{
 				return DbType.Sqlite;
+			}
+			if (name.Equals("MySql", StringComparison.OrdinalIgnoreCase)
+				|| name.Equals("MySQL", StringComparison.OrdinalIgnoreCase)
+				|| name.Equals("MySql.Data", StringComparison.OrdinalIgnoreCase)
+				|| name.Equals("MySqlConnector", StringComparison.OrdinalIgnoreCase))
+			{
+				return DbType.MySql;
 			}
 			if (Enum.TryParse<DbType>(name, true, out var parsed))
 			{

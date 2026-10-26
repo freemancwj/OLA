@@ -107,6 +107,16 @@ namespace WaterCloud.Service
 					{
 						column.DataType = SqlDialect.ToSqliteType(property.PropertyType, column.DataType);
 					}
+					else if (dbType == DbType.MySql)
+					{
+						column.DataType = SqlDialect.ToMySqlType(property.PropertyType, column.DataType);
+						//MySQL 不允许 TEXT/BLOB 主键：未显式声明列类型的字符串主键兜底为 varchar(50)
+						var isPk = column.IsPrimarykey || attributes.Any(a => a is SugarColumn && ((SugarColumn)a).IsPrimaryKey);
+						if (isPk && column.DataType == "longtext")
+						{
+							column.DataType = "varchar(50)";
+						}
+					}
 				}
 			};
 			db.Aop.OnLogExecuted = (sql, pars) => //SQL执行完

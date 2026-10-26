@@ -18,6 +18,16 @@
             描 述：新闻管理控制器类
             </summary>
         </member>
+        <member name="T:WaterCloud.Web.Areas.EducationalAffairs.Controllers.TeachingActivityController">
+            <summary>
+            教研活动培训管理（发布教研/培训活动通知）
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.EducationalAffairs.Controllers.TeachingActivityController.UploadFile">
+            <summary>
+            附件上传（最大50MB）
+            </summary>
+        </member>
         <member name="T:WaterCloud.Web.Areas.FileManage.Controllers.UploadfileController">
             <summary>
             创 建：超级管理员
@@ -61,6 +71,46 @@
         <member name="T:WaterCloud.Web.Areas.FlowManage.Controllers.LeaveApplicationController">
             <summary>
             描 述：请假管理控制器（教师/学生请假，走工作流审批）
+            </summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.HRManagement.Controllers.AttendanceClockController">
+            <summary>
+            员工打卡
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.HRManagement.Controllers.AttendanceClockController.GetTodayStatusJson">
+            <summary>
+            今日打卡状态 + 打卡规则
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.HRManagement.Controllers.AttendanceClockController.GetMyGridJson(WaterCloud.Code.SoulPage{WaterCloud.Domain.HRManagement.AttendanceRecordEntity},System.String)">
+            <summary>
+            我的打卡记录
+            </summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.HRManagement.Controllers.AttendanceRecordController">
+            <summary>
+            打卡记录查询（管理员）
+            </summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.HRManagement.Controllers.AttendanceRuleController">
+            <summary>
+            打卡规则设置
+            </summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.HRManagement.Controllers.HrEmployeeController">
+            <summary>
+            员工档案管理
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.HRManagement.Controllers.HrEmployeeController.GetUnarchivedUserListJson">
+            <summary>
+            未建档用户列表（新增档案时选择）
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.HRManagement.Controllers.HrEmployeeController.UploadPhoto">
+            <summary>
+            员工相片上传
             </summary>
         </member>
         <member name="T:WaterCloud.Web.Areas.InfoManage.Controllers.MessageController">
@@ -508,6 +558,21 @@
         <member name="T:WaterCloud.Web.Areas.InstructionalManagement.Controllers.WorkloadStatController">
             <summary>
             教师工作量统计
+            </summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.LogisticsManagement.Controllers.ContractController">
+            <summary>
+            合同管理
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.LogisticsManagement.Controllers.ContractController.UploadFile">
+            <summary>
+            合同附件上传（最大50MB）
+            </summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.LogisticsManagement.Controllers.PurchaseController">
+            <summary>
+            采购管理
             </summary>
         </member>
         <member name="T:WaterCloud.Web.Areas.OrderManagement.Controllers.OrderController">
