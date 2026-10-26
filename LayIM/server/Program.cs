@@ -5,8 +5,16 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 
-var contentRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", ".."));
-var webRoot = Path.GetFullPath(Path.Combine(contentRoot, ".."));
+var baseDir = AppContext.BaseDirectory;
+// 发布目录（dll 旁就有 appsettings.json）时直接以 dll 所在目录为内容根；
+// 开发目录（bin\Debug\net8.0）保持向上三级回到项目根
+var contentRoot = File.Exists(Path.Combine(baseDir, "appsettings.json"))
+    ? baseDir
+    : Path.GetFullPath(Path.Combine(baseDir, "..", "..", ".."));
+var publishWebRoot = Path.Combine(baseDir, "wwwroot");
+var webRoot = Directory.Exists(publishWebRoot)
+    ? publishWebRoot
+    : Path.GetFullPath(Path.Combine(contentRoot, ".."));
 
 var builder = WebApplication.CreateBuilder(new WebApplicationOptions
 {
