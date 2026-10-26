@@ -1,0 +1,91 @@
+@{
+    ViewBag.Title = "打卡记录";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'table', 'common', 'commonTable', 'laydate'], function () {
+        var $ = layui.jquery,
+            form = layui.form,
+            table = layui.table,
+            laydate = layui.laydate,
+            common = layui.common,
+            commonTable = layui.commonTable;
+
+        wcLoading.close();
+
+        laydate.render({ elem: '#date' });
+
+        commonTable.rendertable({
+            elem: '#currentTableId',
+            id: 'currentTableId',
+            url: '/HRManagement/AttendanceRecord/GetGridJson',
+            cols: [[
+                { field: 'F_Date', title: '日期', width: 110, templet: function (d) { return d.F_Date ? String(d.F_Date).substring(0, 10) : ''; } },
+                { field: 'F_Account', title: '账号', width: 100 },
+                { field: 'F_RealName', title: '姓名', width: 100 },
+                { field: 'F_OrganizeName', title: '部门', width: 140 },
+                { field: 'F_ClockInTime', title: '上班打卡', width: 110, align: 'center', templet: function (d) { return d.F_ClockInTime ? String(d.F_ClockInTime).substring(11, 16) : '<span class="layui-badge layui-bg-gray">缺卡</span>'; } },
+                {
+                    field: 'F_ClockInStatus', title: '上班状态', width: 100, align: 'center',
+                    templet: function (d) {
+                        if (d.F_ClockInStatus === 0) return '<span class="layui-badge layui-bg-green">正常</span>';
+                        if (d.F_ClockInStatus === 1) return '<span class="layui-badge layui-bg-orange">迟到</span>';
+                        return '<span class="layui-badge layui-bg-gray">缺卡</span>';
+                    }
+                },
+                { field: 'F_ClockOutTime', title: '下班打卡', width: 110, align: 'center', templet: function (d) { return d.F_ClockOutTime ? String(d.F_ClockOutTime).substring(11, 16) : '<span class="layui-badge layui-bg-gray">缺卡</span>'; } },
+                {
+                    field: 'F_ClockOutStatus', title: '下班状态', width: 100, align: 'center',
+                    templet: function (d) {
+                        if (d.F_ClockOutStatus === 0) return '<span class="layui-badge layui-bg-green">正常</span>';
+                        if (d.F_ClockOutStatus === 1) return '<span class="layui-badge layui-bg-red">早退</span>';
+                        return '<span class="layui-badge layui-bg-gray">缺卡</span>';
+                    }
+                },
+                { field: 'F_Remark', title: '备注', minWidth: 150 }
+            ]]
+        });
+
+        form.on('submit(data-search-btn)', function (data) {
+            commonTable.reloadtable({
+                elem: 'currentTableId',
+                curr: 1,
+                where: {
+                    keyword: $('#txt_keyword').val(),
+                    date: $('#date').val()
+                }
+            });
+            return false;
+        });
+    });
+</script>
+
+<div class="layuimini-container">
+    <div class="layuimini-main">
+        <fieldset class="table-search-fieldset">
+            <legend>搜索信息</legend>
+            <div style="margin: 10px 10px 10px 10px">
+                <form class="layui-form layui-form-pane">
+                    <div class="layui-form-item">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">关键字:</label>
+                            <div class="layui-input-inline">
+                                <input type="text" id="txt_keyword" name="txt_keyword" autocomplete="off" class="layui-input" placeholder="账号/姓名">
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">日期:</label>
+                            <div class="layui-input-inline">
+                                <input type="text" id="date" name="date" autocomplete="off" class="layui-input" placeholder="选择日期">
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <button type="submit" class="layui-btn layui-btn-primary" lay-submit lay-filter="data-search-btn"><i class="layui-icon">&#xe615;</i> 搜 索</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </fieldset>
+        <table class="layui-hide" id="currentTableId" lay-filter="currentTableFilter"></table>
+    </div>
+</div>

@@ -1,0 +1,95 @@
+@{
+    ViewBag.Title = "打卡规则";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'common'], function () {
+        var form = layui.form,
+            $ = layui.jquery,
+            common = layui.common;
+
+        $(function () {
+            initControl();
+        });
+        wcLoading.close();
+
+        function initControl() {
+            common.ajax({
+                url: '/HRManagement/AttendanceRule/GetFormJson',
+                async: false,
+                success: function (data) {
+                    if (data) {
+                        $('#F_StartTime').val(data.F_StartTime || '08:30');
+                        $('#F_EndTime').val(data.F_EndTime || '17:30');
+                        $('#F_LateGrace').val(data.F_LateGrace == null ? 10 : data.F_LateGrace);
+                        $('#F_EarlyGrace').val(data.F_EarlyGrace == null ? 10 : data.F_EarlyGrace);
+                        $('#F_EnabledMark').prop('checked', data.F_EnabledMark === true || data.F_EnabledMark === 1);
+                    }
+                    form.render();
+                }
+            });
+        }
+
+        // 监听提交
+        form.on('submit(saveBtn)', function (data) {
+            data.field.F_EnabledMark = $('#F_EnabledMark').prop('checked');
+            common.submitForm({
+                url: '/HRManagement/AttendanceRule/SubmitForm',
+                param: data.field,
+                close: false,
+                success: function () {
+                    common.modalMsg('打卡规则已保存', 'success');
+                }
+            });
+            return false;
+        });
+    });
+</script>
+
+<body>
+    <div class="layuimini-container">
+        <div class="layuimini-main">
+            <div class="layui-form layuimini-form" lay-filter="adminform">
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">上班时间</label>
+                    <div class="layui-input-inline">
+                        <input type="text" id="F_StartTime" name="F_StartTime" lay-verify="required" placeholder="HH:mm，如 08:30" maxlength="5" autocomplete="off" class="layui-input">
+                    </div>
+                    <div class="layui-form-mid layui-word-aux">员工上班打卡的基准时间</div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">下班时间</label>
+                    <div class="layui-input-inline">
+                        <input type="text" id="F_EndTime" name="F_EndTime" lay-verify="required" placeholder="HH:mm，如 17:30" maxlength="5" autocomplete="off" class="layui-input">
+                    </div>
+                    <div class="layui-form-mid layui-word-aux">员工下班打卡的基准时间</div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">迟到宽限</label>
+                    <div class="layui-input-inline">
+                        <input type="number" id="F_LateGrace" name="F_LateGrace" value="10" min="0" max="120" autocomplete="off" class="layui-input">
+                    </div>
+                    <div class="layui-form-mid layui-word-aux">分钟。上班时间后超过宽限打卡算迟到</div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">早退宽限</label>
+                    <div class="layui-input-inline">
+                        <input type="number" id="F_EarlyGrace" name="F_EarlyGrace" value="10" min="0" max="120" autocomplete="off" class="layui-input">
+                    </div>
+                    <div class="layui-form-mid layui-word-aux">分钟。下班时间前超过宽限打卡算早退</div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">是否启用</label>
+                    <div class="layui-input-block">
+                        <input type="checkbox" id="F_EnabledMark" name="F_EnabledMark" lay-skin="switch" lay-text="启用|禁用" checked>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-input-block">
+                        <button class="layui-btn" lay-submit lay-filter="saveBtn">保存规则</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>

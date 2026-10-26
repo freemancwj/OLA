@@ -1,0 +1,239 @@
+@{
+    ViewBag.Title = "员工档案";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'laydate', 'common', 'upload', 'optimizeSelectOption'], function () {
+        var form = layui.form,
+            $ = layui.jquery,
+            laydate = layui.laydate,
+            upload = layui.upload,
+            common = layui.common;
+        var keyValue = $.request("keyValue");
+
+        laydate.render({ elem: '#F_EntryDate' });
+        laydate.render({ elem: '#F_RegularDate' });
+        laydate.render({ elem: '#F_ContractStart' });
+        laydate.render({ elem: '#F_ContractEnd' });
+        laydate.render({ elem: '#F_LeaveDate' });
+
+        $(function () {
+            initControl();
+        });
+        wcLoading.close();
+
+        function initControl() {
+            if (!keyValue) {
+                // 新增模式：加载未建档用户
+                $("#F_UserId").bindSelect({
+                    url: "/HRManagement/HrEmployee/GetUnarchivedUserListJson",
+                    id: "F_Id",
+                    text: "F_RealName",
+                    search: true
+                });
+            } else {
+                // 编辑模式：隐藏用户选择，加载档案
+                $('#userItem').hide();
+                common.ajax({
+                    url: '/HRManagement/HrEmployee/GetFormJson',
+                    data: { keyValue: keyValue },
+                    async: false,
+                    success: function (data) {
+                        $('#formMain').formSerialize(data);
+                        if (!!data.F_Photo) {
+                            $('#photoPreview').attr('src', data.F_Photo).show();
+                        }
+                        // 日期格式处理
+                        ['F_EntryDate', 'F_RegularDate', 'F_ContractStart', 'F_ContractEnd', 'F_LeaveDate'].forEach(function (f) {
+                            if (!!data[f]) {
+                                $('#' + f).val(String(data[f]).replace(/\//g, '-').substring(0, 10));
+                            }
+                        });
+                    }
+                });
+            }
+            form.render('select');
+        }
+
+        // 相片上传
+        upload.render({
+            elem: '#btnUploadPhoto',
+            url: '/HRManagement/HrEmployee/UploadPhoto',
+            accept: 'images',
+            size: 5120,
+            done: function (res) {
+                if (res.code > 0) {
+                    common.modalMsg(res.msg, 'warning');
+                    return false;
+                }
+                $('#F_Photo').val(res.data.url);
+                $('#photoPreview').attr('src', res.data.url).show();
+            }
+        });
+
+        // 监听提交
+        form.on('submit(saveBtn)', function (data) {
+            if (!keyValue && !data.field.F_UserId) {
+                common.modalMsg('请选择员工', 'warning');
+                return false;
+            }
+            common.submitForm({
+                url: '/HRManagement/HrEmployee/SubmitForm?keyValue=' + (keyValue || ''),
+                param: data.field,
+                success: function () {
+                    common.parentreload('data-search-btn');
+                }
+            });
+            return false;
+        });
+    });
+</script>
+
+<body>
+    <div class="layuimini-container">
+        <div class="layuimini-main">
+            <div class="layui-form layuimini-form" lay-filter="adminform" id="formMain">
+                <div class="layui-form-item" id="userItem">
+                    <label class="layui-form-label required">选择员工</label>
+                    <div class="layui-input-block">
+                        <select id="F_UserId" name="F_UserId" lay-verify="required" lay-search>
+                            <option value="">请选择员工（仅显示未建档用户）</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">学历</label>
+                        <div class="layui-input-inline">
+                            <select id="F_Education" name="F_Education">
+                                <option value="">请选择</option>
+                                <option value="1">高中/中专</option>
+                                <option value="2">大专</option>
+                                <option value="3">本科</option>
+                                <option value="4">硕士</option>
+                                <option value="5">博士</option>
+                                <option value="6">其他</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">入职日期</label>
+                        <div class="layui-input-inline">
+                            <input type="text" id="F_EntryDate" name="F_EntryDate" autocomplete="off" class="layui-input">
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">转正日期</label>
+                        <div class="layui-input-inline">
+                            <input type="text" id="F_RegularDate" name="F_RegularDate" autocomplete="off" class="layui-input">
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">离职日期</label>
+                        <div class="layui-input-inline">
+                            <input type="text" id="F_LeaveDate" name="F_LeaveDate" autocomplete="off" class="layui-input">
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">婚姻状况</label>
+                        <div class="layui-input-inline">
+                            <select id="F_MaritalStatus" name="F_MaritalStatus">
+                                <option value="">请选择</option>
+                                <option value="0">未婚</option>
+                                <option value="1">已婚</option>
+                                <option value="2">其他</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">政治面貌</label>
+                        <div class="layui-input-inline">
+                            <select id="F_PoliticalStatus" name="F_PoliticalStatus">
+                                <option value="">请选择</option>
+                                <option value="0">群众</option>
+                                <option value="1">团员</option>
+                                <option value="2">党员</option>
+                                <option value="3">其他</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">毕业院校</label>
+                        <div class="layui-input-inline">
+                            <input type="text" id="F_GraduateSchool" name="F_GraduateSchool" autocomplete="off" maxlength="100" class="layui-input">
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">专业</label>
+                        <div class="layui-input-inline">
+                            <input type="text" id="F_Major" name="F_Major" autocomplete="off" maxlength="100" class="layui-input">
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">紧急联系人</label>
+                        <div class="layui-input-inline">
+                            <input type="text" id="F_EmergencyContact" name="F_EmergencyContact" autocomplete="off" maxlength="50" class="layui-input">
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">紧急联系电话</label>
+                        <div class="layui-input-inline">
+                            <input type="text" id="F_EmergencyPhone" name="F_EmergencyPhone" autocomplete="off" maxlength="20" class="layui-input">
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">家庭住址</label>
+                    <div class="layui-input-block">
+                        <input type="text" id="F_Address" name="F_Address" autocomplete="off" maxlength="200" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">合同编号</label>
+                        <div class="layui-input-inline">
+                            <input type="text" id="F_ContractNo" name="F_ContractNo" autocomplete="off" maxlength="50" class="layui-input">
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">合同开始日期</label>
+                        <div class="layui-input-inline">
+                            <input type="text" id="F_ContractStart" name="F_ContractStart" autocomplete="off" class="layui-input">
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">合同结束日期</label>
+                        <div class="layui-input-inline">
+                            <input type="text" id="F_ContractEnd" name="F_ContractEnd" autocomplete="off" class="layui-input">
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">相片</label>
+                    <div class="layui-input-block">
+                        <button type="button" class="layui-btn layui-btn-primary" id="btnUploadPhoto"><i class="layui-icon">&#xe67c;</i>上传相片</button>
+                        <img id="photoPreview" src="" style="width:80px;height:80px;border-radius:4px;margin-left:10px;display:none;object-fit:cover;border:1px solid #e6e6e6" />
+                        <input type="hidden" id="F_Photo" name="F_Photo" />
+                    </div>
+                </div>
+                <div class="layui-form-item layui-form-text">
+                    <label class="layui-form-label">备注</label>
+                    <div class="layui-input-block">
+                        <textarea id="F_Remark" name="F_Remark" maxlength="500" placeholder="请输入备注" class="layui-textarea"></textarea>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-hide">
+                    <button class="layui-btn site-demo-active" lay-submit id="submit" lay-filter="saveBtn">确认保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>

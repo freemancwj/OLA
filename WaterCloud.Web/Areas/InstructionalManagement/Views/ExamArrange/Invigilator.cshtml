@@ -19,6 +19,8 @@
             text: "TeacherName",
             search: true
         });
+        //select填充后需重新渲染，否则layui下拉框不显示选项
+        form.render('select');
 
         commonTable.rendertable({
             elem: '#currentTableId',

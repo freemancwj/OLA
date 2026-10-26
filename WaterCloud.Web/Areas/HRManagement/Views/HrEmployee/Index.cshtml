@@ -1,0 +1,166 @@
+@{
+    ViewBag.Title = "档案管理";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'table', 'common', 'commonTable', 'optimizeSelectOption'], function () {
+        var $ = layui.jquery,
+            form = layui.form,
+            table = layui.table,
+            common = layui.common,
+            commonTable = layui.commonTable;
+
+        wcLoading.close();
+
+        commonTable.rendertable({
+            elem: '#currentTableId',
+            id: 'currentTableId',
+            url: '/HRManagement/HrEmployee/GetGridJson',
+            cols: [[
+                { type: 'checkbox', fixed: 'left' },
+                {
+                    field: 'F_Photo', title: '相片', width: 70, align: 'center',
+                    templet: function (d) {
+                        return d.F_Photo ? '<img src="' + d.F_Photo + '" style="width:36px;height:36px;border-radius:50%;object-fit:cover;cursor:pointer" onclick="layui.$(\'body\').append(\'<img id=__bigphoto src=' + d.F_Photo + ' style=display:none>\');layer.open({type:1,title:false,content:layui.$(\'#__bigphoto\'),area:[\'auto\',\'auto\'],end:function(){layui.$(\'#__bigphoto\').remove()}})">' : '<span class="layui-badge layui-bg-gray">无</span>';
+                    }
+                },
+                { field: 'F_Account', title: '账号', width: 100 },
+                { field: 'F_RealName', title: '姓名', width: 100 },
+                {
+                    field: 'F_Gender', title: '性别', width: 60, align: 'center',
+                    templet: function (d) { return d.F_Gender === true ? '男' : (d.F_Gender === false ? '女' : ''); }
+                },
+                { field: 'F_OrganizeName', title: '部门', width: 140 },
+                { field: 'F_RoleName', title: '角色', width: 130 },
+                {
+                    field: 'F_Education', title: '学历', width: 90, align: 'center',
+                    templet: function (d) {
+                        var map = { 1: '高中/中专', 2: '大专', 3: '本科', 4: '硕士', 5: '博士', 6: '其他' };
+                        return d.F_Education ? (map[d.F_Education] || '') : '';
+                    }
+                },
+                {
+                    field: 'F_EntryDate', title: '入职日期', width: 110,
+                    templet: function (d) { return d.F_EntryDate ? String(d.F_EntryDate).substring(0, 10) : ''; }
+                },
+                { field: 'F_MobilePhone', title: '手机', width: 120 },
+                { field: 'F_IdCard', title: '身份证号', width: 170 },
+                { title: '操作', width: 130, toolbar: '#currentTableBar', align: 'center', fixed: 'right' }
+            ]]
+        });
+
+        form.on('submit(data-search-btn)', function (data) {
+            commonTable.reloadtable({
+                elem: 'currentTableId',
+                curr: 1,
+                where: {
+                    keyword: $('#txt_keyword').val(),
+                    education: $('#F_Education').val()
+                }
+            });
+            return false;
+        });
+
+        var oneList = ["NF-edit"];
+        var moreList = ["NF-delete"];
+        commonTable.tableRowClick("checkbox", "currentTableFilter", "currentTableId", oneList, moreList);
+
+        table.on('toolbar(currentTableFilter)', function (obj) {
+            var checkStatus = table.checkStatus('currentTableId');
+            if (obj.event === 'add') {
+                common.modalOpen({
+                    title: '新增员工档案',
+                    url: '/HRManagement/HrEmployee/Form',
+                    width: '900px',
+                    height: '92%'
+                });
+            }
+            else if (obj.event === 'delete') {
+                if (checkStatus.data.length == 0) {
+                    common.modalMsg('请选择需要删除的数据', 'warning');
+                    return false;
+                }
+                var ids = [];
+                for (var i = 0; i < checkStatus.data.length; i++) {
+                    ids.push(checkStatus.data[i].F_Id);
+                }
+                common.deleteForm({
+                    url: '/HRManagement/HrEmployee/DeleteForm',
+                    param: { keyValue: ids.join(',') },
+                    success: function () {
+                        commonTable.reloadtable({ elem: 'currentTableId' });
+                    }
+                });
+            }
+        });
+
+        table.on('tool(currentTableFilter)', function (obj) {
+            var data = obj.data;
+            if (obj.event === 'edit') {
+                common.modalOpen({
+                    title: '编辑员工档案',
+                    url: '/HRManagement/HrEmployee/Form?keyValue=' + data.F_Id,
+                    width: '900px',
+                    height: '92%'
+                });
+            }
+            else if (obj.event === 'delete') {
+                common.deleteForm({
+                    url: '/HRManagement/HrEmployee/DeleteForm',
+                    param: { keyValue: data.F_Id },
+                    success: function () {
+                        commonTable.reloadtable({ elem: 'currentTableId' });
+                    }
+                });
+            }
+        });
+    });
+</script>
+
+<div class="layuimini-container">
+    <div class="layuimini-main">
+        <fieldset class="table-search-fieldset">
+            <legend>搜索信息</legend>
+            <div style="margin: 10px 10px 10px 10px">
+                <form class="layui-form layui-form-pane">
+                    <div class="layui-form-item">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">关键字:</label>
+                            <div class="layui-input-inline">
+                                <input type="text" id="txt_keyword" name="txt_keyword" autocomplete="off" class="layui-input" placeholder="账号/姓名/手机">
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">学历:</label>
+                            <div class="layui-input-inline">
+                                <select id="F_Education" name="F_Education">
+                                    <option value="">全部</option>
+                                    <option value="1">高中/中专</option>
+                                    <option value="2">大专</option>
+                                    <option value="3">本科</option>
+                                    <option value="4">硕士</option>
+                                    <option value="5">博士</option>
+                                    <option value="6">其他</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <button type="submit" class="layui-btn layui-btn-primary" lay-submit lay-filter="data-search-btn"><i class="layui-icon">&#xe615;</i> 搜 索</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </fieldset>
+        <script type="text/html" id="toolbarDemo">
+            <div class="layui-btn-container">
+                <button class="layui-btn layui-btn-sm layui-btn-normal" lay-event="add" id="NF-add" name="NF-add" authorize><i class="layui-icon">&#xe654;</i>新增档案</button>
+                <button class="layui-btn layui-btn-sm layui-btn-danger" lay-event="delete" id="NF-delete" name="NF-delete" authorize><i class="layui-icon">&#xe640;</i>删除</button>
+            </div>
+        </script>
+        <script type="text/html" id="currentTableBar">
+            <a class="layui-btn layui-btn-xs" lay-event="edit" id="NF-edit" authorize><i class="layui-icon">&#xe642;</i>编辑</a>
+            <a class="layui-btn layui-btn-xs layui-btn-danger" lay-event="delete" id="NF-delete" authorize><i class="layui-icon">&#xe640;</i>删除</a>
+        </script>
+        <table class="layui-hide" id="currentTableId" lay-filter="currentTableFilter"></table>
+    </div>
+</div>
