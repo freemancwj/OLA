@@ -19,6 +19,12 @@ namespace WaterCloud.Web.Areas.HRManagement.Controllers
         [HandlerAuthorize]
         public override ActionResult Index()
         {
+            var key = GlobalContext.Configuration["AMap:Key"] ?? "";
+            if (key.Equals("YOUR_AMAP_KEY_HERE", StringComparison.OrdinalIgnoreCase))
+            {
+                key = "";
+            }
+            ViewBag.AMapKey = key;
             return View();
         }
 

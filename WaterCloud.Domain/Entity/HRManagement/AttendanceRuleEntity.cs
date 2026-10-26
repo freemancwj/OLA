@@ -42,6 +42,30 @@ namespace WaterCloud.Domain.HRManagement
         [SugarColumn(ColumnName = "F_EnabledMark", ColumnDescription = "是否启用", IsNullable = true)]
         public bool? F_EnabledMark { get; set; }
 
+        /// <summary>
+        /// 打卡范围中心点经度（高德坐标系）
+        /// </summary>
+        [SugarColumn(ColumnName = "F_Longitude", ColumnDescription = "打卡中心点经度", ColumnDataType = "decimal(12,8)", IsNullable = true)]
+        public decimal? F_Longitude { get; set; }
+
+        /// <summary>
+        /// 打卡范围中心点纬度（高德坐标系）
+        /// </summary>
+        [SugarColumn(ColumnName = "F_Latitude", ColumnDescription = "打卡中心点纬度", ColumnDataType = "decimal(12,8)", IsNullable = true)]
+        public decimal? F_Latitude { get; set; }
+
+        /// <summary>
+        /// 中心点地址名称
+        /// </summary>
+        [SugarColumn(ColumnName = "F_PoiName", ColumnDescription = "打卡中心点地址", ColumnDataType = "nvarchar(300)", IsNullable = true)]
+        public string F_PoiName { get; set; }
+
+        /// <summary>
+        /// 打卡有效范围（米），GPS定位在半径内算合法打卡
+        /// </summary>
+        [SugarColumn(ColumnName = "F_Radius", ColumnDescription = "打卡有效范围米", IsNullable = true)]
+        public int? F_Radius { get; set; }
+
         [SugarColumn(ColumnName = "F_CreatorTime", ColumnDescription = "创建时间", IsNullable = true)]
         public DateTime? F_CreatorTime { get; set; }
 

@@ -33,6 +33,9 @@
             ]]
         });
 
+        currentTableBar.innerHTML = common.authorizeButtonNew(currentTableBar.innerHTML);
+        toolbarDemo.innerHTML = common.authorizeButtonNew(toolbarDemo.innerHTML);
+
         //监听搜索
         form.on('submit(data-search-btn)', function (data) {
             commonTable.reloadtable({
