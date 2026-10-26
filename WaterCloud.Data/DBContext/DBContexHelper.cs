@@ -40,6 +40,11 @@ namespace WaterCloud.DataBase
 							//PostgreSQL：按 CLR 类型把实体的 SqlServer 列类型转换为 PostgreSQL 类型
 							column.DataType = SqlDialect.ToPostgreSqlType(property.PropertyType, column.DataType);
 						}
+						if (dbType == DbType.Sqlite)
+						{
+							//SQLite：按 CLR 类型把实体的 SqlServer 列类型转换为 SQLite 类型声明
+							column.DataType = SqlDialect.ToSqliteType(property.PropertyType, column.DataType);
+						}
 					}
 				}
 			};
@@ -69,7 +74,17 @@ namespace WaterCloud.DataBase
 			{
 				return DbType.PostgreSQL;
 			}
-			return (DbType)Enum.Parse(typeof(DbType), name, true);
+			if (name.Equals("Sqlite", StringComparison.OrdinalIgnoreCase)
+				|| name.Equals("SQLite", StringComparison.OrdinalIgnoreCase)
+				|| name.Equals("Microsoft.Data.Sqlite", StringComparison.OrdinalIgnoreCase))
+			{
+				return DbType.Sqlite;
+			}
+			if (Enum.TryParse<DbType>(name, true, out var parsed))
+			{
+				return parsed;
+			}
+			throw new ArgumentException("不支持的数据库类型：" + providerName);
 		}
 	}
 }

@@ -5,8 +5,8 @@ namespace WaterCloud.Code
 {
 	/// <summary>
 	/// 数据库方言适配。
-	/// 系统内的原生 SQL 统一按 SqlServer 语法书写，运行时根据当前数据库类型转换为目标数据库语法，
-	/// 目前主要解决 PostgreSQL 与 SqlServer 的差异（ISNULL、COLLATE、CONVERT、字符串拼接、布尔值等）。
+	/// 系统内的原生 SQL 统一按 SqlServer 语法书写，运行时根据当前数据库类型转换为目标数据库语法。
+	/// 支持 PostgreSQL、SQLite 与 SqlServer 的差异（ISNULL→COALESCE、TOP→LIMIT、字符串拼接、布尔值、GETDATE、NEWID、CONVERT 等）。
 	/// </summary>
 	public static class SqlDialect
 	{
@@ -25,16 +25,31 @@ namespace WaterCloud.Code
 		private static readonly string BoolPattern = string.Join("|", BoolColumns);
 
 		/// <summary>
-		/// 当前是否是 PostgreSQL 数据库
+		/// 当前数据库类型（小写）
 		/// </summary>
-		public static bool IsPostgreSql
+		public static string CurrentDbType
 		{
 			get
 			{
 				var provider = GlobalContext.SystemConfig == null ? null : GlobalContext.SystemConfig.DBProvider;
-				return !string.IsNullOrEmpty(provider) && provider.IndexOf("postgre", StringComparison.OrdinalIgnoreCase) >= 0;
+				return string.IsNullOrEmpty(provider) ? "sqlserver" : provider.Trim().ToLowerInvariant();
 			}
 		}
+
+		/// <summary>
+		/// 当前是否是 PostgreSQL 数据库
+		/// </summary>
+		public static bool IsPostgreSql => CurrentDbType.Contains("postgre") || CurrentDbType.Contains("pgsql");
+
+		/// <summary>
+		/// 当前是否是 SQLite 数据库
+		/// </summary>
+		public static bool IsSqlite => CurrentDbType.Contains("sqlite");
+
+		/// <summary>
+		/// 是否需要方言转换（非 SqlServer 的数据库都需要）
+		/// </summary>
+		public static bool NeedTrans => IsPostgreSql || IsSqlite;
 
 		/// <summary>
 		/// 布尔常量（用于拼接原生 SQL 的默认值）
@@ -45,23 +60,24 @@ namespace WaterCloud.Code
 			{
 				return value ? "TRUE" : "FALSE";
 			}
+			// SQLite 原生 SQL 中布尔值用 1/0
 			return value ? "1" : "0";
 		}
 
 		/// <summary>
-		/// SELECT 后的 TOP 关键字（PostgreSQL 使用 LIMIT，由 <see cref="Limit"/> 补在语句末尾）
+		/// SELECT 后的 TOP 关键字（PostgreSQL/SQLite 使用 LIMIT，由 <see cref="Limit"/> 补在语句末尾）
 		/// </summary>
 		public static string Top(int count)
 		{
-			return IsPostgreSql ? string.Empty : "TOP " + count + " ";
+			return NeedTrans ? string.Empty : "TOP " + count + " ";
 		}
 
 		/// <summary>
-		/// 语句末尾的 LIMIT 关键字（PostgreSQL）
+		/// 语句末尾的 LIMIT 关键字（PostgreSQL/SQLite）
 		/// </summary>
 		public static string Limit(int count)
 		{
-			return IsPostgreSql ? " LIMIT " + count : string.Empty;
+			return NeedTrans ? " LIMIT " + count : string.Empty;
 		}
 
 		/// <summary>
@@ -69,38 +85,66 @@ namespace WaterCloud.Code
 		/// </summary>
 		public static string Trans(string sql)
 		{
-			if (string.IsNullOrEmpty(sql) || !IsPostgreSql)
+			if (string.IsNullOrEmpty(sql) || !NeedTrans)
 			{
 				return sql;
 			}
 			var result = sql;
-			// 排序规则（PostgreSQL 不支持）
+			// 排序规则（PostgreSQL、SQLite 都不支持）
 			result = Regex.Replace(result, @"\s+COLLATE\s+[\w]+", string.Empty, RegexOptions.IgnoreCase);
-			// Unicode 字符串前缀
+			// Unicode 字符串前缀 N'
 			result = Regex.Replace(result, @"(?<![\w'])N'", "'", RegexOptions.IgnoreCase);
+			// GETDATE() / GETUTCDATE() → 当前时间
+			result = Regex.Replace(result, @"\bGETDATE\s*\(\s*\)", IsSqlite ? "datetime('now','localtime')" : "now()", RegexOptions.IgnoreCase);
+			result = Regex.Replace(result, @"\bGETUTCDATE\s*\(\s*\)", IsSqlite ? "datetime('now')" : "now()", RegexOptions.IgnoreCase);
+			// NEWID() → 新 GUID
+			if (IsSqlite)
+			{
+				result = Regex.Replace(result, @"\bNEWID\s*\(\s*\)", "lower(hex(randomblob(16)))", RegexOptions.IgnoreCase);
+			}
+			else
+			{
+				result = Regex.Replace(result, @"\bNEWID\s*\(\s*\)", "gen_random_uuid()", RegexOptions.IgnoreCase);
+			}
+			// TOP n SELECT ... → 换成 LIMIT
+			result = Regex.Replace(result, @"\bTOP\s+(\d+)\b", "", RegexOptions.IgnoreCase);
 			// CONVERT(bit,0/1)
-			result = Regex.Replace(result, @"CONVERT\s*\(\s*bit\s*,\s*1\s*\)", "TRUE", RegexOptions.IgnoreCase);
-			result = Regex.Replace(result, @"CONVERT\s*\(\s*bit\s*,\s*0\s*\)", "FALSE", RegexOptions.IgnoreCase);
+			result = Regex.Replace(result, @"CONVERT\s*\(\s*bit\s*,\s*1\s*\)", IsPostgreSql ? "TRUE" : "1", RegexOptions.IgnoreCase);
+			result = Regex.Replace(result, @"CONVERT\s*\(\s*bit\s*,\s*0\s*\)", IsPostgreSql ? "FALSE" : "0", RegexOptions.IgnoreCase);
 			// CONVERT(varchar(n), expr, 108)：时间列本身已是字符串，直接取原值
 			result = Regex.Replace(result, @"CONVERT\s*\(\s*varchar\s*\(\s*\d+\s*\)\s*,\s*([\w\.]+)\s*,\s*108\s*\)", "$1", RegexOptions.IgnoreCase);
 			// CONVERT(varchar(n), expr, 23)：日期格式化
-			result = Regex.Replace(result, @"CONVERT\s*\(\s*varchar\s*\(\s*\d+\s*\)\s*,\s*([\w\.]+)\s*,\s*23\s*\)", "to_char($1,'YYYY-MM-DD')", RegexOptions.IgnoreCase);
+			if (IsPostgreSql)
+			{
+				result = Regex.Replace(result, @"CONVERT\s*\(\s*varchar\s*\(\s*\d+\s*\)\s*,\s*([\w\.]+)\s*,\s*23\s*\)", "to_char($1,'YYYY-MM-DD')", RegexOptions.IgnoreCase);
+			}
+			else
+			{
+				result = Regex.Replace(result, @"CONVERT\s*\(\s*varchar\s*\(\s*\d+\s*\)\s*,\s*([\w\.]+)\s*,\s*23\s*\)", "date($1)", RegexOptions.IgnoreCase);
+			}
 			// 字符串拼接：+ 换成 ||
 			result = Regex.Replace(result, @"'\s*\+\s*", "' || ");
 			result = Regex.Replace(result, @"\s*\+\s*'", " || '");
-			// ISNULL 换成 COALESCE
+			// ISNULL 换成 COALESCE（两者语义相同，但统一处理方便后续布尔列转换）
 			result = Regex.Replace(result, @"\bISNULL\s*\(", "COALESCE(", RegexOptions.IgnoreCase);
-			// 布尔列默认值：COALESCE(布尔列,0/1)
-			result = Regex.Replace(result, @"(COALESCE\s*\(\s*(?:[\w]+\.)?(?:" + BoolPattern + @")\s*,\s*)0(\s*\))",
-				"$1FALSE$2", RegexOptions.IgnoreCase);
-			result = Regex.Replace(result, @"(COALESCE\s*\(\s*(?:[\w]+\.)?(?:" + BoolPattern + @")\s*,\s*)1(\s*\))",
-				"$1TRUE$2", RegexOptions.IgnoreCase);
-			// 布尔表达式与 0/1 的比较：COALESCE(...) = 0
-			result = Regex.Replace(result, @"(COALESCE\s*\(\s*(?:[\w]+\.)?(?:" + BoolPattern + @")\s*,\s*(?:TRUE|FALSE)\s*\))\s*(=|<>|!=)\s*([01])\b",
-				MatchBoolCompare, RegexOptions.IgnoreCase);
-			// 布尔列与 0/1 的比较：a.F_DeleteMark = 0
-			result = Regex.Replace(result, @"((?:[\w]+\.)?(?:" + BoolPattern + @"))\s*(=|<>|!=)\s*([01])\b",
-				MatchBoolCompare, RegexOptions.IgnoreCase);
+			// SQL Server SET QUOTED_IDENTIFIER / NOCOUNT / ANSI_NULLS 等控制语句 — SQLite/PostgreSQL 不支持
+			result = Regex.Replace(result, @"SET\s+QUOTED_IDENTIFIER\s+(ON|OFF)\s*;?", string.Empty, RegexOptions.IgnoreCase);
+			result = Regex.Replace(result, @"SET\s+NOCOUNT\s+(ON|OFF)\s*;?", string.Empty, RegexOptions.IgnoreCase);
+			result = Regex.Replace(result, @"SET\s+ANSI_NULLS\s+(ON|OFF)\s*;?", string.Empty, RegexOptions.IgnoreCase);
+			if (IsPostgreSql)
+			{
+				// 布尔列默认值：COALESCE(布尔列,0/1) → PostgreSQL 需要 TRUE/FALSE
+				result = Regex.Replace(result, @"(COALESCE\s*\(\s*(?:[\w]+\.)?(?:" + BoolPattern + @")\s*,\s*)0(\s*\))",
+					"$1FALSE$2", RegexOptions.IgnoreCase);
+				result = Regex.Replace(result, @"(COALESCE\s*\(\s*(?:[\w]+\.)?(?:" + BoolPattern + @")\s*,\s*)1(\s*\))",
+					"$1TRUE$2", RegexOptions.IgnoreCase);
+				// 布尔表达式与 0/1 的比较：COALESCE(...) = 0 → PostgreSQL 需要布尔直接比较
+				result = Regex.Replace(result, @"(COALESCE\s*\(\s*(?:[\w]+\.)?(?:" + BoolPattern + @")\s*,\s*(?:TRUE|FALSE)\s*\))\s*(=|<>|!=)\s*([01])\b",
+					MatchBoolCompare, RegexOptions.IgnoreCase);
+				// 布尔列与 0/1 的比较：a.F_DeleteMark = 0
+				result = Regex.Replace(result, @"((?:[\w]+\.)?(?:" + BoolPattern + @"))\s*(=|<>|!=)\s*([01])\b",
+					MatchBoolCompare, RegexOptions.IgnoreCase);
+			}
 			return result;
 		}
 
@@ -178,6 +222,30 @@ namespace WaterCloud.Code
 				return "text";
 			}
 			return sqlServerType;
+		}
+
+		/// <summary>
+		/// SQLite 类型声明（SQLite 是动态类型系统，返回与 CLR 类型最匹配的声明即可）
+		/// </summary>
+		public static string ToSqliteType(Type clrType, string sqlServerType)
+		{
+			var type = Nullable.GetUnderlyingType(clrType) ?? clrType;
+			if (type == typeof(bool)) return "INTEGER";
+			if (type == typeof(byte) || type == typeof(sbyte) || type == typeof(short) || type == typeof(ushort)) return "INTEGER";
+			if (type == typeof(int) || type == typeof(uint)) return "INTEGER";
+			if (type == typeof(long) || type == typeof(ulong)) return "INTEGER";
+			if (type == typeof(decimal))
+			{
+				var declared = (sqlServerType ?? string.Empty).Trim().ToLower();
+				if (declared.StartsWith("decimal(") || declared.StartsWith("numeric(")) return "NUMERIC";
+				return "NUMERIC";
+			}
+			if (type == typeof(double) || type == typeof(float)) return "REAL";
+			if (type == typeof(DateTime) || type == typeof(DateTimeOffset)) return "TEXT";
+			if (type == typeof(Guid)) return "TEXT";
+			if (type == typeof(byte[])) return "BLOB";
+			if (type == typeof(string)) return "TEXT";
+			return "TEXT";
 		}
 	}
 }

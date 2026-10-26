@@ -98,10 +98,14 @@ namespace WaterCloud.Service
 					{
 						column.DataType = "nvarchar(4000)";
 					}
-					//PostgreSQL：按 CLR 类型把 SqlServer 列类型转换为 PostgreSQL 类型
-					if (db.CurrentConnectionConfig.DbType == DbType.PostgreSQL)
+					var dbType = db.CurrentConnectionConfig.DbType;
+					if (dbType == DbType.PostgreSQL)
 					{
 						column.DataType = SqlDialect.ToPostgreSqlType(property.PropertyType, column.DataType);
+					}
+					else if (dbType == DbType.Sqlite)
+					{
+						column.DataType = SqlDialect.ToSqliteType(property.PropertyType, column.DataType);
 					}
 				}
 			};
