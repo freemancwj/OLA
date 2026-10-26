@@ -17,12 +17,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="wwwroot\lib\jquery-3.4.1\**" />
-    <Content Remove="wwwroot\lib\jquery-3.4.1\**" />
-    <EmbeddedResource Remove="wwwroot\lib\jquery-3.4.1\**" />
-    <None Remove="wwwroot\lib\jquery-3.4.1\**" />
+    <!-- jquery-3.4.1 登录页必须使用，必须作为 Content 保留，否则发布包缺失导致登录页滑块无法渲染 -->
+    <Content Include="wwwroot\lib\jquery-3.4.1\**" />
   </ItemGroup>
-
   <ItemGroup>
     <Content Remove="Areas\SystemOrganize\Views\User\StudentList.cshtml" />
   </ItemGroup>
