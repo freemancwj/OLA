@@ -1,0 +1,62 @@
+@{
+    ViewBag.Title = "功能室/教室管理";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'table', 'common', 'commonTable'], function () {
+        var $ = layui.jquery, form = layui.form, table = layui.table, common = layui.common, commonTable = layui.commonTable;
+        currentTableBar.innerHTML = common.authorizeButtonNew(currentTableBar.innerHTML);
+        toolbarDemo.innerHTML = common.authorizeButtonNew(toolbarDemo.innerHTML);
+        wcLoading.close();
+        var roomTypeMap = { '教室': '教室', '功能室': '功能室', '实验室': '实验室', '体育室': '体育室', '宿舍': '宿舍', '办公': '办公' };
+
+        commonTable.rendertable({
+            elem: '#currentTableId', id: 'currentTableId', url: '/AssetManagement/AstRoom/GetGridJson',
+            cols: [[
+                { type: 'checkbox', fixed: 'left' },
+                { field: 'F_RoomCode', title: '房间编码', width: 120 },
+                { field: 'F_RoomName', title: '房间名称', width: 160 },
+                { field: 'F_RoomType', title: '类型', width: 100, align: 'center', templet: function (d) { return roomTypeMap[d.F_RoomType] || d.F_RoomType; } },
+                { field: 'F_Building', title: '楼栋', width: 120 },
+                { field: 'F_Description', title: '描述' },
+                { title: '操作', width: 130, toolbar: '#currentTableBar', align: 'center', fixed: 'right' }
+            ]]
+        });
+
+        form.on('submit(data-search-btn)', function () { commonTable.reloadtable({ elem: 'currentTableId', curr: 1, where: { keyword: $('#txt_keyword').val() } }); return false; });
+
+        var oneList = ["NF-edit"]; var moreList = ["NF-delete"];
+        commonTable.tableRowClick("checkbox", "currentTableFilter", "currentTableId", oneList, moreList);
+
+        table.on('toolbar(currentTableFilter)', function (obj) {
+            var checkStatus = table.checkStatus('currentTableId');
+            if (obj.event === 'add') { common.modalOpen({ title: '新增房间', url: '/AssetManagement/AstRoom/Form', width: '600px', height: '75%' }); }
+            else if (obj.event === 'delete') {
+                if (checkStatus.data.length == 0) { common.modalMsg('请选择需要删除的数据', 'warning'); return false; }
+                var ids = checkStatus.data.map(function (d) { return d.F_Id; });
+                common.deleteForm({ url: '/AssetManagement/AstRoom/DeleteForm', param: { keyValue: ids.join(',') }, success: function () { commonTable.reloadtable({ elem: 'currentTableId' }); } });
+            }
+        });
+
+        table.on('tool(currentTableFilter)', function (obj) {
+            var data = obj.data;
+            if (obj.event === 'edit') { common.modalOpen({ title: '编辑房间', url: '/AssetManagement/AstRoom/Form?keyValue=' + data.F_Id, width: '600px', height: '75%' }); }
+            else if (obj.event === 'delete') { common.deleteForm({ url: '/AssetManagement/AstRoom/DeleteForm', param: { keyValue: data.F_Id }, success: function () { commonTable.reloadtable({ elem: 'currentTableId' }); } }); }
+        });
+    });
+</script>
+<div class="layuimini-container"><div class="layuimini-main">
+    <fieldset class="table-search-fieldset"><legend>搜索信息</legend><div style="margin:10px"><form class="layui-form layui-form-pane"><div class="layui-form-item">
+        <div class="layui-inline"><label class="layui-form-label">关键字:</label><div class="layui-input-inline"><input type="text" id="txt_keyword" autocomplete="off" class="layui-input" placeholder="编码/名称"></div></div>
+        <div class="layui-inline"><button type="submit" class="layui-btn layui-btn-primary" lay-submit lay-filter="data-search-btn"><i class="layui-icon">&#xe615;</i> 搜 索</button></div>
+    </div></form></div></fieldset>
+    <script type="text/html" id="toolbarDemo"><div class="layui-btn-container">
+        <button class="layui-btn layui-btn-sm layui-btn-normal" lay-event="add" id="NF-add" name="NF-add" authorize><i class="layui-icon">&#xe654;</i>新增</button>
+        <button class="layui-btn layui-btn-sm layui-btn-danger" lay-event="delete" id="NF-delete" name="NF-delete" authorize><i class="layui-icon">&#xe640;</i>删除</button>
+    </div></script>
+    <script type="text/html" id="currentTableBar">
+        <a class="layui-btn layui-btn-xs" lay-event="edit" id="NF-edit" authorize><i class="layui-icon">&#xe642;</i>编辑</a>
+        <a class="layui-btn layui-btn-xs layui-btn-danger" lay-event="delete" id="NF-delete" authorize><i class="layui-icon">&#xe640;</i>删除</a>
+    </script>
+    <table class="layui-hide" id="currentTableId" lay-filter="currentTableFilter"></table>
+</div></div>

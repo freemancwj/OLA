@@ -1,0 +1,27 @@
+@{
+    ViewBag.Title = "器材借用";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'laydate', 'common'], function () {
+        var $ = layui.jquery, form = layui.form, laydate = layui.laydate, common = layui.common;
+        var keyValue = $.request("keyValue");
+        laydate.render({ elem: '#F_ExpectedReturnDate' });
+        $(function () { if (keyValue) { common.ajax({ url: '/AssetManagement/AstBorrow/GetFormJson', data: { keyValue: keyValue }, async: false, success: function (data) { common.val('adminform', data); if (!!data.F_ExpectedReturnDate) $('#F_ExpectedReturnDate').val(String(data.F_ExpectedReturnDate).substring(0, 10)); } }); } });
+        wcLoading.close();
+        form.on('submit(saveBtn)', function (data) {
+            common.submitForm({ url: '/AssetManagement/AstBorrow/SubmitForm?keyValue=' + (keyValue || ''), param: data.field, success: function () { common.parentreload('data-search-btn'); } });
+            return false;
+        });
+    });
+</script>
+<body><div class="layuimini-container"><div class="layuimini-main">
+    <div class="layui-form layuimini-form" lay-filter="adminform" id="formMain">
+        <div class="layui-form-item"><label class="layui-form-label required">资产ID</label><div class="layui-input-block"><input type="text" id="F_AssetId" name="F_AssetId" lay-verify="required" autocomplete="off" class="layui-input"></div></div>
+        <div class="layui-form-item"><label class="layui-form-label required">借用人</label><div class="layui-input-block"><input type="text" id="F_BorrowerName" name="F_BorrowerName" lay-verify="required" autocomplete="off" class="layui-input"></div></div>
+        <div class="layui-form-item"><label class="layui-form-label">借用人ID</label><div class="layui-input-block"><input type="text" id="F_BorrowerId" name="F_BorrowerId" autocomplete="off" class="layui-input"></div></div>
+        <div class="layui-form-item"><label class="layui-form-label">借用用途</label><div class="layui-input-block"><input type="text" id="F_Purpose" name="F_Purpose" autocomplete="off" class="layui-input"></div></div>
+        <div class="layui-form-item"><label class="layui-form-label">预计归还</label><div class="layui-input-block"><input type="text" id="F_ExpectedReturnDate" name="F_ExpectedReturnDate" autocomplete="off" class="layui-input"></div></div>
+        <div class="layui-form-item layui-hide"><button class="layui-btn" lay-submit lay-filter="saveBtn">确认保存</button></div>
+    </div>
+</div></div></body>

@@ -1,0 +1,25 @@
+@{
+    ViewBag.Title = "年级";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'common'], function () {
+        var $ = layui.jquery, form = layui.form, common = layui.common;
+        var keyValue = $.request("keyValue");
+        $(function () { if (keyValue) { common.ajax({ url: '/AssetManagement/AstGrade/GetFormJson', data: { keyValue: keyValue }, async: false, success: function (data) { common.val('adminform', data); } }); } });
+        wcLoading.close();
+        form.on('submit(saveBtn)', function (data) {
+            common.submitForm({ url: '/AssetManagement/AstGrade/SubmitForm?keyValue=' + (keyValue || ''), param: data.field, success: function () { common.parentreload('data-search-btn'); } });
+            return false;
+        });
+    });
+</script>
+<body><div class="layuimini-container"><div class="layuimini-main">
+    <div class="layui-form layuimini-form" lay-filter="adminform" id="formMain">
+        <div class="layui-form-item"><label class="layui-form-label required">年级编码</label><div class="layui-input-block"><input type="text" id="F_GradeCode" name="F_GradeCode" autocomplete="off" class="layui-input"></div></div>
+        <div class="layui-form-item"><label class="layui-form-label required">年级名称</label><div class="layui-input-block"><input type="text" id="F_GradeName" name="F_GradeName" lay-verify="required" autocomplete="off" class="layui-input"></div></div>
+        <div class="layui-form-item"><label class="layui-form-label">排序</label><div class="layui-input-block"><input type="number" id="F_SortCode" name="F_SortCode" value="0" class="layui-input"></div></div>
+        <div class="layui-form-item layui-form-text"><label class="layui-form-label">描述</label><div class="layui-input-block"><textarea id="F_Description" name="F_Description" class="layui-textarea"></textarea></div></div>
+        <div class="layui-form-item layui-hide"><button class="layui-btn" lay-submit lay-filter="saveBtn">确认保存</button></div>
+    </div>
+</div></div></body>

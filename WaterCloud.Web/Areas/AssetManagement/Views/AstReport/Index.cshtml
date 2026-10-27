@@ -1,0 +1,63 @@
+@{
+    ViewBag.Title = "资产报表";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'table', 'common', 'commonTable'], function () {
+        var $ = layui.jquery, form = layui.form, table = layui.table, common = layui.common, commonTable = layui.commonTable;
+        wcLoading.close();
+
+        var currentType = 'summary';
+
+        function loadData() {
+            common.ajax({
+                url: '/AssetManagement/AstReport/GetGridJson',
+                data: { type: currentType, keyword: $('#txt_keyword').val(), period: $('#F_Period').val() },
+                success: function (res) {
+                    var rows = res.rows || [];
+                    var html = '';
+                    if (rows.length === 0) { html = '<tr><td colspan="10" style="text-align:center;padding:20px">暂无数据</td></tr>'; }
+                    else {
+                        var cols = Object.keys(rows[0]);
+                        html = '<thead><tr>' + cols.map(function (c) { return '<th>' + c + '</th>'; }).join('') + '</tr></thead><tbody>';
+                        rows.forEach(function (r) { html += '<tr>' + cols.map(function (c) { return '<td>' + (r[c] == null ? '' : r[c]) + '</td>'; }).join('') + '</tr>'; });
+                        html += '</tbody>';
+                    }
+                    $('#reportTable').html(html);
+                }
+            });
+        }
+
+        form.on('submit(data-search-btn)', function () { loadData(); return false; });
+        $('#btnExport').on('click', function () {
+            window.location.href = '/AssetManagement/AstReport/ExportExcel?type=' + currentType + '&keyword=' + encodeURIComponent($('#txt_keyword').val()) + '&period=' + encodeURIComponent($('#F_Period').val());
+        });
+
+        $('.type-btn').on('click', function () {
+            currentType = $(this).data('type');
+            $('.type-btn').removeClass('layui-btn-normal');
+            $(this).addClass('layui-btn-normal');
+            loadData();
+        });
+
+        loadData();
+    });
+</script>
+<div class="layuimini-container"><div class="layuimini-main">
+    <fieldset class="table-search-fieldset"><legend>报表选择</legend>
+        <div style="margin:10px">
+            <button type="button" class="layui-btn layui-btn-sm layui-btn-normal type-btn" data-type="summary">资产总台账</button>
+            <button type="button" class="layui-btn layui-btn-sm type-btn" data-type="category">分类汇总</button>
+            <button type="button" class="layui-btn layui-btn-sm type-btn" data-type="damage">班级损坏</button>
+            <button type="button" class="layui-btn layui-btn-sm type-btn" data-type="idle">闲置资产</button>
+            <button type="button" class="layui-btn layui-btn-sm type-btn" data-type="depreciation">折旧台账</button>
+        </div>
+        <form class="layui-form layui-form-pane"><div class="layui-form-item">
+            <div class="layui-inline"><label class="layui-form-label">关键字:</label><div class="layui-input-inline"><input type="text" id="txt_keyword" autocomplete="off" class="layui-input"></div></div>
+            <div class="layui-inline"><label class="layui-form-label">期间:</label><div class="layui-input-inline"><input type="text" id="F_Period" autocomplete="off" class="layui-input" placeholder="如2026-10"></div></div>
+            <div class="layui-inline"><button type="submit" class="layui-btn layui-btn-primary" lay-submit lay-filter="data-search-btn"><i class="layui-icon">&#xe615;</i> 查询</button></div>
+            <div class="layui-inline"><button type="button" id="btnExport" class="layui-btn layui-btn-normal" id="NF-export" authorize><i class="layui-icon">&#xe67d;</i> 导出Excel</button></div>
+        </div></form>
+    </fieldset>
+    <table class="layui-table" id="reportTable"></table>
+</div></div>

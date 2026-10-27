@@ -1,0 +1,29 @@
+@{
+    ViewBag.Title = "班级";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'common', 'optimizeSelectOption'], function () {
+        var $ = layui.jquery, form = layui.form, common = layui.common;
+        var keyValue = $.request("keyValue");
+        $(function () {
+            $('#F_GradeId').bindSelect({ url: '/AssetManagement/AstGrade/GetGridJson', id: 'F_Id', text: 'F_GradeName', search: true });
+            if (keyValue) { common.ajax({ url: '/AssetManagement/AstClass/GetFormJson', data: { keyValue: keyValue }, async: false, success: function (data) { common.val('adminform', data); } }); }
+        });
+        wcLoading.close();
+        form.on('submit(saveBtn)', function (data) {
+            common.submitForm({ url: '/AssetManagement/AstClass/SubmitForm?keyValue=' + (keyValue || ''), param: data.field, success: function () { common.parentreload('data-search-btn'); } });
+            return false;
+        });
+    });
+</script>
+<body><div class="layuimini-container"><div class="layuimini-main">
+    <div class="layui-form layuimini-form" lay-filter="adminform" id="formMain">
+        <div class="layui-form-item"><label class="layui-form-label required">所属年级</label><div class="layui-input-block"><select id="F_GradeId" name="F_GradeId" lay-search><option value="">请选择年级</option></select></div></div>
+        <div class="layui-form-item"><label class="layui-form-label required">班级名称</label><div class="layui-input-block"><input type="text" id="F_ClassName" name="F_ClassName" lay-verify="required" autocomplete="off" class="layui-input"></div></div>
+        <div class="layui-form-item"><label class="layui-form-label">班主任</label><div class="layui-input-block"><input type="text" id="F_HeadTeacherId" name="F_HeadTeacherId" autocomplete="off" class="layui-input" placeholder="班主任用户ID"></div></div>
+        <div class="layui-form-item"><label class="layui-form-label">教室</label><div class="layui-input-block"><input type="text" id="F_RoomId" name="F_RoomId" autocomplete="off" class="layui-input" placeholder="教室ID"></div></div>
+        <div class="layui-form-item layui-form-text"><label class="layui-form-label">描述</label><div class="layui-input-block"><textarea id="F_Description" name="F_Description" class="layui-textarea"></textarea></div></div>
+        <div class="layui-form-item layui-hide"><button class="layui-btn" lay-submit lay-filter="saveBtn">确认保存</button></div>
+    </div>
+</div></div></body>

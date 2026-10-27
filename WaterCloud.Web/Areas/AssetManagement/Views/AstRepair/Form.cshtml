@@ -1,0 +1,24 @@
+@{
+    ViewBag.Title = "公物报修";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'common'], function () {
+        var $ = layui.jquery, form = layui.form, common = layui.common;
+        var keyValue = $.request("keyValue");
+        $(function () { if (keyValue) { common.ajax({ url: '/AssetManagement/AstRepair/GetFormJson', data: { keyValue: keyValue }, async: false, success: function (data) { common.val('adminform', data); } }); } });
+        wcLoading.close();
+        form.on('submit(saveBtn)', function (data) {
+            common.submitForm({ url: '/AssetManagement/AstRepair/SubmitForm?keyValue=' + (keyValue || ''), param: data.field, success: function () { common.parentreload('data-search-btn'); } });
+            return false;
+        });
+    });
+</script>
+<body><div class="layuimini-container"><div class="layuimini-main">
+    <div class="layui-form layuimini-form" lay-filter="adminform" id="formMain">
+        <div class="layui-form-item"><label class="layui-form-label required">资产ID</label><div class="layui-input-block"><input type="text" id="F_AssetId" name="F_AssetId" lay-verify="required" autocomplete="off" class="layui-input"></div></div>
+        <div class="layui-form-item"><label class="layui-form-label required">报修人</label><div class="layui-input-block"><input type="text" id="F_ReporterName" name="F_ReporterName" lay-verify="required" autocomplete="off" class="layui-input"></div></div>
+        <div class="layui-form-item"><label class="layui-form-label">故障描述</label><div class="layui-input-block"><textarea id="F_FaultDescription" name="F_FaultDescription" class="layui-textarea"></textarea></div></div>
+        <div class="layui-form-item layui-hide"><button class="layui-btn" lay-submit lay-filter="saveBtn">确认保存</button></div>
+    </div>
+</div></div></body>

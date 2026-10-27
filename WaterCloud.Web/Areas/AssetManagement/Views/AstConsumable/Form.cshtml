@@ -1,0 +1,28 @@
+@{
+    ViewBag.Title = "低值易耗品";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'common'], function () {
+        var $ = layui.jquery, form = layui.form, common = layui.common;
+        var keyValue = $.request("keyValue");
+        $(function () { if (keyValue) { common.ajax({ url: '/AssetManagement/AstConsumable/GetFormJson', data: { keyValue: keyValue }, async: false, success: function (data) { common.val('adminform', data); } }); } });
+        wcLoading.close();
+        form.on('submit(saveBtn)', function (data) {
+            common.submitForm({ url: '/AssetManagement/AstConsumable/SubmitForm?keyValue=' + (keyValue || ''), param: data.field, success: function () { common.parentreload('data-search-btn'); } });
+            return false;
+        });
+    });
+</script>
+<body><div class="layuimini-container"><div class="layuimini-main">
+    <div class="layui-form layuimini-form" lay-filter="adminform" id="formMain">
+        <div class="layui-form-item"><label class="layui-form-label required">名称</label><div class="layui-input-block"><input type="text" id="F_Name" name="F_Name" lay-verify="required" autocomplete="off" class="layui-input"></div></div>
+        <div class="layui-form-item"><div class="layui-inline"><label class="layui-form-label">规格</label><div class="layui-input-inline"><input type="text" id="F_Spec" name="F_Spec" autocomplete="off" class="layui-input"></div></div>
+            <div class="layui-inline"><label class="layui-form-label">单位</label><div class="layui-input-inline"><input type="text" id="F_Unit" name="F_Unit" autocomplete="off" class="layui-input"></div></div></div>
+        <div class="layui-form-item"><div class="layui-inline"><label class="layui-form-label">库存数量</label><div class="layui-input-inline"><input type="number" id="F_StockQty" name="F_StockQty" step="0.01" min="0" value="0" class="layui-input"></div></div>
+            <div class="layui-inline"><label class="layui-form-label">预警值</label><div class="layui-input-inline"><input type="number" id="F_StockWarnQty" name="F_StockWarnQty" step="0.01" min="0" value="0" class="layui-input"></div></div></div>
+        <div class="layui-form-item"><label class="layui-form-label">单价</label><div class="layui-input-block"><input type="number" id="F_UnitPrice" name="F_UnitPrice" step="0.01" min="0" value="0" class="layui-input"></div></div>
+        <div class="layui-form-item layui-form-text"><label class="layui-form-label">备注</label><div class="layui-input-block"><textarea id="F_Remark" name="F_Remark" class="layui-textarea"></textarea></div></div>
+        <div class="layui-form-item layui-hide"><button class="layui-btn" lay-submit lay-filter="saveBtn">确认保存</button></div>
+    </div>
+</div></div></body>

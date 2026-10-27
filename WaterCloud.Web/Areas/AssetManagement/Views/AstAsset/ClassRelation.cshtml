@@ -1,0 +1,56 @@
+@{
+    ViewBag.Title = "班级资产绑定";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'table', 'common', 'commonTable', 'optimizeSelectOption'], function () {
+        var $ = layui.jquery, form = layui.form, table = layui.table, common = layui.common, commonTable = layui.commonTable;
+        currentTableBar.innerHTML = common.authorizeButtonNew(currentTableBar.innerHTML);
+        toolbarDemo.innerHTML = common.authorizeButtonNew(toolbarDemo.innerHTML);
+        wcLoading.close();
+
+        commonTable.rendertable({
+            elem: '#currentTableId', id: 'currentTableId', url: '/AssetManagement/AstAsset/GetClassRelationJson',
+            cols: [[
+                { field: 'F_AssetId', title: '资产ID', width: 180 },
+                { field: 'F_GradeId', title: '年级ID', width: 160 },
+                { field: 'F_ClassId', title: '班级ID', width: 160 },
+                { field: 'F_Term', title: '学期', width: 120 },
+                { field: 'F_Status', title: '状态', width: 90, align: 'center' },
+                { title: '操作', width: 100, toolbar: '#currentTableBar', align: 'center', fixed: 'right' }
+            ]]
+        });
+
+        form.on('submit(data-search-btn)', function () { commonTable.reloadtable({ elem: 'currentTableId', curr: 1, where: { classId: $('#F_ClassId').val(), term: $('#F_Term').val() } }); return false; });
+
+        table.on('toolbar(currentTableFilter)', function (obj) {
+            if (obj.event === 'bind') {
+                layer.prompt({ title: '绑定班级资产', formType: 0, value: '' }, function (val, idx) {
+                    // 简化：直接用表单弹窗
+                    layer.close(idx);
+                    common.modalOpen({ title: '绑定资产到班级', url: '/AssetManagement/AstAsset/Form', area: ['500px', '60%'] });
+                });
+            }
+        });
+
+        table.on('tool(currentTableFilter)', function (obj) {
+            if (obj.event === 'unbind') {
+                common.deleteForm({ url: '/AssetManagement/AstAsset/UnbindClassAsset', param: { keyValue: obj.data.F_Id }, success: function () { commonTable.reloadtable({ elem: 'currentTableId' }); } });
+            }
+        });
+    });
+</script>
+<div class="layuimini-container"><div class="layuimini-main">
+    <fieldset class="table-search-fieldset"><legend>搜索信息</legend><div style="margin:10px"><form class="layui-form layui-form-pane"><div class="layui-form-item">
+        <div class="layui-inline"><label class="layui-form-label">班级ID:</label><div class="layui-input-inline"><input type="text" id="F_ClassId" autocomplete="off" class="layui-input"></div></div>
+        <div class="layui-inline"><label class="layui-form-label">学期:</label><div class="layui-input-inline"><input type="text" id="F_Term" autocomplete="off" class="layui-input" placeholder="如2026秋"></div></div>
+        <div class="layui-inline"><button type="submit" class="layui-btn layui-btn-primary" lay-submit lay-filter="data-search-btn"><i class="layui-icon">&#xe615;</i> 搜 索</button></div>
+    </div></form></div></fieldset>
+    <script type="text/html" id="toolbarDemo"><div class="layui-btn-container">
+        <button class="layui-btn layui-btn-sm layui-btn-normal" lay-event="bind" id="NF-add" name="NF-add" authorize><i class="layui-icon">&#xe654;</i>绑定资产</button>
+    </div></script>
+    <script type="text/html" id="currentTableBar">
+        <a class="layui-btn layui-btn-xs layui-btn-warm" lay-event="unbind" id="NF-delete" authorize>解绑</a>
+    </script>
+    <table class="layui-hide" id="currentTableId" lay-filter="currentTableFilter"></table>
+</div></div>

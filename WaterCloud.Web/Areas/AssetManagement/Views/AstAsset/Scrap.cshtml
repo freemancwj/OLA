@@ -1,0 +1,80 @@
+@{
+    ViewBag.Title = "报废处置";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'table', 'common', 'commonTable'], function () {
+        var $ = layui.jquery, form = layui.form, table = layui.table, common = layui.common, commonTable = layui.commonTable;
+        currentTableBar.innerHTML = common.authorizeButtonNew(currentTableBar.innerHTML);
+        toolbarDemo.innerHTML = common.authorizeButtonNew(toolbarDemo.innerHTML);
+        wcLoading.close();
+
+        commonTable.rendertable({
+            elem: '#currentTableId', id: 'currentTableId', url: '/AssetManagement/AstAsset/GetScrapJson',
+            cols: [[
+                { field: 'F_AssetId', title: '资产ID', width: 180 },
+                { field: 'F_ApplyTime', title: '申请时间', width: 160 },
+                { field: 'F_Reason', title: '报废原因' },
+                { field: 'F_OriginalValue', title: '原值', width: 100, align: 'right' },
+                { field: 'F_NetValue', title: '净值', width: 100, align: 'right' },
+                { field: 'F_Status', title: '状态', width: 100, align: 'center' },
+                { title: '操作', width: 160, toolbar: '#currentTableBar', align: 'center', fixed: 'right' }
+            ]]
+        });
+
+        form.on('submit(data-search-btn)', function () { commonTable.reloadtable({ elem: 'currentTableId', curr: 1, where: { status: $('#F_Status').val() } }); return false; });
+
+        table.on('toolbar(currentTableFilter)', function (obj) {
+            if (obj.event === 'apply') {
+                layer.prompt({ title: '报废资产ID', formType: 0 }, function (assetId, idx) {
+                    layer.close(idx);
+                    layer.prompt({ title: '报废原因', formType: 2 }, function (reason, idx2) {
+                        layer.close(idx2);
+                        common.submitForm({
+                            url: '/AssetManagement/AstAsset/ApplyScrap',
+                            param: { F_AssetId: assetId, F_Reason: reason },
+                            success: function () { commonTable.reloadtable({ elem: 'currentTableId' }); }
+                        });
+                    });
+                });
+            }
+        });
+
+        table.on('tool(currentTableFilter)', function (obj) {
+            var data = obj.data;
+            if (obj.event === 'approve') {
+                layer.prompt({ title: '审批意见', formType: 2 }, function (remark, idx) {
+                    layer.close(idx);
+                    common.submitForm({
+                        url: '/AssetManagement/AstAsset/ApproveScrap',
+                        param: { keyValue: data.F_Id, approve: true, remark: remark },
+                        success: function () { commonTable.reloadtable({ elem: 'currentTableId' }); }
+                    });
+                });
+            } else if (obj.event === 'reject') {
+                layer.prompt({ title: '驳回原因', formType: 2 }, function (remark, idx) {
+                    layer.close(idx);
+                    common.submitForm({
+                        url: '/AssetManagement/AstAsset/ApproveScrap',
+                        param: { keyValue: data.F_Id, approve: false, remark: remark },
+                        success: function () { commonTable.reloadtable({ elem: 'currentTableId' }); }
+                    });
+                });
+            }
+        });
+    });
+</script>
+<div class="layuimini-container"><div class="layuimini-main">
+    <fieldset class="table-search-fieldset"><legend>搜索信息</legend><div style="margin:10px"><form class="layui-form layui-form-pane"><div class="layui-form-item">
+        <div class="layui-inline"><label class="layui-form-label">状态:</label><div class="layui-input-inline"><select id="F_Status" name="F_Status"><option value="">全部</option><option value="待审批">待审批</option><option value="已批准">已批准</option><option value="已驳回">已驳回</option></select></div></div>
+        <div class="layui-inline"><button type="submit" class="layui-btn layui-btn-primary" lay-submit lay-filter="data-search-btn"><i class="layui-icon">&#xe615;</i> 搜 索</button></div>
+    </div></form></div></fieldset>
+    <script type="text/html" id="toolbarDemo"><div class="layui-btn-container">
+        <button class="layui-btn layui-btn-sm layui-btn-normal" lay-event="apply" id="NF-add" name="NF-add" authorize><i class="layui-icon">&#xe654;</i>申请报废</button>
+    </div></script>
+    <script type="text/html" id="currentTableBar">
+        <a class="layui-btn layui-btn-xs" lay-event="approve" id="NF-approve" authorize>批准</a>
+        <a class="layui-btn layui-btn-xs layui-btn-danger" lay-event="reject" id="NF-reject" authorize>驳回</a>
+    </script>
+    <table class="layui-hide" id="currentTableId" lay-filter="currentTableFilter"></table>
+</div></div>

@@ -1,0 +1,54 @@
+@{
+    ViewBag.Title = "资产调拨";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'table', 'common', 'commonTable'], function () {
+        var $ = layui.jquery, form = layui.form, table = layui.table, common = layui.common, commonTable = layui.commonTable;
+        currentTableBar.innerHTML = common.authorizeButtonNew(currentTableBar.innerHTML);
+        toolbarDemo.innerHTML = common.authorizeButtonNew(toolbarDemo.innerHTML);
+        wcLoading.close();
+
+        commonTable.rendertable({
+            elem: '#currentTableId', id: 'currentTableId', url: '/AssetManagement/AstAsset/GetTransferJson',
+            cols: [[
+                { field: 'F_AssetId', title: '资产ID', width: 180 },
+                { field: 'F_FromClassId', title: '原班级', width: 140 },
+                { field: 'F_ToClassId', title: '新班级', width: 140 },
+                { field: 'F_TransferDate', title: '调拨时间', width: 160 },
+                { field: 'F_Reason', title: '原因' }
+            ]]
+        });
+
+        form.on('submit(data-search-btn)', function () { commonTable.reloadtable({ elem: 'currentTableId', curr: 1, where: { keyword: $('#txt_keyword').val() } }); return false; });
+
+        table.on('toolbar(currentTableFilter)', function (obj) {
+            if (obj.event === 'transfer') {
+                layer.prompt({ title: '调拨资产（资产ID）', formType: 0 }, function (assetId, idx) {
+                    layer.close(idx);
+                    layer.prompt({ title: '调入班级ID', formType: 0 }, function (toClass, idx2) {
+                        layer.close(idx2);
+                        layer.prompt({ title: '调拨原因', formType: 2 }, function (reason, idx3) {
+                            layer.close(idx3);
+                            common.submitForm({
+                                url: '/AssetManagement/AstAsset/TransferAsset',
+                                param: { F_AssetId: assetId, F_ToClassId: toClass, F_Reason: reason },
+                                success: function () { commonTable.reloadtable({ elem: 'currentTableId' }); }
+                            });
+                        });
+                    });
+                });
+            }
+        });
+    });
+</script>
+<div class="layuimini-container"><div class="layuimini-main">
+    <fieldset class="table-search-fieldset"><legend>搜索信息</legend><div style="margin:10px"><form class="layui-form layui-form-pane"><div class="layui-form-item">
+        <div class="layui-inline"><label class="layui-form-label">关键字:</label><div class="layui-input-inline"><input type="text" id="txt_keyword" autocomplete="off" class="layui-input"></div></div>
+        <div class="layui-inline"><button type="submit" class="layui-btn layui-btn-primary" lay-submit lay-filter="data-search-btn"><i class="layui-icon">&#xe615;</i> 搜 索</button></div>
+    </div></form></div></fieldset>
+    <script type="text/html" id="toolbarDemo"><div class="layui-btn-container">
+        <button class="layui-btn layui-btn-sm layui-btn-normal" lay-event="transfer" id="NF-add" name="NF-add" authorize><i class="layui-icon">&#xe654;</i>资产调拨</button>
+    </div></script>
+    <table class="layui-hide" id="currentTableId" lay-filter="currentTableFilter"></table>
+</div></div>

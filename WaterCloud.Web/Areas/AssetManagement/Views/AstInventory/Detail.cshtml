@@ -1,0 +1,42 @@
+@{
+    ViewBag.Title = "盘点明细";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'table', 'common', 'commonTable'], function () {
+        var $ = layui.jquery, form = layui.form, table = layui.table, common = layui.common, commonTable = layui.commonTable;
+        wcLoading.close();
+        var inventoryId = $.request("inventoryId");
+
+        commonTable.rendertable({
+            elem: '#currentTableId', id: 'currentTableId', url: '/AssetManagement/AstInventory/GetItemsJson', where: { inventoryId: inventoryId },
+            cols: [[
+                { field: 'F_AssetId', title: '资产ID', width: 180 },
+                { field: 'F_SystemStatus', title: '系统状态', width: 100, align: 'center' },
+                { field: 'F_ActualStatus', title: '实际状态', width: 100, align: 'center' },
+                { field: 'F_DiffResult', title: '差异', width: 90, align: 'center' },
+                { field: 'F_ConfirmTime', title: '确认时间', width: 160 },
+                { title: '操作', width: 100, toolbar: '#currentTableBar', align: 'center' }
+            ]]
+        });
+
+        table.on('tool(currentTableFilter)', function (obj) {
+            var data = obj.data;
+            if (obj.event === 'confirm') {
+                layer.prompt({ title: '实际状态（在用/闲置/维修中/报废）', formType: 0 }, function (status, idx) {
+                    layer.close(idx);
+                    layer.prompt({ title: '备注', formType: 2 }, function (remark, idx2) {
+                        layer.close(idx2);
+                        common.submitForm({ url: '/AssetManagement/AstInventory/ConfirmItem', param: { itemId: data.F_Id, actualStatus: status, remark: remark }, success: function () { commonTable.reloadtable({ elem: 'currentTableId' }); } });
+                    });
+                });
+            }
+        });
+    });
+</script>
+<div class="layuimini-container"><div class="layuimini-main">
+    <script type="text/html" id="currentTableBar">
+        <a class="layui-btn layui-btn-xs layui-btn-normal" lay-event="confirm" id="NF-edit" authorize>确认</a>
+    </script>
+    <table class="layui-hide" id="currentTableId" lay-filter="currentTableFilter"></table>
+</div></div>

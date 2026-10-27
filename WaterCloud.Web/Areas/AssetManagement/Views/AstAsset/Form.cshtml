@@ -1,0 +1,47 @@
+@{
+    ViewBag.Title = "资产卡片";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'laydate', 'common', 'optimizeSelectOption'], function () {
+        var $ = layui.jquery, form = layui.form, laydate = layui.laydate, common = layui.common;
+        var keyValue = $.request("keyValue");
+        laydate.render({ elem: '#F_PurchaseDate' });
+
+        $(function () {
+            $('#F_CategoryId').bindSelect({ url: '/AssetManagement/AstCategory/GetGridJson', id: 'F_Id', text: 'F_CategoryName', search: true });
+            $('#F_SupplierId').bindSelect({ url: '/AssetManagement/AstSupplier/GetGridJson', id: 'F_Id', text: 'F_SupplierName', search: true });
+            $('#F_GradeId').bindSelect({ url: '/AssetManagement/AstGrade/GetGridJson', id: 'F_Id', text: 'F_GradeName', search: true });
+            $('#F_RoomId').bindSelect({ url: '/AssetManagement/AstRoom/GetGridJson', id: 'F_Id', text: 'F_RoomName', search: true });
+            if (keyValue) { common.ajax({ url: '/AssetManagement/AstAsset/GetFormJson', data: { keyValue: keyValue }, async: false, success: function (data) { common.val('adminform', data); if (!!data.F_PurchaseDate) $('#F_PurchaseDate').val(String(data.F_PurchaseDate).substring(0, 10)); } }); }
+        });
+        wcLoading.close();
+        form.on('submit(saveBtn)', function (data) {
+            common.submitForm({ url: '/AssetManagement/AstAsset/SubmitForm?keyValue=' + (keyValue || ''), param: data.field, success: function () { common.parentreload('data-search-btn'); } });
+            return false;
+        });
+    });
+</script>
+<body><div class="layuimini-container"><div class="layuimini-main">
+    <div class="layui-form layuimini-form" lay-filter="adminform" id="formMain">
+        <div class="layui-form-item"><label class="layui-form-label">资产编号</label><div class="layui-input-block"><input type="text" id="F_AssetCode" name="F_AssetCode" autocomplete="off" class="layui-input"></div></div>
+        <div class="layui-form-item"><label class="layui-form-label required">资产名称</label><div class="layui-input-block"><input type="text" id="F_AssetName" name="F_AssetName" lay-verify="required" autocomplete="off" class="layui-input"></div></div>
+        <div class="layui-form-item"><div class="layui-inline"><label class="layui-form-label">资产分类</label><div class="layui-input-inline"><select id="F_CategoryId" name="F_CategoryId" lay-search><option value="">请选择</option></select></div></div>
+            <div class="layui-inline"><label class="layui-form-label">供应商</label><div class="layui-input-inline"><select id="F_SupplierId" name="F_SupplierId" lay-search><option value="">请选择</option></select></div></div></div>
+        <div class="layui-form-item"><div class="layui-inline"><label class="layui-form-label">规格型号</label><div class="layui-input-inline"><input type="text" id="F_SpecModel" name="F_SpecModel" autocomplete="off" class="layui-input"></div></div>
+            <div class="layui-inline"><label class="layui-form-label">序列号</label><div class="layui-input-inline"><input type="text" id="F_SerialNumber" name="F_SerialNumber" autocomplete="off" class="layui-input"></div></div></div>
+        <div class="layui-form-item"><div class="layui-inline"><label class="layui-form-label">购置日期</label><div class="layui-input-inline"><input type="text" id="F_PurchaseDate" name="F_PurchaseDate" autocomplete="off" class="layui-input"></div></div>
+            <div class="layui-inline"><label class="layui-form-label">购置价格</label><div class="layui-input-inline"><input type="number" id="F_PurchasePrice" name="F_PurchasePrice" step="0.01" min="0" class="layui-input"></div></div></div>
+        <div class="layui-form-item"><div class="layui-inline"><label class="layui-form-label">购置来源</label><div class="layui-input-inline"><select id="F_PurchaseSource" name="F_PurchaseSource"><option value="">请选择</option><option value="财政拨付">财政拨付</option><option value="自购">自购</option><option value="捐赠">捐赠</option></select></div></div>
+            <div class="layui-inline"><label class="layui-form-label">折旧年限</label><div class="layui-input-inline"><input type="number" id="F_DepreciationYears" name="F_DepreciationYears" value="0" class="layui-input"></div></div></div>
+        <div class="layui-form-item"><div class="layui-inline"><label class="layui-form-label">状态</label><div class="layui-input-inline"><select id="F_Status" name="F_Status"><option value="在用">在用</option><option value="闲置">闲置</option><option value="维修中">维修中</option><option value="借用中">借用中</option><option value="报废">报废</option></select></div></div>
+            <div class="layui-inline"><label class="layui-form-label">教学专用</label><div class="layui-input-inline"><select id="F_IsTeachingDevice" name="F_IsTeachingDevice"><option value="false">否</option><option value="true">是</option></select></div></div></div>
+        <div class="layui-form-item"><div class="layui-inline"><label class="layui-form-label">所属年级</label><div class="layui-input-inline"><select id="F_GradeId" name="F_GradeId" lay-search><option value="">请选择</option></select></div></div>
+            <div class="layui-inline"><label class="layui-form-label">所属班级</label><div class="layui-input-inline"><input type="text" id="F_ClassId" name="F_ClassId" autocomplete="off" class="layui-input" placeholder="班级ID"></div></div>
+            <div class="layui-inline"><label class="layui-form-label">存放房间</label><div class="layui-input-inline"><select id="F_RoomId" name="F_RoomId" lay-search><option value="">请选择</option></select></div></div></div>
+        <div class="layui-form-item"><label class="layui-form-label">存放位置</label><div class="layui-input-block"><input type="text" id="F_Location" name="F_Location" autocomplete="off" class="layui-input"></div></div>
+        <div class="layui-form-item"><label class="layui-form-label">责任人ID</label><div class="layui-input-block"><input type="text" id="F_ResponsibleUserId" name="F_ResponsibleUserId" autocomplete="off" class="layui-input"></div></div>
+        <div class="layui-form-item layui-form-text"><label class="layui-form-label">备注</label><div class="layui-input-block"><textarea id="F_Remark" name="F_Remark" class="layui-textarea"></textarea></div></div>
+        <div class="layui-form-item layui-hide"><button class="layui-btn" lay-submit lay-filter="saveBtn">确认保存</button></div>
+    </div>
+</div></div></body>

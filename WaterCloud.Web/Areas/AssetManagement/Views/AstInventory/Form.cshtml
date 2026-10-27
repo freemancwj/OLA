@@ -1,0 +1,24 @@
+@{
+    ViewBag.Title = "学期盘点";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'common'], function () {
+        var $ = layui.jquery, form = layui.form, common = layui.common;
+        var keyValue = $.request("keyValue");
+        $(function () { if (keyValue) { common.ajax({ url: '/AssetManagement/AstInventory/GetFormJson', data: { keyValue: keyValue }, async: false, success: function (data) { common.val('adminform', data); } }); } });
+        wcLoading.close();
+        form.on('submit(saveBtn)', function (data) {
+            common.submitForm({ url: '/AssetManagement/AstInventory/SubmitForm?keyValue=' + (keyValue || ''), param: data.field, success: function () { common.parentreload('data-search-btn'); } });
+            return false;
+        });
+    });
+</script>
+<body><div class="layuimini-container"><div class="layuimini-main">
+    <div class="layui-form layuimini-form" lay-filter="adminform" id="formMain">
+        <div class="layui-form-item"><label class="layui-form-label required">学期</label><div class="layui-input-block"><input type="text" id="F_Term" name="F_Term" lay-verify="required" autocomplete="off" class="layui-input" placeholder="如2026-2027-1"></div></div>
+        <div class="layui-form-item"><label class="layui-form-label">盘点类型</label><div class="layui-input-block"><select id="F_InventoryType" name="F_InventoryType"><option value="开学">开学</option><option value="期末">期末</option></select></div></div>
+        <div class="layui-form-item layui-form-text"><label class="layui-form-label">备注</label><div class="layui-input-block"><textarea id="F_Remark" name="F_Remark" class="layui-textarea"></textarea></div></div>
+        <div class="layui-form-item layui-hide"><button class="layui-btn" lay-submit lay-filter="saveBtn">确认保存</button></div>
+    </div>
+</div></div></body>

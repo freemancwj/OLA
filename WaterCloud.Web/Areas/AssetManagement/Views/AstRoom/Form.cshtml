@@ -1,0 +1,28 @@
+@{
+    ViewBag.Title = "功能室/教室";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'common'], function () {
+        var $ = layui.jquery, form = layui.form, common = layui.common;
+        var keyValue = $.request("keyValue");
+        $(function () { if (keyValue) { common.ajax({ url: '/AssetManagement/AstRoom/GetFormJson', data: { keyValue: keyValue }, async: false, success: function (data) { common.val('adminform', data); } }); } });
+        wcLoading.close();
+        form.on('submit(saveBtn)', function (data) {
+            common.submitForm({ url: '/AssetManagement/AstRoom/SubmitForm?keyValue=' + (keyValue || ''), param: data.field, success: function () { common.parentreload('data-search-btn'); } });
+            return false;
+        });
+    });
+</script>
+<body><div class="layuimini-container"><div class="layuimini-main">
+    <div class="layui-form layuimini-form" lay-filter="adminform" id="formMain">
+        <div class="layui-form-item"><label class="layui-form-label">房间编码</label><div class="layui-input-block"><input type="text" id="F_RoomCode" name="F_RoomCode" autocomplete="off" class="layui-input"></div></div>
+        <div class="layui-form-item"><label class="layui-form-label required">房间名称</label><div class="layui-input-block"><input type="text" id="F_RoomName" name="F_RoomName" lay-verify="required" autocomplete="off" class="layui-input"></div></div>
+        <div class="layui-form-item"><label class="layui-form-label">类型</label><div class="layui-input-block">
+            <select id="F_RoomType" name="F_RoomType"><option value="">请选择</option><option value="教室">教室</option><option value="功能室">功能室</option><option value="实验室">实验室</option><option value="体育室">体育室</option><option value="宿舍">宿舍</option><option value="办公">办公</option></select>
+        </div></div>
+        <div class="layui-form-item"><label class="layui-form-label">楼栋</label><div class="layui-input-block"><input type="text" id="F_Building" name="F_Building" autocomplete="off" class="layui-input"></div></div>
+        <div class="layui-form-item layui-form-text"><label class="layui-form-label">描述</label><div class="layui-input-block"><textarea id="F_Description" name="F_Description" class="layui-textarea"></textarea></div></div>
+        <div class="layui-form-item layui-hide"><button class="layui-btn" lay-submit lay-filter="saveBtn">确认保存</button></div>
+    </div>
+</div></div></body>

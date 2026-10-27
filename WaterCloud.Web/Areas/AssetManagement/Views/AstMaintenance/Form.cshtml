@@ -1,0 +1,32 @@
+@{
+    ViewBag.Title = "设备维保";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'laydate', 'common'], function () {
+        var $ = layui.jquery, form = layui.form, laydate = layui.laydate, common = layui.common;
+        var keyValue = $.request("keyValue");
+        laydate.render({ elem: '#F_PlanDate' });
+        laydate.render({ elem: '#F_ActualDate' });
+        laydate.render({ elem: '#F_NextDate' });
+        $(function () { if (keyValue) { common.ajax({ url: '/AssetManagement/AstMaintenance/GetFormJson', data: { keyValue: keyValue }, async: false, success: function (data) { common.val('adminform', data); } }); } });
+        wcLoading.close();
+        form.on('submit(saveBtn)', function (data) {
+            common.submitForm({ url: '/AssetManagement/AstMaintenance/SubmitForm?keyValue=' + (keyValue || ''), param: data.field, success: function () { common.parentreload('data-search-btn'); } });
+            return false;
+        });
+    });
+</script>
+<body><div class="layuimini-container"><div class="layuimini-main">
+    <div class="layui-form layuimini-form" lay-filter="adminform" id="formMain">
+        <div class="layui-form-item"><label class="layui-form-label required">资产ID</label><div class="layui-input-block"><input type="text" id="F_AssetId" name="F_AssetId" lay-verify="required" autocomplete="off" class="layui-input"></div></div>
+        <div class="layui-form-item"><label class="layui-form-label">维保类型</label><div class="layui-input-block"><select id="F_MaintenanceType" name="F_MaintenanceType"><option value="定期">定期</option><option value="年检">年检</option><option value="故障">故障</option></select></div></div>
+        <div class="layui-form-item"><div class="layui-inline"><label class="layui-form-label">计划日期</label><div class="layui-input-inline"><input type="text" id="F_PlanDate" name="F_PlanDate" autocomplete="off" class="layui-input"></div></div>
+            <div class="layui-inline"><label class="layui-form-label">实际日期</label><div class="layui-input-inline"><input type="text" id="F_ActualDate" name="F_ActualDate" autocomplete="off" class="layui-input"></div></div></div>
+        <div class="layui-form-item"><div class="layui-inline"><label class="layui-form-label">操作人</label><div class="layui-input-inline"><input type="text" id="F_Operator" name="F_Operator" autocomplete="off" class="layui-input"></div></div>
+            <div class="layui-inline"><label class="layui-form-label">费用</label><div class="layui-input-inline"><input type="number" id="F_Cost" name="F_Cost" step="0.01" min="0" class="layui-input"></div></div></div>
+        <div class="layui-form-item layui-form-text"><label class="layui-form-label">维保结果</label><div class="layui-input-block"><textarea id="F_Result" name="F_Result" class="layui-textarea"></textarea></div></div>
+        <div class="layui-form-item"><label class="layui-form-label">下次维保</label><div class="layui-input-block"><input type="text" id="F_NextDate" name="F_NextDate" autocomplete="off" class="layui-input"></div></div>
+        <div class="layui-form-item layui-hide"><button class="layui-btn" lay-submit lay-filter="saveBtn">确认保存</button></div>
+    </div>
+</div></div></body>
