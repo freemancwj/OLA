@@ -1,0 +1,178 @@
+@{
+    ViewBag.Title = "薪酬档案";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'table', 'common', 'commonTable', 'optimizeSelectOption'], function () {
+        var $ = layui.jquery,
+            form = layui.form,
+            table = layui.table,
+            common = layui.common,
+            commonTable = layui.commonTable;
+
+        //权限控制(js是值传递)
+        currentTableBar.innerHTML = common.authorizeButtonNew(currentTableBar.innerHTML);
+        toolbarDemo.innerHTML = common.authorizeButtonNew(toolbarDemo.innerHTML);
+        wcLoading.close();
+
+        var postTypeMap = { 1: '专任教师', 2: '行政', 3: '后勤', 4: '校医', 5: '临聘代课' };
+        var titleLevelMap = { 1: '二级教师', 2: '一级教师', 3: '高级教师', 4: '正高级教师' };
+
+        commonTable.rendertable({
+            elem: '#currentTableId',
+            id: 'currentTableId',
+            url: '/SalaryManagement/SalProfile/GetGridJson',
+            cols: [[
+                { type: 'checkbox', fixed: 'left' },
+                { field: 'F_Account', title: '账号', width: 100 },
+                { field: 'F_RealName', title: '姓名', width: 100 },
+                { field: 'F_OrganizeName', title: '部门', width: 140 },
+                { field: 'F_JobNumber', title: '工号', width: 100 },
+                {
+                    field: 'F_PostType', title: '岗位属性', width: 100, align: 'center',
+                    templet: function (d) { return d.F_PostType ? (postTypeMap[d.F_PostType] || '') : ''; }
+                },
+                {
+                    field: 'F_TitleLevel', title: '职称等级', width: 100, align: 'center',
+                    templet: function (d) { return d.F_TitleLevel ? (titleLevelMap[d.F_TitleLevel] || '') : ''; }
+                },
+                {
+                    field: 'F_IsHeadTeacher', title: '班主任', width: 80, align: 'center',
+                    templet: function (d) { return d.F_IsHeadTeacher === true ? '是' : '否'; }
+                },
+                {
+                    field: 'F_IsGroupLeader', title: '教研组长', width: 90, align: 'center',
+                    templet: function (d) { return d.F_IsGroupLeader === true ? '是' : '否'; }
+                },
+                { field: 'F_SocialBase', title: '社保基数', width: 100, align: 'right' },
+                { title: '操作', width: 130, toolbar: '#currentTableBar', align: 'center', fixed: 'right' }
+            ]]
+        });
+
+        form.on('submit(data-search-btn)', function (data) {
+            commonTable.reloadtable({
+                elem: 'currentTableId',
+                curr: 1,
+                where: {
+                    keyword: $('#txt_keyword').val(),
+                    postType: $('#postType').val(),
+                    titleLevel: $('#titleLevel').val()
+                }
+            });
+            return false;
+        });
+
+        var oneList = ["NF-edit"];
+        var moreList = ["NF-delete"];
+        commonTable.tableRowClick("checkbox", "currentTableFilter", "currentTableId", oneList, moreList);
+
+        table.on('toolbar(currentTableFilter)', function (obj) {
+            var checkStatus = table.checkStatus('currentTableId');
+            if (obj.event === 'add') {
+                common.modalOpen({
+                    title: '新增薪酬档案',
+                    url: '/SalaryManagement/SalProfile/Form',
+                    width: '900px',
+                    height: '92%'
+                });
+            }
+            else if (obj.event === 'delete') {
+                if (checkStatus.data.length == 0) {
+                    common.modalMsg('请选择需要删除的数据', 'warning');
+                    return false;
+                }
+                var ids = [];
+                for (var i = 0; i < checkStatus.data.length; i++) {
+                    ids.push(checkStatus.data[i].F_Id);
+                }
+                common.deleteForm({
+                    url: '/SalaryManagement/SalProfile/DeleteForm',
+                    param: { keyValue: ids.join(',') },
+                    success: function () {
+                        commonTable.reloadtable({ elem: 'currentTableId' });
+                    }
+                });
+            }
+        });
+
+        table.on('tool(currentTableFilter)', function (obj) {
+            var data = obj.data;
+            if (obj.event === 'edit') {
+                common.modalOpen({
+                    title: '编辑薪酬档案',
+                    url: '/SalaryManagement/SalProfile/Form?keyValue=' + data.F_Id,
+                    width: '900px',
+                    height: '92%'
+                });
+            }
+            else if (obj.event === 'delete') {
+                common.deleteForm({
+                    url: '/SalaryManagement/SalProfile/DeleteForm',
+                    param: { keyValue: data.F_Id },
+                    success: function () {
+                        commonTable.reloadtable({ elem: 'currentTableId' });
+                    }
+                });
+            }
+        });
+    });
+</script>
+
+<div class="layuimini-container">
+    <div class="layuimini-main">
+        <fieldset class="table-search-fieldset">
+            <legend>搜索信息</legend>
+            <div style="margin: 10px 10px 10px 10px">
+                <form class="layui-form layui-form-pane">
+                    <div class="layui-form-item">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">关键字:</label>
+                            <div class="layui-input-inline">
+                                <input type="text" id="txt_keyword" name="txt_keyword" autocomplete="off" class="layui-input" placeholder="账号/姓名/工号">
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">岗位属性:</label>
+                            <div class="layui-input-inline">
+                                <select id="postType" name="postType">
+                                    <option value="">全部</option>
+                                    <option value="1">专任教师</option>
+                                    <option value="2">行政</option>
+                                    <option value="3">后勤</option>
+                                    <option value="4">校医</option>
+                                    <option value="5">临聘代课</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">职称等级:</label>
+                            <div class="layui-input-inline">
+                                <select id="titleLevel" name="titleLevel">
+                                    <option value="">全部</option>
+                                    <option value="1">二级教师</option>
+                                    <option value="2">一级教师</option>
+                                    <option value="3">高级教师</option>
+                                    <option value="4">正高级教师</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <button type="submit" class="layui-btn layui-btn-primary" lay-submit lay-filter="data-search-btn"><i class="layui-icon">&#xe615;</i> 搜 索</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </fieldset>
+        <script type="text/html" id="toolbarDemo">
+            <div class="layui-btn-container">
+                <button class="layui-btn layui-btn-sm layui-btn-normal" lay-event="add" id="NF-add" name="NF-add" authorize><i class="layui-icon">&#xe654;</i>新增档案</button>
+                <button class="layui-btn layui-btn-sm layui-btn-danger" lay-event="delete" id="NF-delete" name="NF-delete" authorize><i class="layui-icon">&#xe640;</i>删除</button>
+            </div>
+        </script>
+        <script type="text/html" id="currentTableBar">
+            <a class="layui-btn layui-btn-xs" lay-event="edit" id="NF-edit" authorize><i class="layui-icon">&#xe642;</i>编辑</a>
+            <a class="layui-btn layui-btn-xs layui-btn-danger" lay-event="delete" id="NF-delete" authorize><i class="layui-icon">&#xe640;</i>删除</a>
+        </script>
+        <table class="layui-hide" id="currentTableId" lay-filter="currentTableFilter"></table>
+    </div>
+</div>

@@ -1,0 +1,104 @@
+@{
+    ViewBag.Title = "我的工资明细";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<script>
+    layui.use(['jquery', 'table', 'common'], function () {
+        var $ = layui.jquery,
+            table = layui.table,
+            common = layui.common;
+        var keyValue = $.request("keyValue");
+
+        $(function () {
+            initControl();
+        });
+        wcLoading.close();
+
+        //带防伪token的操作类POST请求
+        function postAction(url, param, success) {
+            var csrfToken = '';
+            if ($('[name=__RequestVerificationToken]').length > 0) {
+                csrfToken = $('[name=__RequestVerificationToken]').val();
+            }
+            var index = parent.layer.load(0, { shade: [0.5, '#000'] });
+            $.ajax({
+                url: common.urlAddTime(url),
+                data: param,
+                type: 'post',
+                dataType: 'json',
+                headers: { "X-CSRF-TOKEN": csrfToken },
+                success: function (data) {
+                    if (data.state == "success") {
+                        common.modalMsg(data.message, data.state);
+                        if (!!success) success(data);
+                    } else {
+                        common.modalAlert(data.message, data.state);
+                    }
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    common.modalAlert(errorThrown, "error");
+                },
+                complete: function () {
+                    parent.layer.close(index);
+                }
+            });
+        }
+
+        function initControl() {
+            common.ajax({
+                url: '/SalaryManagement/SalMyPayslip/GetDetailsJson',
+                data: { keyValue: keyValue },
+                async: false,
+                success: function (data) {
+                    table.render({
+                        elem: '#detailTable',
+                        data: data,
+                        page: false,
+                        limit: data.length > 0 ? data.length : 10,
+                        cols: [[
+                            { field: 'F_Category', title: '类别', width: 110, align: 'center' },
+                            { field: 'F_ItemName', title: '项目', minWidth: 200 },
+                            { field: 'F_Quantity', title: '数量', width: 100, align: 'right' },
+                            { field: 'F_UnitPrice', title: '单价', width: 100, align: 'right' },
+                            {
+                                field: 'F_Amount', title: '金额', width: 120, align: 'right',
+                                templet: function (d) {
+                                    var v = d.F_Amount;
+                                    if (v == null) return '';
+                                    return v < 0 ? '<span style="color:red">' + v + '</span>' : v;
+                                }
+                            }
+                        ]]
+                    });
+                }
+            });
+        }
+
+        // 我要申诉
+        $('#btnAppeal').on('click', function () {
+            layer.prompt({ formType: 2, title: '请输入申诉内容' }, function (value, index) {
+                layer.close(index);
+                if (!value) {
+                    common.modalMsg('申诉内容不能为空', 'warning');
+                    return false;
+                }
+                postAction('/SalaryManagement/SalMyPayslip/SubmitAppeal', { payslipId: keyValue, content: value }, function () {
+                });
+            });
+        });
+    });
+</script>
+
+<body>
+    <div class="layuimini-container">
+        <div class="layuimini-main">
+            <fieldset class="layui-elem-field layui-field-title">
+                <legend>我的工资明细</legend>
+            </fieldset>
+            <table id="detailTable" lay-filter="detailTableFilter"></table>
+            <div style="text-align:center;margin-top:15px;">
+                <button type="button" class="layui-btn layui-btn-warm" id="btnAppeal"><i class="layui-icon">&#xe606;</i>我要申诉</button>
+            </div>
+        </div>
+    </div>
+</body>

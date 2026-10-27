@@ -1,0 +1,106 @@
+@{
+    ViewBag.Title = "薪酬报表中心";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'table', 'laydate', 'common', 'commonTable', 'optimizeSelectOption'], function () {
+        var $ = layui.jquery,
+            form = layui.form,
+            table = layui.table,
+            laydate = layui.laydate,
+            common = layui.common,
+            commonTable = layui.commonTable;
+
+        //权限控制(js是值传递)
+        currentTableBar.innerHTML = common.authorizeButtonNew(currentTableBar.innerHTML);
+        toolbarDemo.innerHTML = common.authorizeButtonNew(toolbarDemo.innerHTML);
+        wcLoading.close();
+
+        var defaultMonth = new Date().Format("yyyy-MM");
+        laydate.render({ elem: '#F_Month', type: 'month', value: defaultMonth });
+
+        var statusMap = {
+            0: ['草稿', 'layui-bg-gray'],
+            1: ['人事已提交', 'layui-bg-blue'],
+            2: ['教务已核对', 'layui-bg-cyan'],
+            3: ['财务已核对', 'layui-bg-green'],
+            4: ['已归档锁定', 'layui-bg-black'],
+            5: ['已驳回', 'layui-bg-red']
+        };
+
+        commonTable.rendertable({
+            elem: '#currentTableId',
+            id: 'currentTableId',
+            url: '/SalaryManagement/SalReport/GetGridJson',
+            where: { month: defaultMonth },
+            cols: [[
+                { field: 'F_Month', title: '月份', width: 90, align: 'center' },
+                { field: 'F_Account', title: '账号', width: 100 },
+                { field: 'F_RealName', title: '姓名', width: 100 },
+                { field: 'F_GrossPay', title: '应发工资', width: 110, align: 'right' },
+                { field: 'F_Tax', title: '个人所得税', width: 110, align: 'right' },
+                { field: 'F_SocialPersonal', title: '社保公积金', width: 110, align: 'right' },
+                { field: 'F_NetPay', title: '实发工资', width: 110, align: 'right' },
+                {
+                    field: 'F_Status', title: '状态', width: 110, align: 'center',
+                    templet: function (d) {
+                        var s = statusMap[d.F_Status] || statusMap[0];
+                        return '<span class="layui-badge ' + s[1] + '">' + s[0] + '</span>';
+                    }
+                }
+            ]]
+        });
+
+        form.on('submit(data-search-btn)', function (data) {
+            commonTable.reloadtable({
+                elem: 'currentTableId',
+                curr: 1,
+                where: { month: $('#F_Month').val() }
+            });
+            return false;
+        });
+
+        table.on('toolbar(currentTableFilter)', function (obj) {
+            var month = $('#F_Month').val() || defaultMonth;
+            var typeMap = { 'export-summary': 'summary', 'export-period': 'period', 'export-headteacher': 'headteacher', 'export-afterschool': 'afterschool', 'export-taxsocial': 'taxsocial' };
+            if (!!typeMap[obj.event]) {
+                window.open('/SalaryManagement/SalReport/ExportExcel?type=' + typeMap[obj.event] + '&month=' + month);
+            }
+        });
+    });
+</script>
+
+<div class="layuimini-container">
+    <div class="layuimini-main">
+        <fieldset class="table-search-fieldset">
+            <legend>搜索信息</legend>
+            <div style="margin: 10px 10px 10px 10px">
+                <form class="layui-form layui-form-pane">
+                    <div class="layui-form-item">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">月份:</label>
+                            <div class="layui-input-inline">
+                                <input type="text" id="F_Month" name="F_Month" autocomplete="off" class="layui-input" placeholder="yyyy-MM">
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <button type="submit" class="layui-btn layui-btn-primary" lay-submit lay-filter="data-search-btn"><i class="layui-icon">&#xe615;</i> 查 询</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </fieldset>
+        <script type="text/html" id="toolbarDemo">
+            <div class="layui-btn-container">
+                <button class="layui-btn layui-btn-sm layui-btn-normal" lay-event="export-summary" id="NF-export" name="NF-export" authorize><i class="layui-icon">&#xe601;</i>导出薪酬总表</button>
+                <button class="layui-btn layui-btn-sm" lay-event="export-period" id="NF-export" name="NF-export" authorize><i class="layui-icon">&#xe601;</i>课时费明细</button>
+                <button class="layui-btn layui-btn-sm layui-btn-warm" lay-event="export-headteacher" id="NF-export" name="NF-export" authorize><i class="layui-icon">&#xe601;</i>班主任津贴台账</button>
+                <button class="layui-btn layui-btn-sm" lay-event="export-afterschool" id="NF-export" name="NF-export" authorize><i class="layui-icon">&#xe601;</i>课后服务费专项</button>
+                <button class="layui-btn layui-btn-sm layui-btn-danger" lay-event="export-taxsocial" id="NF-export" name="NF-export" authorize><i class="layui-icon">&#xe601;</i>个税社保汇总</button>
+            </div>
+        </script>
+        <script type="text/html" id="currentTableBar">
+        </script>
+        <table class="layui-hide" id="currentTableId" lay-filter="currentTableFilter"></table>
+    </div>
+</div>

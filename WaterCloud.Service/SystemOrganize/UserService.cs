@@ -307,7 +307,7 @@ namespace WaterCloud.Service.SystemOrganize
 			if (GlobalContext.SystemConfig.SqlMode == Define.SQL_TENANT)
 			{
 				repository.ChangeEntityDb(GlobalContext.SystemConfig.MainDbNumber);
-				var setTemp = (await syssetApp.GetList()).Where(a => localurl.Contains(a.F_HostUrl)).FirstOrDefault();
+				var setTemp = (await syssetApp.GetList()).Where(a => !string.IsNullOrEmpty(localurl) && !string.IsNullOrEmpty(a.F_HostUrl) && localurl.Contains(a.F_HostUrl)).FirstOrDefault();
 				if (setTemp != null)
 				{
 					if (setTemp.F_EndTime < DateTime.Now.Date)

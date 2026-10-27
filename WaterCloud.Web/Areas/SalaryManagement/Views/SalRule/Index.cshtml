@@ -1,0 +1,290 @@
+@{
+    ViewBag.Title = "薪酬规则配置";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'common'], function () {
+        var $ = layui.jquery,
+            form = layui.form,
+            common = layui.common;
+
+        $(function () {
+            initControl();
+        });
+        wcLoading.close();
+
+        function initControl() {
+            common.ajax({
+                url: '/SalaryManagement/SalRule/GetRuleJson',
+                async: false,
+                success: function (data) {
+                    common.val('adminform', data);
+                }
+            });
+        }
+
+        // 监听提交
+        form.on('submit(saveBtn)', function (data) {
+            common.submitForm({
+                url: '/SalaryManagement/SalRule/SaveRule',
+                param: data.field,
+                close: false,
+                success: function () {
+                }
+            });
+            return false;
+        });
+    });
+</script>
+
+<div class="layuimini-container">
+    <div class="layuimini-main">
+        <div class="layui-form layuimini-form" lay-filter="adminform" id="formMain">
+            <fieldset class="layui-elem-field layui-field-title">
+                <legend>课时费单价</legend>
+            </fieldset>
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label">二级教师(元/节)</label>
+                    <div class="layui-input-inline">
+                        <input type="number" id="F_RateTitle1" name="F_RateTitle1" autocomplete="off" step="0.01" min="0" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">一级教师(元/节)</label>
+                    <div class="layui-input-inline">
+                        <input type="number" id="F_RateTitle2" name="F_RateTitle2" autocomplete="off" step="0.01" min="0" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">高级教师(元/节)</label>
+                    <div class="layui-input-inline">
+                        <input type="number" id="F_RateTitle3" name="F_RateTitle3" autocomplete="off" step="0.01" min="0" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">正高级(元/节)</label>
+                    <div class="layui-input-inline">
+                        <input type="number" id="F_RateTitle4" name="F_RateTitle4" autocomplete="off" step="0.01" min="0" class="layui-input">
+                    </div>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label">周标准课时数</label>
+                    <div class="layui-input-inline">
+                        <input type="number" id="F_StandardWeeklyPeriods" name="F_StandardWeeklyPeriods" autocomplete="off" step="1" min="0" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">超课时倍率</label>
+                    <div class="layui-input-inline">
+                        <input type="number" id="F_OvertimeRate" name="F_OvertimeRate" autocomplete="off" step="0.01" min="0" placeholder="如1.5" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">早读补贴(元/次)</label>
+                    <div class="layui-input-inline">
+                        <input type="number" id="F_MorningReadRate" name="F_MorningReadRate" autocomplete="off" step="0.01" min="0" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">晚自习值班(元/次)</label>
+                    <div class="layui-input-inline">
+                        <input type="number" id="F_EveningStudyRate" name="F_EveningStudyRate" autocomplete="off" step="0.01" min="0" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">代课费(元/节)</label>
+                    <div class="layui-input-inline">
+                        <input type="number" id="F_SubstituteRate" name="F_SubstituteRate" autocomplete="off" step="0.01" min="0" class="layui-input">
+                    </div>
+                </div>
+            </div>
+
+            <fieldset class="layui-elem-field layui-field-title">
+                <legend>班主任津贴</legend>
+            </fieldset>
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label">一档人数上限</label>
+                    <div class="layui-input-inline">
+                        <input type="number" id="F_ClassTier1Max" name="F_ClassTier1Max" autocomplete="off" step="1" min="0" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">一档金额</label>
+                    <div class="layui-input-inline">
+                        <input type="number" id="F_ClassTier1Amount" name="F_ClassTier1Amount" autocomplete="off" step="0.01" min="0" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">二档人数上限</label>
+                    <div class="layui-input-inline">
+                        <input type="number" id="F_ClassTier2Max" name="F_ClassTier2Max" autocomplete="off" step="1" min="0" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">二档金额</label>
+                    <div class="layui-input-inline">
+                        <input type="number" id="F_ClassTier2Amount" name="F_ClassTier2Amount" autocomplete="off" step="0.01" min="0" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">三档金额</label>
+                    <div class="layui-input-inline">
+                        <input type="number" id="F_ClassTier3Amount" name="F_ClassTier3Amount" autocomplete="off" step="0.01" min="0" placeholder="超二档上限" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">毕业班加成比例</label>
+                    <div class="layui-input-inline">
+                        <input type="number" id="F_GraduationBonusRate" name="F_GraduationBonusRate" autocomplete="off" step="0.01" min="0" placeholder="如0.3" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">副班主任比例</label>
+                    <div class="layui-input-inline">
+                        <input type="number" id="F_DeputyRate" name="F_DeputyRate" autocomplete="off" step="0.01" min="0" placeholder="如0.3" class="layui-input">
+                    </div>
+                </div>
+            </div>
+
+            <fieldset class="layui-elem-field layui-field-title">
+                <legend>考核发放比例</legend>
+            </fieldset>
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label">优秀</label>
+                    <div class="layui-input-inline">
+                        <input type="number" id="F_AssessExcellent" name="F_AssessExcellent" autocomplete="off" step="0.01" min="0" placeholder="如1" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">合格</label>
+                    <div class="layui-input-inline">
+                        <input type="number" id="F_AssessGood" name="F_AssessGood" autocomplete="off" step="0.01" min="0" placeholder="如0.9" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">不合格</label>
+                    <div class="layui-input-inline">
+                        <input type="number" id="F_AssessPoor" name="F_AssessPoor" autocomplete="off" step="0.01" min="0" placeholder="如0.6" class="layui-input">
+                    </div>
+                </div>
+            </div>
+
+            <fieldset class="layui-elem-field layui-field-title">
+                <legend>课后服务单价</legend>
+            </fieldset>
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label">作业辅导(元/节)</label>
+                    <div class="layui-input-inline">
+                        <input type="number" id="F_AfterSchoolHomework" name="F_AfterSchoolHomework" autocomplete="off" step="0.01" min="0" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">社团活动(元/节)</label>
+                    <div class="layui-input-inline">
+                        <input type="number" id="F_AfterSchoolClub" name="F_AfterSchoolClub" autocomplete="off" step="0.01" min="0" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">延时托管(元/节)</label>
+                    <div class="layui-input-inline">
+                        <input type="number" id="F_AfterSchoolCare" name="F_AfterSchoolCare" autocomplete="off" step="0.01" min="0" class="layui-input">
+                    </div>
+                </div>
+            </div>
+
+            <fieldset class="layui-elem-field layui-field-title">
+                <legend>其他专项</legend>
+            </fieldset>
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label">教研组长津贴(元/月)</label>
+                    <div class="layui-input-inline">
+                        <input type="number" id="F_GroupLeaderAllowance" name="F_GroupLeaderAllowance" autocomplete="off" step="0.01" min="0" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">备课组长津贴(元/月)</label>
+                    <div class="layui-input-inline">
+                        <input type="number" id="F_LessonLeaderAllowance" name="F_LessonLeaderAllowance" autocomplete="off" step="0.01" min="0" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">监考费(元/场)</label>
+                    <div class="layui-input-inline">
+                        <input type="number" id="F_InvigilateRate" name="F_InvigilateRate" autocomplete="off" step="0.01" min="0" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">值班补贴(元/次)</label>
+                    <div class="layui-input-inline">
+                        <input type="number" id="F_DutyRate" name="F_DutyRate" autocomplete="off" step="0.01" min="0" class="layui-input">
+                    </div>
+                </div>
+            </div>
+
+            <fieldset class="layui-elem-field layui-field-title">
+                <legend>考勤扣款</legend>
+            </fieldset>
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label">迟到早退(元/次)</label>
+                    <div class="layui-input-inline">
+                        <input type="number" id="F_LateDeduct" name="F_LateDeduct" autocomplete="off" step="0.01" min="0" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">病假(元/天)</label>
+                    <div class="layui-input-inline">
+                        <input type="number" id="F_SickLeaveDeduct" name="F_SickLeaveDeduct" autocomplete="off" step="0.01" min="0" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">事假(元/天)</label>
+                    <div class="layui-input-inline">
+                        <input type="number" id="F_PersonalLeaveDeduct" name="F_PersonalLeaveDeduct" autocomplete="off" step="0.01" min="0" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">旷工(元/天)</label>
+                    <div class="layui-input-inline">
+                        <input type="number" id="F_AbsentDeduct" name="F_AbsentDeduct" autocomplete="off" step="0.01" min="0" class="layui-input">
+                    </div>
+                </div>
+            </div>
+
+            <fieldset class="layui-elem-field layui-field-title">
+                <legend>社保/工会比例</legend>
+            </fieldset>
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label">社保个人比例</label>
+                    <div class="layui-input-inline">
+                        <input type="number" id="F_SocialRate" name="F_SocialRate" autocomplete="off" step="0.001" min="0" placeholder="如0.105" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">公积金个人比例</label>
+                    <div class="layui-input-inline">
+                        <input type="number" id="F_HousingFundRate" name="F_HousingFundRate" autocomplete="off" step="0.001" min="0" placeholder="如0.12" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">工会会费比例</label>
+                    <div class="layui-input-inline">
+                        <input type="number" id="F_UnionFeeRate" name="F_UnionFeeRate" autocomplete="off" step="0.001" min="0" placeholder="如0.005" class="layui-input">
+                    </div>
+                </div>
+            </div>
+
+            <div class="layui-form-item" style="text-align:center;margin-top:20px;">
+                <button class="layui-btn site-demo-active" lay-submit lay-filter="saveBtn"><i class="layui-icon">&#xe605;</i>保存规则</button>
+            </div>
+        </div>
+    </div>
+</div>

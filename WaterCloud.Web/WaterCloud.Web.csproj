@@ -17,8 +17,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- jquery-3.4.1 登录页必须使用，必须作为 Content 保留，否则发布包缺失导致登录页滑块无法渲染 -->
-    <Content Include="wwwroot\lib\jquery-3.4.1\**" />
+    <!-- jquery-3.4.1 登录页必须使用，必须作为 Content 保留，否则发布包缺失导致登录页滑块无法渲染；SDK 默认已包含 wwwroot 为 Content，此处用 Update 显式保留发布，避免 NETSDK1022 重复项错误 -->
+    <Content Update="wwwroot\lib\jquery-3.4.1\**" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>
     <Content Remove="Areas\SystemOrganize\Views\User\StudentList.cshtml" />

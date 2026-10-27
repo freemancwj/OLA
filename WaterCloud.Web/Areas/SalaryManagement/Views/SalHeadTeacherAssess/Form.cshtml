@@ -1,0 +1,144 @@
+@{
+    ViewBag.Title = "班主任考核";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'laydate', 'common', 'optimizeSelectOption'], function () {
+        var form = layui.form,
+            $ = layui.jquery,
+            laydate = layui.laydate,
+            common = layui.common;
+        var keyValue = $.request("keyValue");
+
+        laydate.render({ elem: '#F_Month', type: 'month' });
+
+        $(function () {
+            initControl();
+        });
+        wcLoading.close();
+
+        function initControl() {
+            if (!keyValue) {
+                // 新增模式：加载已建档教职工
+                $("#F_UserId").bindSelect({
+                    url: "/SalaryManagement/SalHeadTeacherAssess/GetProfileUserListJson",
+                    id: "F_Id",
+                    text: "F_RealName",
+                    search: true
+                });
+            } else {
+                // 编辑模式：隐藏人员选择，加载数据
+                $('#userItem').hide();
+                $('#F_UserId').removeAttr('lay-verify');
+                common.ajax({
+                    url: '/SalaryManagement/SalHeadTeacherAssess/GetFormJson',
+                    data: { keyValue: keyValue },
+                    async: false,
+                    success: function (data) {
+                        common.val('adminform', data);
+                        if (!!data.F_Month) {
+                            $('#F_Month').val(String(data.F_Month).substring(0, 7));
+                        }
+                        // 保留人员绑定（隐藏选择但仍需回传）
+                        if (!!data.F_UserId) {
+                            $('#F_UserId').append('<option value="' + data.F_UserId + '" selected>' + data.F_UserId + '</option>');
+                        }
+                    }
+                });
+            }
+            form.render('select');
+        }
+
+        // 监听提交
+        form.on('submit(saveBtn)', function (data) {
+            if (!keyValue && !data.field.F_UserId) {
+                common.modalMsg('请选择教职工', 'warning');
+                return false;
+            }
+            common.submitForm({
+                url: '/SalaryManagement/SalHeadTeacherAssess/SubmitForm?keyValue=' + (keyValue || ''),
+                param: data.field,
+                success: function () {
+                    common.parentreload('data-search-btn');
+                }
+            });
+            return false;
+        });
+    });
+</script>
+
+<body>
+    <div class="layuimini-container">
+        <div class="layuimini-main">
+            <div class="layui-form layuimini-form" lay-filter="adminform" id="formMain">
+                <div class="layui-form-item" id="userItem">
+                    <label class="layui-form-label required">选择教职工</label>
+                    <div class="layui-input-block">
+                        <select id="F_UserId" name="F_UserId" lay-verify="required" lay-search>
+                            <option value="">请选择教职工</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label required">月份</label>
+                    <div class="layui-input-block">
+                        <input type="text" id="F_Month" name="F_Month" lay-verify="required" autocomplete="off" placeholder="yyyy-MM" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">班级ID</label>
+                        <div class="layui-input-inline">
+                            <input type="text" id="F_ClassId" name="F_ClassId" autocomplete="off" maxlength="50" class="layui-input">
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">班级人数</label>
+                        <div class="layui-input-inline">
+                            <input type="number" id="F_ClassSize" name="F_ClassSize" autocomplete="off" step="1" min="0" class="layui-input">
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">是否毕业班</label>
+                        <div class="layui-input-inline">
+                            <select id="F_IsGraduation" name="F_IsGraduation">
+                                <option value="false">否</option>
+                                <option value="true">是</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">考核等级</label>
+                        <div class="layui-input-inline">
+                            <select id="F_AssessLevel" name="F_AssessLevel">
+                                <option value="">请选择</option>
+                                <option value="1">优秀</option>
+                                <option value="2">合格</option>
+                                <option value="3">不合格</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">量化评分</label>
+                        <div class="layui-input-inline">
+                            <input type="number" id="F_Score" name="F_Score" autocomplete="off" step="0.01" min="0" class="layui-input">
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-form-text">
+                    <label class="layui-form-label">备注</label>
+                    <div class="layui-input-block">
+                        <textarea id="F_Remark" name="F_Remark" maxlength="500" placeholder="请输入备注" class="layui-textarea"></textarea>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-hide">
+                    <button class="layui-btn site-demo-active" lay-submit id="submit" lay-filter="saveBtn">确认保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>

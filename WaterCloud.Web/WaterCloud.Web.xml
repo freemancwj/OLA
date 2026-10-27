@@ -582,6 +582,99 @@
             描 述：订单管理控制器类
             </summary>
         </member>
+        <member name="T:WaterCloud.Web.Areas.SalaryManagement.Controllers.SalAdjustmentController">
+            <summary>
+            薪酬手动调整项（临时加发/扣款，留痕）
+            </summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.SalaryManagement.Controllers.SalAfterSchoolRecordController">
+            <summary>
+            课后服务记录
+            </summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.SalaryManagement.Controllers.SalAppealController">
+            <summary>
+            薪酬申诉处理（人事回复）
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.SalaryManagement.Controllers.SalAppealController.Reply(System.String,System.String)">
+            <summary>回复申诉（处理完成）</summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.SalaryManagement.Controllers.SalAttendanceSummaryController">
+            <summary>
+            考勤汇总（按月）
+            </summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.SalaryManagement.Controllers.SalHeadTeacherAssessController">
+            <summary>
+            班主任考核（德育处按月录入）
+            </summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.SalaryManagement.Controllers.SalInvigilateRecordController">
+            <summary>
+            监考记录
+            </summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.SalaryManagement.Controllers.SalMyPayslipController">
+            <summary>
+            我的工资条（教职工自助查询，仅本人数据）
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.SalaryManagement.Controllers.SalMyPayslipController.GetDetailsJson(System.String)">
+            <summary>工资明细（校验本人）</summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.SalaryManagement.Controllers.SalMyPayslipController.SubmitAppeal(System.String,System.String)">
+            <summary>对本人工资单提交申诉</summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.SalaryManagement.Controllers.SalPayslipController">
+            <summary>
+            工资单管理：自动算薪、审批流转、归档锁定、审计日志
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.SalaryManagement.Controllers.SalPayslipController.CalculateMonth(System.String)">
+            <summary>对某月执行自动算薪</summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.SalaryManagement.Controllers.SalPayslipController.SubmitApprove(System.String)">
+            <summary>人事提交审批</summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.SalaryManagement.Controllers.SalPayslipController.Approve(System.String,System.String)">
+            <summary>逐级审批（教务→财务→校长）</summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.SalaryManagement.Controllers.SalPayslipController.Reject(System.String,System.String)">
+            <summary>驳回到草稿</summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.SalaryManagement.Controllers.SalPeriodRecordController">
+            <summary>
+            课时记录（教务按月录入）
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.SalaryManagement.Controllers.SalPeriodRecordController.GetProfileUserListJson">
+            <summary>已建档教职工列表（录入时选择）</summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.SalaryManagement.Controllers.SalProfileController">
+            <summary>
+            教职工薪酬档案
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.SalaryManagement.Controllers.SalProfileController.GetUnarchivedUserListJson">
+            <summary>未建薪酬档案的用户（新增时选择）</summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.SalaryManagement.Controllers.SalReportController">
+            <summary>
+            薪酬报表中心（Excel 导出，对接财务/财政对账）
+            </summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.SalaryManagement.Controllers.SalReportController.GetGridJson(WaterCloud.Code.SoulPage{WaterCloud.Domain.SalaryManagement.SalPayslipExtend},System.String)">
+            <summary>报表预览数据</summary>
+        </member>
+        <member name="M:WaterCloud.Web.Areas.SalaryManagement.Controllers.SalReportController.ExportExcel(System.String,System.String)">
+            <summary>导出 Excel：summary总表/period课时费/headteacher班主任/afterschool课后服务/taxsocial个税社保</summary>
+        </member>
+        <member name="T:WaterCloud.Web.Areas.SalaryManagement.Controllers.SalRuleController">
+            <summary>
+            薪酬规则参数配置（单行配置）
+            </summary>
+        </member>
         <member name="T:WaterCloud.Web.Areas.SystemManage.Controllers.CodegeneratelogController">
             <summary>
             创 建：超级管理员

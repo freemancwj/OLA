@@ -1,0 +1,94 @@
+@{
+    ViewBag.Title = "工资单明细";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<script>
+    layui.use(['jquery', 'table', 'common'], function () {
+        var $ = layui.jquery,
+            table = layui.table,
+            common = layui.common;
+        var keyValue = $.request("keyValue");
+
+        var statusMap = {
+            0: ['草稿', 'layui-bg-gray'],
+            1: ['人事已提交', 'layui-bg-blue'],
+            2: ['教务已核对', 'layui-bg-cyan'],
+            3: ['财务已核对', 'layui-bg-green'],
+            4: ['已归档锁定', 'layui-bg-black'],
+            5: ['已驳回', 'layui-bg-red']
+        };
+
+        $(function () {
+            initControl();
+        });
+        wcLoading.close();
+
+        function initControl() {
+            // 汇总信息
+            common.ajax({
+                url: '/SalaryManagement/SalPayslip/GetFormJson',
+                data: { keyValue: keyValue },
+                async: false,
+                success: function (data) {
+                    $('#lblMonth').text(data.F_Month || '');
+                    $('#lblGrossPay').text(data.F_GrossPay != null ? data.F_GrossPay : '');
+                    $('#lblSocialPersonal').text(data.F_SocialPersonal != null ? data.F_SocialPersonal : '');
+                    $('#lblUnionFee').text(data.F_UnionFee != null ? data.F_UnionFee : '');
+                    $('#lblTax').text(data.F_Tax != null ? data.F_Tax : '');
+                    $('#lblNetPay').text(data.F_NetPay != null ? data.F_NetPay : '');
+                    var s = statusMap[data.F_Status] || statusMap[0];
+                    $('#lblStatus').html('<span class="layui-badge ' + s[1] + '">' + s[0] + '</span>');
+                }
+            });
+            // 明细列表
+            common.ajax({
+                url: '/SalaryManagement/SalPayslip/GetDetailsJson',
+                data: { keyValue: keyValue },
+                async: false,
+                success: function (data) {
+                    table.render({
+                        elem: '#detailTable',
+                        data: data,
+                        page: false,
+                        limit: data.length > 0 ? data.length : 10,
+                        cols: [[
+                            { field: 'F_Category', title: '类别', width: 110, align: 'center' },
+                            { field: 'F_ItemName', title: '项目', minWidth: 200 },
+                            { field: 'F_Quantity', title: '数量', width: 100, align: 'right' },
+                            { field: 'F_UnitPrice', title: '单价', width: 100, align: 'right' },
+                            {
+                                field: 'F_Amount', title: '金额', width: 120, align: 'right',
+                                templet: function (d) {
+                                    var v = d.F_Amount;
+                                    if (v == null) return '';
+                                    return v < 0 ? '<span style="color:red">' + v + '</span>' : v;
+                                }
+                            }
+                        ]]
+                    });
+                }
+            });
+        }
+    });
+</script>
+
+<body>
+    <div class="layuimini-container">
+        <div class="layuimini-main">
+            <div class="layui-panel" style="padding: 15px;">
+                <div class="layui-row layui-col-space10">
+                    <div class="layui-col-md2 layui-col-xs4"><strong>月份：</strong><span id="lblMonth"></span></div>
+                    <div class="layui-col-md2 layui-col-xs4"><strong>应发：</strong><span id="lblGrossPay" style="color:#1E9FFF"></span></div>
+                    <div class="layui-col-md2 layui-col-xs4"><strong>社保公积金：</strong><span id="lblSocialPersonal"></span></div>
+                    <div class="layui-col-md2 layui-col-xs4"><strong>工会会费：</strong><span id="lblUnionFee"></span></div>
+                    <div class="layui-col-md2 layui-col-xs4"><strong>个税：</strong><span id="lblTax"></span></div>
+                    <div class="layui-col-md2 layui-col-xs4"><strong>实发：</strong><span id="lblNetPay" style="color:#FF5722;font-weight:bold"></span></div>
+                </div>
+                <div class="layui-row" style="margin-top:8px;">
+                    <div class="layui-col-md12"><strong>状态：</strong><span id="lblStatus"></span></div>
+                </div>
+            </div>
+            <table id="detailTable" lay-filter="detailTableFilter"></table>
+        </div>
+    </div>
+</body>

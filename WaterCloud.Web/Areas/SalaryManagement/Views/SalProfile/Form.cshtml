@@ -1,0 +1,211 @@
+@{
+    ViewBag.Title = "薪酬档案";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<script>
+    layui.use(['jquery', 'form', 'laydate', 'common', 'optimizeSelectOption'], function () {
+        var form = layui.form,
+            $ = layui.jquery,
+            laydate = layui.laydate,
+            common = layui.common;
+        var keyValue = $.request("keyValue");
+
+        laydate.render({ elem: '#F_EntryDate' });
+
+        $(function () {
+            initControl();
+        });
+        wcLoading.close();
+
+        function initControl() {
+            if (!keyValue) {
+                // 新增模式：加载未建档用户
+                $("#F_UserId").bindSelect({
+                    url: "/SalaryManagement/SalProfile/GetUnarchivedUserListJson",
+                    id: "F_Id",
+                    text: "F_RealName",
+                    search: true
+                });
+            } else {
+                // 编辑模式：隐藏用户选择，加载档案
+                $('#userItem').hide();
+                $('#F_UserId').removeAttr('lay-verify');
+                common.ajax({
+                    url: '/SalaryManagement/SalProfile/GetFormJson',
+                    data: { keyValue: keyValue },
+                    async: false,
+                    success: function (data) {
+                        common.val('adminform', data);
+                        // 日期格式处理
+                        if (!!data.F_EntryDate) {
+                            $('#F_EntryDate').val(String(data.F_EntryDate).replace(/\//g, '-').substring(0, 10));
+                        }
+                    }
+                });
+            }
+            form.render('select');
+        }
+
+        // 监听提交
+        form.on('submit(saveBtn)', function (data) {
+            if (!keyValue && !data.field.F_UserId) {
+                common.modalMsg('请选择员工', 'warning');
+                return false;
+            }
+            common.submitForm({
+                url: '/SalaryManagement/SalProfile/SubmitForm?keyValue=' + (keyValue || ''),
+                param: data.field,
+                success: function () {
+                    common.parentreload('data-search-btn');
+                }
+            });
+            return false;
+        });
+    });
+</script>
+
+<body>
+    <div class="layuimini-container">
+        <div class="layuimini-main">
+            <div class="layui-form layuimini-form" lay-filter="adminform" id="formMain">
+                <div class="layui-form-item" id="userItem">
+                    <label class="layui-form-label required">选择员工</label>
+                    <div class="layui-input-block">
+                        <select id="F_UserId" name="F_UserId" lay-verify="required" lay-search>
+                            <option value="">请选择员工（仅显示未建薪酬档案用户）</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">工号</label>
+                        <div class="layui-input-inline">
+                            <input type="text" id="F_JobNumber" name="F_JobNumber" autocomplete="off" maxlength="50" class="layui-input">
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">入职时间</label>
+                        <div class="layui-input-inline">
+                            <input type="text" id="F_EntryDate" name="F_EntryDate" autocomplete="off" class="layui-input">
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">教龄(年)</label>
+                        <div class="layui-input-inline">
+                            <input type="number" id="F_TeachingYears" name="F_TeachingYears" autocomplete="off" min="0" class="layui-input">
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">岗位属性</label>
+                        <div class="layui-input-inline">
+                            <select id="F_PostType" name="F_PostType">
+                                <option value="">请选择</option>
+                                <option value="1">专任教师</option>
+                                <option value="2">行政</option>
+                                <option value="3">后勤</option>
+                                <option value="4">校医</option>
+                                <option value="5">临聘代课</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">职称等级</label>
+                        <div class="layui-input-inline">
+                            <select id="F_TitleLevel" name="F_TitleLevel">
+                                <option value="">请选择</option>
+                                <option value="1">二级教师</option>
+                                <option value="2">一级教师</option>
+                                <option value="3">高级教师</option>
+                                <option value="4">正高级教师</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">是否班主任</label>
+                        <div class="layui-input-inline">
+                            <select id="F_IsHeadTeacher" name="F_IsHeadTeacher">
+                                <option value="false">否</option>
+                                <option value="true">是</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">是否副班主任</label>
+                        <div class="layui-input-inline">
+                            <select id="F_IsDeputyHead" name="F_IsDeputyHead">
+                                <option value="false">否</option>
+                                <option value="true">是</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">是否教研组长</label>
+                        <div class="layui-input-inline">
+                            <select id="F_IsGroupLeader" name="F_IsGroupLeader">
+                                <option value="false">否</option>
+                                <option value="true">是</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">是否备课组长</label>
+                        <div class="layui-input-inline">
+                            <select id="F_IsLessonLeader" name="F_IsLessonLeader">
+                                <option value="false">否</option>
+                                <option value="true">是</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">毕业班任课</label>
+                        <div class="layui-input-inline">
+                            <select id="F_IsGraduationTeacher" name="F_IsGraduationTeacher">
+                                <option value="false">否</option>
+                                <option value="true">是</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">班主任班级</label>
+                        <div class="layui-input-inline">
+                            <input type="text" id="F_ClassId" name="F_ClassId" autocomplete="off" maxlength="50" class="layui-input">
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">社保公积金基数</label>
+                        <div class="layui-input-inline">
+                            <input type="number" id="F_SocialBase" name="F_SocialBase" autocomplete="off" step="0.01" min="0" class="layui-input">
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">专项附加扣除/月</label>
+                        <div class="layui-input-inline">
+                            <input type="number" id="F_TaxDeduction" name="F_TaxDeduction" autocomplete="off" step="0.01" min="0" class="layui-input">
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-form-text">
+                    <label class="layui-form-label">备注</label>
+                    <div class="layui-input-block">
+                        <textarea id="F_Remark" name="F_Remark" maxlength="500" placeholder="请输入备注" class="layui-textarea"></textarea>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-hide">
+                    <button class="layui-btn site-demo-active" lay-submit id="submit" lay-filter="saveBtn">确认保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
